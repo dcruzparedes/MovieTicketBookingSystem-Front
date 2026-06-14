@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import { ref } from 'vue'
+import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MovieForm from '@/components/admin/MovieForm.vue'
+
+const router = useRouter()
 
 interface Movie {
   id: number
@@ -81,7 +84,12 @@ function toggleActive(movie: Movie) {
                 />
               </td>
               <td>
-                <button class="btn btn-ghost btn-sm">Editar</button>
+                <button
+                  class="btn btn-ghost btn-sm"
+                  @click="router.push('/admin/peliculas/' + movie.id + '/editar')"
+                >
+                  Editar
+                </button>
               </td>
             </tr>
           </tbody>

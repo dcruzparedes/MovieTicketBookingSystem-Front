@@ -1,10 +1,5 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
-
-const emit = defineEmits<{
-  saved: [data: { title: string; genre: string; language: string; releaseDate: string; synopsis: string; poster: File | null }]
-  cancel: []
-}>()
+import { computed, reactive, ref, withDefaults } from 'vue'
 
 interface FormFields {
   title: string
@@ -22,12 +17,27 @@ interface FormErrors {
   synopsis: string
 }
 
+const props = withDefaults(
+  defineProps<{
+    initialData?: Partial<FormFields>
+    initialPosterUrl?: string
+  }>(),
+  { initialData: undefined, initialPosterUrl: undefined },
+)
+
+const emit = defineEmits<{
+  saved: [data: FormFields & { poster: File | null }]
+  cancel: []
+}>()
+
+const isEditing = computed(() => !!props.initialData)
+
 const form = reactive<FormFields>({
-  title: '',
-  genre: '',
-  language: '',
-  releaseDate: '',
-  synopsis: '',
+  title: props.initialData?.title ?? '',
+  genre: props.initialData?.genre ?? '',
+  language: props.initialData?.language ?? '',
+  releaseDate: props.initialData?.releaseDate ?? '',
+  synopsis: props.initialData?.synopsis ?? '',
 })
 
 const errors = reactive<FormErrors>({
@@ -43,7 +53,7 @@ const languages = ['Español', 'Subtitulada']
 
 // Poster
 const posterFile = ref<File | null>(null)
-const posterPreview = ref('')
+const posterPreview = ref(props.initialPosterUrl ?? '')
 const posterError = ref('')
 const isDragging = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
@@ -161,7 +171,9 @@ function handleSubmit() {
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">Guardar película</button>
+        <button type="submit" class="btn btn-primary">
+          {{ isEditing ? 'Guardar cambios' : 'Guardar película' }}
+        </button>
         <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancelar</button>
       </div>
     </div>

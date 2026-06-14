@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import PosterUpload from '@/components/PosterUpload.vue'
 
 const router = useRouter()
 
@@ -36,47 +37,10 @@ const errors = reactive<FormErrors>({
   synopsis: '',
 })
 
+const posterFile = ref<File | null>(null)
+
 const genres = ['Acción', 'Animación', 'Drama', 'Sci-Fi', 'Terror']
 const languages = ['Español', 'Subtitulada']
-
-// Poster upload
-const posterFile = ref<File | null>(null)
-const posterPreview = ref('')
-const posterError = ref('')
-const isDragging = ref(false)
-const fileInputRef = ref<HTMLInputElement | null>(null)
-
-function handleFileSelect(file: File) {
-  posterError.value = ''
-  if (!['image/jpeg', 'image/png'].includes(file.type)) {
-    posterError.value = 'Solo se permiten archivos JPG o PNG'
-    return
-  }
-  if (file.size > 5 * 1024 * 1024) {
-    posterError.value = 'El archivo no debe superar 5 MB'
-    return
-  }
-  posterFile.value = file
-  posterPreview.value = URL.createObjectURL(file)
-}
-
-function onFileInput(event: Event) {
-  const file = (event.target as HTMLInputElement).files?.[0]
-  if (file) handleFileSelect(file)
-}
-
-function onDrop(event: DragEvent) {
-  isDragging.value = false
-  const file = event.dataTransfer?.files[0]
-  if (file) handleFileSelect(file)
-}
-
-function removePoster() {
-  posterFile.value = null
-  posterPreview.value = ''
-  posterError.value = ''
-  if (fileInputRef.value) fileInputRef.value.value = ''
-}
 
 function validate(): boolean {
   errors.title = form.title.trim() ? '' : 'El título es requerido'
@@ -90,7 +54,7 @@ function validate(): boolean {
 
 function handleSubmit() {
   if (!validate()) return
-  // TODO: enviar al API
+  // TODO: enviar al API junto con posterFile.value
   router.push('/admin/peliculas')
 }
 
@@ -177,43 +141,11 @@ function goBack() {
           </div>
         </div>
 
-        <!-- Columna derecha: póster -->
+        <!-- Columna derecha: póster + S3 -->
         <div class="right-col">
           <div class="card">
             <p class="section-label">Imagen del póster</p>
-
-            <input
-              ref="fileInputRef"
-              type="file"
-              accept="image/jpeg,image/png"
-              class="hidden-input"
-              @change="onFileInput"
-            />
-
-            <!-- Preview -->
-            <div v-if="posterPreview" class="preview-wrap">
-              <img :src="posterPreview" alt="Póster" class="poster-preview" />
-              <button type="button" class="remove-btn" @click="removePoster">Quitar imagen</button>
-            </div>
-
-            <!-- Drop zone -->
-            <div
-              v-else
-              class="drop-zone"
-              :class="{ dragging: isDragging }"
-              @click="fileInputRef?.click()"
-              @dragover.prevent="isDragging = true"
-              @dragleave="isDragging = false"
-              @drop.prevent="onDrop"
-            >
-              <span class="drop-icon">🖼</span>
-              <p class="drop-text">
-                Arrastra o <span class="drop-link">haz clic para subir</span>
-              </p>
-              <p class="drop-hint">JPG, PNG · máx. 5 MB</p>
-            </div>
-
-            <span v-if="posterError" class="field-error poster-error">{{ posterError }}</span>
+            <PosterUpload v-model="posterFile" />
           </div>
 
           <div class="card" style="margin-top: 14px">
@@ -376,85 +308,6 @@ function goBack() {
   gap: 12px;
 }
 
-/* Poster */
-.hidden-input {
-  display: none;
-}
-
-.drop-zone {
-  border: 2px dashed var(--border2);
-  border-radius: var(--radius);
-  padding: 32px 20px;
-  text-align: center;
-  cursor: pointer;
-  transition: border-color 0.2s, background 0.2s;
-}
-
-.drop-zone:hover,
-.drop-zone.dragging {
-  border-color: var(--tangelo);
-  background: rgba(243, 113, 0, 0.06);
-}
-
-.drop-icon {
-  font-size: 28px;
-  display: block;
-  margin-bottom: 8px;
-}
-
-.drop-text {
-  font-size: 13px;
-  color: var(--text2);
-  margin-bottom: 4px;
-}
-
-.drop-link {
-  color: var(--sinopia);
-  font-weight: 500;
-}
-
-.drop-hint {
-  font-size: 11px;
-  color: var(--text3);
-}
-
-.preview-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 12px;
-}
-
-.poster-preview {
-  width: 100%;
-  max-width: 200px;
-  aspect-ratio: 2 / 3;
-  object-fit: cover;
-  border-radius: var(--radius);
-  border: 1px solid var(--border2);
-}
-
-.remove-btn {
-  background: none;
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  font-size: 12px;
-  font-family: 'Outfit', sans-serif;
-  padding: 6px 14px;
-  border-radius: var(--radius);
-  cursor: pointer;
-  transition: background 0.2s;
-}
-
-.remove-btn:hover {
-  background: var(--bg);
-}
-
-.poster-error {
-  margin-top: 8px;
-}
-
-/* Actions */
 .form-actions {
   display: flex;
   gap: 10px;

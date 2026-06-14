@@ -3,8 +3,11 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MovieForm from '@/components/admin/MovieForm.vue'
+import ToggleSwitch from '@/components/ToggleSwitch.vue'
 
 const router = useRouter()
+
+const loadingIds = ref(new Set<number>())
 
 interface Movie {
   id: number
@@ -44,8 +47,18 @@ function onMovieSaved(data: { title: string; genre: string; language: string; re
   closeModal()
 }
 
-function toggleActive(movie: Movie) {
-  movie.active = !movie.active
+async function toggleActive(movie: Movie) {
+  loadingIds.value.add(movie.id)
+  const previous = movie.active
+  movie.active = !movie.active // optimistic update
+  try {
+    // TODO: PATCH /api/peliculas/:id { active: movie.active }
+    await new Promise((r) => setTimeout(r, 600))
+  } catch {
+    movie.active = previous // rollback on error
+  } finally {
+    loadingIds.value.delete(movie.id)
+  }
 }
 </script>
 
@@ -76,12 +89,16 @@ function toggleActive(movie: Movie) {
               <td>{{ movie.language }}</td>
               <td>{{ movie.releaseDate }}</td>
               <td>
-                <button
-                  class="toggle"
-                  :class="movie.active ? 'on' : 'off'"
-                  type="button"
-                  @click="toggleActive(movie)"
-                />
+                <div class="status-cell">
+                  <ToggleSwitch
+                    :model-value="movie.active"
+                    :loading="loadingIds.has(movie.id)"
+                    @update:model-value="toggleActive(movie)"
+                  />
+                  <span class="status-label" :class="movie.active ? 'active' : 'inactive'">
+                    {{ movie.active ? 'Activo' : 'Inactivo' }}
+                  </span>
+                </div>
               </td>
               <td>
                 <button
@@ -179,44 +196,23 @@ function toggleActive(movie: Movie) {
   background: rgba(243, 113, 0, 0.03);
 }
 
-/* Toggle */
-.toggle {
-  width: 38px;
-  height: 21px;
-  border-radius: 11px;
-  position: relative;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition: background 0.2s;
-  border: none;
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
-.toggle.on {
-  background: var(--sinopia);
+.status-label {
+  font-size: 12px;
+  font-weight: 500;
 }
 
-.toggle.off {
-  background: rgba(42, 10, 6, 0.15);
+.status-label.active {
+  color: #1e783c;
 }
 
-.toggle::after {
-  content: '';
-  width: 15px;
-  height: 15px;
-  border-radius: 50%;
-  background: #fff;
-  position: absolute;
-  top: 3px;
-  transition: left 0.2s;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-.toggle.on::after {
-  left: 20px;
-}
-
-.toggle.off::after {
-  left: 3px;
+.status-label.inactive {
+  color: var(--text3);
 }
 
 /* Buttons */

@@ -12,6 +12,11 @@ const router = createRouter({
     },
     { path: '/asientos', name: 'asientos', component: VistaSeleccionAsientos },
     {
+      path: '/admin/peliculas',
+      name: 'admin-movies',
+      component: () => import('@/views/admin/MoviesView.vue'),
+    },
+    {
       path: '/admin/peliculas/nueva',
       name: 'admin-movie-create',
       component: () => import('@/views/admin/MovieFormView.vue'),

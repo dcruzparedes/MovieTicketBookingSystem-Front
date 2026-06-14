@@ -1,5 +1,4 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import PosterUpload from '@/components/PosterUpload.vue'
 
@@ -64,12 +63,11 @@ function goBack() {
 </script>
 
 <template>
-  <div class="page-wrap">
+  <AdminLayout>
     <div class="page-header">
       <button class="back-btn" @click="goBack">Volver</button>
       <h1 class="page-title">Nueva película</h1>
     </div>
-
     <div class="page-body">
       <form class="form-grid" novalidate @submit.prevent="handleSubmit">
         <!-- Columna izquierda: información general -->
@@ -162,15 +160,10 @@ function goBack() {
         </div>
       </form>
     </div>
-  </div>
+  </AdminLayout>
 </template>
 
 <style scoped>
-.page-wrap {
-  min-height: 100vh;
-  background: var(--bg);
-}
-
 .page-header {
   padding: 24px 28px 0;
   margin-bottom: 20px;
@@ -208,13 +201,6 @@ function goBack() {
 
 .page-body {
   padding: 0 28px 28px;
-}
-
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-  align-items: start;
 }
 
 .card {

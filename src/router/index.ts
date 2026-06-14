@@ -32,6 +32,11 @@ const router = createRouter({
       component: () => import('@/views/admin/CinemaFormView.vue'),
     },
     {
+      path: '/admin/cines/:id/editar',
+      name: 'admin-cinema-edit',
+      component: () => import('@/views/admin/EditCinemaView.vue'),
+    },
+    {
       path: '/admin/salas/nueva',
       name: 'admin-sala-create',
       component: () => import('@/views/admin/SalaFormView.vue'),

@@ -26,6 +26,11 @@ const router = createRouter({
       name: 'admin-movie-edit',
       component: () => import('@/views/admin/EditMovieView.vue'),
     },
+    {
+      path: '/admin/cines/nuevo',
+      name: 'admin-cinema-create',
+      component: () => import('@/views/admin/CinemaFormView.vue'),
+    },
   ],
 })
 

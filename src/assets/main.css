@@ -6,3 +6,25 @@
   padding: 0;
   font-weight: normal;
 }
+
+:root {
+  --bg: #faf4f0;
+  --surface: #ffffff;
+  --border: rgba(92, 0, 6, 0.09);
+  --border2: rgba(92, 0, 6, 0.17);
+  --text: #2a0a06;
+  --text2: #7a3020;
+  --text3: #b87060;
+  --orange: #f37100;
+  --tangelo: #f3500a;
+  --sinopia: #d92200;
+  --darkred: #920004;
+  --rosewood: #5a0006;
+  --radius: 8px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Outfit', sans-serif;
+}

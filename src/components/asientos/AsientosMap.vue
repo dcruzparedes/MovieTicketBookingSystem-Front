@@ -1,5 +1,5 @@
 <template>
-  <div class="mapa-asientos">
+  <div class="mapa-asientos" :class="{ 'modo-preview': preview }">
     <!-- Pantalla -->
     <div class="etiqueta-pantalla">Pantalla</div>
     <div class="barra-pantalla"></div>
@@ -21,8 +21,8 @@
       </div>
     </div>
 
-    <!-- Leyenda -->
-    <div class="leyenda-asientos">
+    <!-- Leyenda (oculta en modo preview) -->
+    <div v-if="!preview" class="leyenda-asientos">
       <div class="item-leyenda">
         <div class="punto-leyenda disponible"></div>
         <span>Disponible</span>
@@ -44,19 +44,53 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { computed, withDefaults } from 'vue'
 import { useReservaStore } from '@/stores/reserva'
 import type { Asiento } from '@/stores/reserva'
 
+const props = withDefaults(
+  defineProps<{
+    preview?: boolean
+    filas?: number
+    columnas?: number
+  }>(),
+  { preview: false, filas: undefined, columnas: undefined },
+)
+
 const tienda = useReservaStore()
 
+const ROW_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+
+const asientosPreview = computed<Asiento[]>(() => {
+  const cantFilas = Math.max(1, Math.min(26, props.filas ?? 8))
+  const cantCols = Math.max(1, Math.min(30, props.columnas ?? 10))
+  const resultado: Asiento[] = []
+  for (let r = 0; r < cantFilas; r++) {
+    const fila = ROW_LABELS[r]
+    for (let c = 1; c <= cantCols; c++) {
+      resultado.push({
+        id: `p-${fila}${c}`,
+        codigo: `${fila}${c}`,
+        fila,
+        columna: c,
+        tipo: 'regular',
+        estado: 'disponible',
+        estadoReal: 'disponible',
+      })
+    }
+  }
+  return resultado
+})
+
+const asientosActivos = computed(() => (props.preview ? asientosPreview.value : tienda.asientos))
+
 const etiquetasFilas = computed(() => {
-  const filas = new Set(tienda.asientos.map(a => a.fila))
+  const filas = new Set(asientosActivos.value.map((a) => a.fila))
   return [...filas]
 })
 
 function asientosPorFila(fila: string): Asiento[] {
-  return tienda.asientos.filter(a => a.fila === fila)
+  return asientosActivos.value.filter((a) => a.fila === fila)
 }
 
 function claseAsiento(asiento: Asiento) {
@@ -64,6 +98,7 @@ function claseAsiento(asiento: Asiento) {
 }
 
 function manejarClick(asiento: Asiento) {
+  if (props.preview) return
   if (asiento.estado === 'ocupado') return
   tienda.alternarAsiento(asiento.codigo)
 }
@@ -166,6 +201,12 @@ function manejarClick(asiento: Asiento) {
   background: rgba(243, 113, 0, 0.18);
   border-color: var(--orange);
   color: var(--orange);
+}
+
+/* ── Modo preview ── */
+.modo-preview .asiento {
+  cursor: default;
+  pointer-events: none;
 }
 
 /* ── Leyenda ── */

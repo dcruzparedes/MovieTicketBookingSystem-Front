@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, reactive, withDefaults } from 'vue'
+import AsientosMap from '@/components/asientos/AsientosMap.vue'
 
 interface SalaFields {
   cinemaId: string
@@ -50,20 +51,11 @@ const errors = reactive<SalaErrors>({
   columns: '',
 })
 
-// Preview grid
-const ROW_LABELS = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-
-const previewRows = computed(() => {
-  const count = Math.max(1, Math.min(26, form.rows || 0))
-  return Array.from({ length: count }, (_, i) => ROW_LABELS[i])
+const totalSeats = computed(() => {
+  const r = Math.max(1, Math.min(26, form.rows || 0))
+  const c = Math.max(1, Math.min(30, form.columns || 0))
+  return r * c
 })
-
-const previewCols = computed(() => {
-  const count = Math.max(1, Math.min(30, form.columns || 0))
-  return Array.from({ length: count }, (_, i) => i + 1)
-})
-
-const totalSeats = computed(() => previewRows.value.length * previewCols.value.length)
 
 function validate(): boolean {
   errors.cinemaId = form.cinemaId ? '' : 'Selecciona un cine'
@@ -161,27 +153,17 @@ function handleSubmit() {
       </div>
     </div>
 
-    <!-- Columna derecha: preview del grid -->
+    <!-- Columna derecha: preview de AsientosMap -->
     <div class="col">
       <p class="section-label">Vista previa</p>
 
       <div class="preview-wrap">
-        <div class="screen-label">Pantalla</div>
-        <div class="screen-bar"></div>
-
-        <div class="grid-scroll">
-          <div class="grid">
-            <div v-for="row in previewRows" :key="row" class="grid-row">
-              <span class="row-label">{{ row }}</span>
-              <div v-for="col in previewCols" :key="col" class="seat"></div>
-            </div>
-          </div>
-        </div>
+        <AsientosMap :preview="true" :filas="form.rows" :columnas="form.columns" />
 
         <div class="preview-footer">
           <span class="preview-stat">
-            <strong>{{ previewRows.length }}</strong> filas ×
-            <strong>{{ previewCols.length }}</strong> columnas =
+            <strong>{{ Math.min(form.rows, 26) }}</strong> filas ×
+            <strong>{{ Math.min(form.columns, 30) }}</strong> columnas =
             <strong>{{ totalSeats }}</strong> asientos
           </span>
         </div>
@@ -294,71 +276,16 @@ function handleSubmit() {
   border: 1px solid var(--border2);
   border-radius: var(--radius);
   padding: 20px 16px 16px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
+  overflow: auto;
+  max-height: 480px;
   position: sticky;
   top: 24px;
-}
-
-.screen-label {
-  font-size: 9px;
-  letter-spacing: 3px;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 5px;
-}
-
-.screen-bar {
-  background: var(--orange);
-  opacity: 0.25;
-  border-radius: 2px;
-  height: 3px;
-  width: 90%;
-  margin-bottom: 16px;
-}
-
-.grid-scroll {
-  overflow: auto;
-  max-height: 360px;
-  width: 100%;
-}
-
-.grid {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.grid-row {
-  display: flex;
-  gap: 4px;
-  align-items: center;
-}
-
-.row-label {
-  width: 16px;
-  font-family: 'DM Mono', monospace;
-  font-size: 9px;
-  color: var(--text3);
-  text-align: center;
-  flex-shrink: 0;
-}
-
-.seat {
-  width: 14px;
-  height: 11px;
-  border-radius: 3px 3px 1px 1px;
-  border: 1px solid var(--border2);
-  background: var(--surface);
-  flex-shrink: 0;
 }
 
 .preview-footer {
   margin-top: 14px;
   padding-top: 12px;
   border-top: 1px solid var(--border2);
-  width: 100%;
   text-align: center;
 }
 

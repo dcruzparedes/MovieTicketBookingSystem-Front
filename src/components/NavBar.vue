@@ -29,7 +29,7 @@ function logout() {
       <div class="nav-links">
         <a @click="handleHomeClick">Cartelera</a>
         <RouterLink to="/perfil">Mi cuenta</RouterLink>
-        <button class="nav-btn" @click="logout">Salir</button>
+        <button class="nav-btn" @click="logout">Iniciar Sesión</button>
       </div>
     </div>
   </nav>

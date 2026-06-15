@@ -12,6 +12,7 @@ interface Funcion {
   hora: string
   precio: string
   cancelada: boolean
+  reservasActivas: number
 }
 
 const router = useRouter()
@@ -26,6 +27,7 @@ const funciones = ref<Funcion[]>([
     hora: '19:30',
     precio: '65.00',
     cancelada: false,
+    reservasActivas: 14,
   },
   {
     id: 2,
@@ -36,6 +38,7 @@ const funciones = ref<Funcion[]>([
     hora: '17:00',
     precio: '45.00',
     cancelada: false,
+    reservasActivas: 7,
   },
   {
     id: 3,
@@ -46,6 +49,7 @@ const funciones = ref<Funcion[]>([
     hora: '20:00',
     precio: '75.00',
     cancelada: false,
+    reservasActivas: 0,
   },
   {
     id: 4,
@@ -56,6 +60,7 @@ const funciones = ref<Funcion[]>([
     hora: '18:30',
     precio: '45.00',
     cancelada: true,
+    reservasActivas: 0,
   },
   {
     id: 5,
@@ -66,25 +71,29 @@ const funciones = ref<Funcion[]>([
     hora: '16:00',
     precio: '40.00',
     cancelada: false,
+    reservasActivas: 3,
   },
 ])
 
 // ── Cancel confirmation ──
 const showCancelConfirm = ref(false)
 const cancelingFuncion = ref<Funcion | null>(null)
+const confirmChecked = ref(false)
 
 function openCancelConfirm(funcion: Funcion) {
   cancelingFuncion.value = funcion
+  confirmChecked.value = false
   showCancelConfirm.value = true
 }
 
 function closeCancelConfirm() {
   showCancelConfirm.value = false
   cancelingFuncion.value = null
+  confirmChecked.value = false
 }
 
 function confirmCancel() {
-  if (!cancelingFuncion.value) return
+  if (!cancelingFuncion.value || !confirmChecked.value) return
   // TODO: PATCH /api/funciones/:id { cancelada: true }
   cancelingFuncion.value.cancelada = true
   closeCancelConfirm()
@@ -168,14 +177,61 @@ function confirmCancel() {
             <button class="close-btn" @click="closeCancelConfirm">✕</button>
           </div>
           <div class="modal-body">
-            <p class="confirm-text">
-              ¿Estás seguro de que deseas cancelar la función de
-              <strong>{{ cancelingFuncion?.peliculaTitulo }}</strong> el
-              {{ cancelingFuncion?.fecha }} a las {{ cancelingFuncion?.hora }}?
+            <!-- Detalle de la función -->
+            <div class="funcion-chip">
+              <span class="chip-movie">{{ cancelingFuncion?.peliculaTitulo }}</span>
+              <span class="chip-detail">
+                {{ cancelingFuncion?.cinemaNombre }} · {{ cancelingFuncion?.salaNombre }}
+              </span>
+              <span class="chip-detail">
+                {{ cancelingFuncion?.fecha }} a las {{ cancelingFuncion?.hora }}
+              </span>
+            </div>
+
+            <!-- Advertencia de reservas afectadas -->
+            <div
+              v-if="cancelingFuncion && cancelingFuncion.reservasActivas > 0"
+              class="warning-box"
+            >
+              <span class="warning-icon">⚠</span>
+              <div class="warning-content">
+                <p class="warning-title">
+                  {{ cancelingFuncion.reservasActivas }}
+                  {{ cancelingFuncion.reservasActivas === 1 ? 'cliente tiene' : 'clientes tienen' }}
+                  reservas activas
+                </p>
+                <ul class="warning-list">
+                  <li>Sus reservas quedarán anuladas automáticamente.</li>
+                  <li>Recibirán una notificación por correo electrónico.</li>
+                  <li>Los pagos realizados serán reembolsados.</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Sin reservas: mensaje leve -->
+            <p v-else class="no-reservas-note">
+              Esta función no tiene reservas activas.
             </p>
-            <p class="confirm-note">Esta acción no se puede deshacer.</p>
+
+            <!-- Checkbox de confirmación explícita -->
+            <label class="confirm-check">
+              <input v-model="confirmChecked" type="checkbox" />
+              <span>
+                Entiendo que esta acción es irreversible y que
+                {{ cancelingFuncion && cancelingFuncion.reservasActivas > 0
+                  ? 'los ' + cancelingFuncion.reservasActivas + ' clientes afectados serán notificados.'
+                  : 'la función quedará cancelada.' }}
+              </span>
+            </label>
+
             <div class="confirm-actions">
-              <button class="btn btn-danger" @click="confirmCancel">Sí, cancelar función</button>
+              <button
+                class="btn btn-danger"
+                :disabled="!confirmChecked"
+                @click="confirmCancel"
+              >
+                Cancelar función
+              </button>
               <button class="btn btn-ghost" @click="closeCancelConfirm">Volver</button>
             </div>
           </div>
@@ -364,7 +420,7 @@ function confirmCancel() {
   border: 1px solid var(--border2);
   border-radius: 12px;
   width: 100%;
-  max-width: 420px;
+  max-width: 480px;
 }
 
 .modal-header {
@@ -400,23 +456,112 @@ function confirmCancel() {
 
 .modal-body {
   padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
-.confirm-text {
+/* Función chip */
+.funcion-chip {
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.chip-movie {
   font-size: 14px;
-  color: var(--text2);
-  line-height: 1.55;
-  margin-bottom: 8px;
-}
-
-.confirm-text strong {
+  font-weight: 600;
   color: var(--text);
 }
 
-.confirm-note {
+.chip-detail {
   font-size: 12px;
   color: var(--text3);
-  margin-bottom: 20px;
+}
+
+/* Warning box */
+.warning-box {
+  background: rgba(217, 100, 0, 0.07);
+  border: 1px solid rgba(217, 100, 0, 0.25);
+  border-radius: var(--radius);
+  padding: 14px;
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.warning-icon {
+  font-size: 16px;
+  line-height: 1;
+  margin-top: 1px;
+  flex-shrink: 0;
+}
+
+.warning-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.warning-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a3800;
+}
+
+.warning-list {
+  margin: 0;
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.warning-list li {
+  font-size: 12px;
+  color: #7a3800;
+  line-height: 1.4;
+}
+
+.no-reservas-note {
+  font-size: 13px;
+  color: var(--text3);
+}
+
+/* Confirm checkbox */
+.confirm-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+  padding: 12px 14px;
+  border: 1px solid var(--border2);
+  border-radius: var(--radius);
+  transition: border-color 0.2s, background 0.2s;
+}
+
+.confirm-check:has(input:checked) {
+  border-color: var(--sinopia);
+  background: rgba(217, 34, 0, 0.03);
+}
+
+.confirm-check input[type='checkbox'] {
+  margin-top: 2px;
+  flex-shrink: 0;
+  accent-color: var(--sinopia);
+  width: 15px;
+  height: 15px;
+  cursor: pointer;
+}
+
+.confirm-check span {
+  font-size: 13px;
+  color: var(--text2);
+  line-height: 1.5;
 }
 
 .confirm-actions {

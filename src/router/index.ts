@@ -41,6 +41,11 @@ const router = createRouter({
       name: 'admin-sala-create',
       component: () => import('@/views/admin/SalaFormView.vue'),
     },
+    {
+      path: '/admin/clientes',
+      name: 'admin-customers',
+      component: () => import('@/views/admin/CustomersView.vue'),
+    },
   ],
 })
 

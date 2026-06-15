@@ -81,6 +81,7 @@ function generarMockAsientos(cantFilas: number, cantColumnas: number): AsientoMo
   return resultado
 }
 
+
 // ── Mapeo de estado backend → estado visual ──
 function mapearEstado(estadoReal: EstadoAsientoBackend, tipo: TipoAsiento): EstadoAsiento {
   if (estadoReal === 'disponible') {
@@ -214,7 +215,7 @@ export const useReservaStore = defineStore('reserva', () => {
         idsSeleccionados.value.splice(indice, 1)
       }
     })
-  } 
+  }
 
   function limpiarConflicto() {
     asientosEnConflicto.value = []
@@ -242,6 +243,10 @@ export const useReservaStore = defineStore('reserva', () => {
     codigoCupon.value = ''
     idCupon.value = null
     descuento.value = 0
+  }
+
+  function seleccionarFuncion(funcion: Funcion) {
+    funcionActual.value = funcion
   }
 
   return {
@@ -275,5 +280,6 @@ export const useReservaStore = defineStore('reserva', () => {
     totalFinal,
     aplicarCupon,
     limpiarCupon,
+    seleccionarFuncion,
   }
 })

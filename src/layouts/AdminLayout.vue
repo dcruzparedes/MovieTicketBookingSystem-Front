@@ -8,29 +8,31 @@ const navGroups = [
   {
     label: 'Catálogo',
     items: [
-      { label: 'Películas', icon: '🎬', to: '/admin/peliculas' },
-      { label: 'Cines', icon: '🏛', to: '/admin/cines' },
-      { label: 'Salas', icon: '🎭', to: '/admin/salas' },
-      { label: 'Ciudades', icon: '🌍', to: '/admin/ciudades' },
-      { label: 'Funciones', icon: '📅', to: '/admin/funciones' },
+      { label: 'Películas', icon: 'pi-video', to: '/admin/peliculas' },  // pi-film no existe
+      { label: 'Cines', icon: 'pi-building', to: '/admin/cines' },
+      { label: 'Salas', icon: 'pi-objects-column', to: '/admin/salas' },   // pi-th-large no existe
+      { label: 'Ciudades', icon: 'pi-map-marker', to: '/admin/ciudades' },
+      { label: 'Funciones', icon: 'pi-calendar', to: '/admin/funciones' },
     ],
   },
   {
     label: 'Comercial',
     items: [
-      { label: 'Cupones', icon: '🏷', to: '/admin/cupones' },
-      { label: 'Cancelaciones', icon: '↩', to: '/admin/cancelacion' },
+      { label: 'Cupones', icon: 'pi-tag', to: '/admin/cupones' },
+      { label: 'Cancelaciones', icon: 'pi-arrow-circle-left', to: '/admin/cancelacion' }, // pi-undo no existe
     ],
   },
   {
     label: 'Usuarios',
-    items: [{ label: 'Clientes', icon: '👥', to: '/admin/clientes' }],
+    items: [
+      { label: 'Clientes', icon: 'pi-users', to: '/admin/clientes' },
+    ],
   },
   {
     label: 'Reportes',
     items: [
-      { label: 'Reservas', icon: '📊', to: '/admin/reportes' },
-      { label: 'Pagos', icon: '💰', to: '/admin/pagos' },
+      { label: 'Reservas', icon: 'pi-chart-bar', to: '/admin/reportes' },
+      { label: 'Pagos', icon: 'pi-wallet', to: '/admin/pagos' },
     ],
   },
 ]
@@ -55,20 +57,18 @@ function logout() {
       <nav class="sidebar-nav">
         <template v-for="group in navGroups" :key="group.label">
           <p class="nav-group">{{ group.label }}</p>
-          <RouterLink
-            v-for="item in group.items"
-            :key="item.to"
-            :to="item.to"
-            class="nav-item"
-            :class="{ active: isActive(item.to) }"
-          >
-            <span class="nav-icon">{{ item.icon }}</span>
+          <RouterLink v-for="item in group.items" :key="item.to" :to="item.to" class="nav-item"
+            :class="{ active: isActive(item.to) }">
+            <i :class="['pi', item.icon, 'nav-icon']" />
             {{ item.label }}
           </RouterLink>
         </template>
       </nav>
 
-      <button class="nav-item logout" @click="logout">✕ Salir</button>
+      <button class="nav-item logout" @click="logout">
+        <i class="pi pi-sign-out nav-icon" />
+        Salir
+      </button>
     </aside>
 
     <main class="admin-content">
@@ -165,13 +165,17 @@ function logout() {
 }
 
 .nav-icon {
-  font-size: 14px;
+  font-size: 13px;
   flex-shrink: 0;
 }
 
 .logout {
   color: rgba(250, 240, 236, 0.3);
   margin-top: 8px;
+}
+
+.logout:hover {
+  color: rgba(250, 240, 236, 0.6);
 }
 
 .admin-content {

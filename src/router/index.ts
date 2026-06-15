@@ -29,7 +29,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/admin/CuponesView.vue'),
+      component: () => import('@/views/HomeView.vue'),
     },
     {
       path: '/asientos',
@@ -65,6 +65,11 @@ const router = createRouter({
     },
 
     // ── Admin ──
+    {
+      path: '/admin',
+      name: 'admin-dashboard',
+      component: () => import('@/views/admin/AdminDashboard.vue'),
+    },
     {
       path: '/admin/peliculas',
       name: 'admin-peliculas',

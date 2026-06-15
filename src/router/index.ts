@@ -96,6 +96,11 @@ const router = createRouter({
       component: () => import('@/views/admin/SalaFormView.vue'),
     },
     {
+      path: '/admin/ciudades',
+      name: 'admin-ciudades',
+      component: () => import('@/views/admin/CiudadesView.vue'),
+    },
+    {
       path: '/admin/clientes',
       name: 'admin-clientes',
       component: () => import('@/views/admin/CustomersView.vue'),

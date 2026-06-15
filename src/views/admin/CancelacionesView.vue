@@ -1,111 +1,101 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import MovieForm from '@/components/admin/MovieForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
-import { list } from '@primeuix/themes/aura/autocomplete'
 
 
-interface Cupon{
+interface Politica{
     id: number
-    codigo: string
-    tipo: string
-    valor: number
-    fecha_expiracion: string
-    usos_maximos: number
-    usos_actuales: number
-    activo: boolean
+    horas_antes_minimo: number
+    horas_antes_maximo: number
+    porcentaje_reembolso: number
 }
 
-const Cups: Cupon[]=[
+const Polis: Politica[]=[
     {
         id: 1,
-        codigo: "CP-1",
-        tipo: "Monto fijo",
-        valor: 34,
-        fecha_expiracion: "5/23/2026",
-        usos_maximos: 4,
-        usos_actuales: 0,
-        activo: true
+        horas_antes_maximo: 3,
+        horas_antes_minimo: 4,
+        porcentaje_reembolso: 50
     },
     {
         id: 2,
-        codigo: "CP-2",
-        tipo: "Monto fijo",
-        valor: 34,
-        fecha_expiracion: "5/23/2026",
-        usos_maximos: 6,
-        usos_actuales: 0,
-        activo: true
+        horas_antes_maximo: 3,
+        horas_antes_minimo: 4,
+        porcentaje_reembolso: 50
     },
     {
         id: 3,
-        codigo: "CP-3",
-        tipo: "Monto fijo",
-        valor: 34,
-        fecha_expiracion: "5/23/2026",
-        usos_maximos: 2,
-        usos_actuales: 0,
-        activo: true
-    }
+        horas_antes_maximo: 3,
+        horas_antes_minimo: 4,
+        porcentaje_reembolso: 50
+    },
 ]
 
-const cupones = ref<Cupon[]>(Cups)
+const politicas = ref<Politica[]>(Polis)
 
 const showModal = ref(false)
-
-function toggleActive(cupon: Cupon, valor: boolean){
-    cupon.activo=valor
-}
+const editModal = ref(false)
 
 const nuevoForm = ref({
-  codigo: '',
-  tipo: 'Porcentaje',
-  valor: null as number | null,
-  fecha_expiracion: '',
-  usos_maximos: null as number | null,
+    id: null as number | null,
+    horas_antes_minimo: null as number | null,
+    horas_antes_maximo: null as number | null,
+    porcentaje_reembolso: null as number | null,
 })
 
-function agregarCupon() {
-  if (!nuevoForm.value.codigo || !nuevoForm.value.valor || !nuevoForm.value.fecha_expiracion || !nuevoForm.value.usos_maximos) return
+function agregarPolitica() {
+  if (!nuevoForm.value.horas_antes_maximo || !nuevoForm.value.horas_antes_minimo || !nuevoForm.value.porcentaje_reembolso) return
 
-  cupones.value.push({
+  politicas.value.push({
     id: Date.now(),
-    codigo: nuevoForm.value.codigo,
-    tipo: nuevoForm.value.tipo,
-    valor: nuevoForm.value.valor,
-    fecha_expiracion: nuevoForm.value.fecha_expiracion,
-    usos_maximos: nuevoForm.value.usos_maximos,
-    usos_actuales: 0,
-    activo: true,
+    horas_antes_maximo: nuevoForm.value.horas_antes_maximo,
+    horas_antes_minimo: nuevoForm.value.horas_antes_minimo,
+    porcentaje_reembolso: nuevoForm.value.porcentaje_reembolso,
   })
 
-  nuevoForm.value = { codigo: '', tipo: 'Porcentaje', valor: null, fecha_expiracion: '', usos_maximos: null }
+  nuevoForm.value = { id: null, horas_antes_maximo: null, horas_antes_minimo: null, porcentaje_reembolso: null }
   showModal.value = false
 }
 
-const vista = ref<'lista' | 'form'>('lista')
+function editarPolitica() {
+    if (!nuevoForm.value.id || !nuevoForm.value.horas_antes_maximo || !nuevoForm.value.horas_antes_minimo || !nuevoForm.value.porcentaje_reembolso) return
+
+    const pol = politicas.value.find(pol => pol.id === nuevoForm.value.id)
+
+    if(pol){
+        pol.horas_antes_maximo=nuevoForm.value.horas_antes_maximo
+        pol.horas_antes_minimo=nuevoForm.value.horas_antes_minimo
+        pol.porcentaje_reembolso=nuevoForm.value.porcentaje_reembolso
+    }
+
+    nuevoForm.value = { id: null, horas_antes_maximo: null, horas_antes_minimo: null, porcentaje_reembolso: null }
+    editModal.value = false
+}
 
 </script>
 
 <template>
     <AdminLayout>
-    <!-- CUPONES -->
     <div id="admin-cupones">
     <div class="admin-header">
-    <div class="admin-page-title">Cupones</div>
-    <button class="btn btn-primary btn-sm" @click="showModal = true">+ Nuevo cupón</button></div>
+    <div class="admin-page-title">Políticas de Cancelación</div>
+    <button class="btn btn-primary btn-sm" @click="showModal = true">+ Nueva Política</button></div>
     <div class="admin-body">
         <div class="card"><div class="card-body" style="padding:0">
         <table class="tbl">
-            <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Vencimiento</th><th>Usos</th><th>Estado</th></tr></thead>
+            <thead><tr><th class="id-th">ID</th><th>Horas Antes Maximo</th><th>Horas Antes Minimo</th><th>Porcentaje de Reembolso</th><th>Acciones</th></tr></thead>
             <tbody>
-                <tr v-for="cupon in cupones">
-                    <td><strong style="font-family:'DM Mono',monospace">{{cupon.codigo}}</strong></td><td>{{cupon.tipo}}</td><td>{{cupon.valor}}</td><td>{{cupon.fecha_expiracion}}</td><td>{{cupon.usos_actuales}} / {{cupon.usos_maximos}}</td><td>
-                        <ToggleSwitch 
-                        :model-value="cupon.activo" 
-                        @update:model-value="(valor) => toggleActive(cupon, valor)"></ToggleSwitch></td>
+                <tr v-for="politica in politicas">
+                    <td><strong style="font-family:'DM Mono',monospace">{{politica.id}}</strong></td>
+                    <td>{{politica.horas_antes_maximo}}</td>
+                    <td>{{politica.horas_antes_minimo}}</td>
+                    <td>{{politica.porcentaje_reembolso}}%</td>
+                    <td><button
+                    class="btn btn-ghost btn-sm"
+                    @click="editModal=true; nuevoForm.id=politica.id;"
+                    >Editar</button>
+                    </td>
                 </tr>
             </tbody>
         </table>
@@ -113,46 +103,67 @@ const vista = ref<'lista' | 'form'>('lista')
     </div>
     </div>
 
-    <!-- FORMULARIO CUPÓN -->
     <Teleport to="body">
     <div v-if="showModal" class="modal-overlay">
     <div class="modal-box">
     <div class="modal-header">
-    <div class="modal-title">Nuevo cupon</div>
+    <div class="modal-title">Nueva Política</div>
     <button class="close-btn"  @click="showModal = false">✕</button>
     </div>
     <div class="modal-body">
         <div class="card"><div class="card-body">
-        <div class="field">
-            <label>Código</label>
-            <input v-model="nuevoForm.codigo" placeholder="ej. VERANO50" style="font-family:'DM Mono',monospace;letter-spacing:1px" />
-        </div>
         <div class="field-row">
             <div class="field">
-                <label>Tipo</label>
-                <select>
-                    <option>Porcentaje</option>
-                    <option>Monto fijo</option>
-                </select>
+                <label>Horas Antes Maximo</label>
+                <input v-model.number="nuevoForm.horas_antes_maximo" type="number" min="1" placeholder="10" />
             </div>
             <div class="field">
-                <label>Valor</label>
-                <input v-model.number="nuevoForm.valor" type="number" min="1" placeholder="20" />
+                <label>Horas Antes Minimo</label>
+                <input v-model.number="nuevoForm.horas_antes_minimo" type="number" min="1" placeholder="5" />
             </div>
         </div>
         <div class="field-row">
             <div class="field">
-                <label>Vencimiento</label>
-                <input v-model="nuevoForm.fecha_expiracion" type="date" />
-            </div>
-            <div class="field">
-                <label>Usos máximos</label>
-                <input v-model.number="nuevoForm.usos_maximos" type="number" min="1" placeholder="500" />
+                <label>Porcentaje de Reembolso</label>
+                <input v-model.number="nuevoForm.porcentaje_reembolso" type="number" min="10" placeholder="50"/>
             </div>
         </div>
         <div style="display:flex;gap:10px">
-            <button class="btn btn-primary"  @click="agregarCupon">Guardar cupón</button>
+            <button class="btn btn-primary"  @click="agregarPolitica">Guardar política</button>
             <button class="btn btn-ghost" @click="showModal = false">Cancelar</button>
+        </div>
+        </div></div>
+    </div>
+    </div>
+    </div>
+
+    <div v-if="editModal" class="modal-overlay">
+    <div class="modal-box">
+    <div class="modal-header">
+    <div class="modal-title">Editar Política</div>
+    <button class="close-btn"  @click="editModal = false">✕</button>
+    </div>
+    <div class="modal-body">
+        <div class="card"><div class="card-body">
+        <div class="field-row">
+            <div class="field">
+                <label>Horas Antes Maximo</label>
+                <input v-model.number="nuevoForm.horas_antes_maximo" type="number" min="1" placeholder="10" />
+            </div>
+            <div class="field">
+                <label>Horas Antes Minimo</label>
+                <input v-model.number="nuevoForm.horas_antes_minimo" type="number" min="1" placeholder="5" />
+            </div>
+        </div>
+        <div class="field-row">
+            <div class="field">
+                <label>Porcentaje de Reembolso</label>
+                <input v-model.number="nuevoForm.porcentaje_reembolso" type="number" min="10" placeholder="50"/>
+            </div>
+        </div>
+        <div style="display:flex;gap:10px">
+            <button class="btn btn-primary"  @click="editarPolitica">Editar política</button>
+            <button class="btn btn-ghost" @click="editModal = false">Cancelar</button>
         </div>
         </div></div>
     </div>
@@ -209,6 +220,10 @@ const vista = ref<'lista' | 'form'>('lista')
 .tbl {
   width: 100%;
   border-collapse: collapse;
+}
+
+.id-th {
+  width: 150px;
 }
 
 .tbl th {

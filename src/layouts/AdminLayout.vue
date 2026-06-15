@@ -19,7 +19,7 @@ const navGroups = [
     label: 'Comercial',
     items: [
       { label: 'Cupones', icon: '🏷', to: '/admin/cupones' },
-      { label: 'Cancelaciones', icon: '↩', to: '/admin/cancelacion' },
+      { label: 'Cancelaciones', icon: '↩', to: '/admin/cancelaciones' },
     ],
   },
   {

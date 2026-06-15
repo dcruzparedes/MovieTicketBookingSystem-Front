@@ -29,7 +29,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/admin/CuponesView.vue'),
+      component: () => import('@/views/HomeView.vue'),
     },
     {
       path: '/asientos',
@@ -124,6 +124,11 @@ const router = createRouter({
       path: '/admin/cupones',
       name: 'admin-cupones',
       component: () => import('@/views/admin/CuponesView.vue'),
+    },
+    {
+      path: '/admin/cancelaciones',
+      name: 'admin-cancelaciones',
+      component: () => import('@/views/admin/CancelacionesView.vue'),
     },
   ],
 })

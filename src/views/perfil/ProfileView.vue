@@ -12,14 +12,21 @@
               :class="{ active: activeTab === 'perfil' }"
               @click="activeTab = 'perfil'"
             >
-              👤 Perfil
+              👤 Mi perfil
+            </div>
+            <div
+              class="sidebar-item"
+              :class="{ active: activeTab === 'notificaciones' }"
+              @click="activeTab = 'notificaciones'"
+            >
+              🔔 Notificaciones
             </div>
             <div
               class="sidebar-item"
               :class="{ active: activeTab === 'password' }"
               @click="activeTab = 'password'"
             >
-              🔑 Cambiar contraseña
+              🔑 Contraseña
             </div>
           </aside>
 
@@ -93,6 +100,39 @@
                   </button>
                 </div>
               </form>
+            </div>
+
+            <div v-if="activeTab === 'notificaciones'">
+              <div class="section-title">Notificaciones</div>
+              <p class="section-desc">
+                Gestiona cómo recibes las novedades y avisos de Cine Vicenta.
+              </p>
+
+              <div class="settings-list">
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <p class="setting-label">Correos promocionales</p>
+                    <p class="setting-desc">Ofertas, estrenos y descuentos exclusivos</p>
+                  </div>
+                  <ToggleSwitch
+                    v-model="profile.notificaciones_activas"
+                    :loading="notifLoading"
+                    @update:model-value="updateNotifications"
+                  />
+                </div>
+
+                <div class="setting-item">
+                  <div class="setting-info">
+                    <p class="setting-label">Recordatorios de función</p>
+                    <p class="setting-desc">Te avisaremos 1 hora antes de que inicie tu función</p>
+                  </div>
+                  <ToggleSwitch
+                    v-model="notifReminders"
+                    :loading="notifLoading"
+                    @update:model-value="updateNotifications"
+                  />
+                </div>
+              </div>
             </div>
 
             <!-- ══════════════════════════
@@ -202,6 +242,7 @@
 <script setup lang="ts">
 import { reactive, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import ToggleSwitch from '@/components/ToggleSwitch.vue'
 
 const router = useRouter()
 const activeTab = ref('perfil')
@@ -215,9 +256,12 @@ const INITIAL_PROFILE = {
   nombre: 'Juan Pérez',
   email: 'juan@correo.com',
   telefono: '+504 9999 9999',
+  notificaciones_activas: true,
 }
 
 const profile = reactive({ ...INITIAL_PROFILE })
+const notifReminders = ref(false)
+const notifLoading = ref(false)
 const pTouched = reactive({ nombre: false, email: false, telefono: false })
 const profileSubmitting = ref(false)
 const profileSaved = ref(false)
@@ -268,6 +312,23 @@ async function saveProfile() {
     profileError.value = err?.response?.data?.message ?? 'No se pudieron guardar los cambios.'
   } finally {
     profileSubmitting.value = false
+  }
+}
+
+// ══════════════════════════════════════════════
+//  NOTIFICACIONES
+// ══════════════════════════════════════════════
+
+async function updateNotifications() {
+  notifLoading.value = true
+  try {
+    // TODO: PATCH /api/usuarios/profile { notificaciones_activas: profile.notificaciones_activas }
+    await new Promise((r) => setTimeout(r, 600))
+    console.log('Notificaciones actualizadas:', profile.notificaciones_activas)
+  } catch (err) {
+    console.error('Error actualizando notificaciones:', err)
+  } finally {
+    notifLoading.value = false
   }
 }
 
@@ -411,6 +472,43 @@ function logout() {
   font-size: 20px;
   color: #2a0a06;
   margin-bottom: 22px;
+}
+.section-desc {
+  font-size: 13px;
+  color: #7a3020;
+  margin: -14px 0 24px;
+  line-height: 1.5;
+}
+
+.settings-list {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 18px;
+  border-bottom: 1px solid rgba(92, 0, 6, 0.07);
+}
+.setting-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+.setting-info {
+  flex: 1;
+  padding-right: 20px;
+}
+.setting-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: #2a0a06;
+  margin-bottom: 2px;
+}
+.setting-desc {
+  font-size: 12px;
+  color: #b87060;
 }
 
 .profile-layout {

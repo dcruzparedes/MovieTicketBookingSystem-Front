@@ -1,6 +1,10 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '../views/HomeView.vue'
 import VistaSeleccionAsientos from '@/views/asientos/VistaSeleccionAsientos.vue'
+import VistaPago from '@/views/pago/VistaPago.vue'
+import VistaConfirmacion from '@/views/pago/VistaConfirmacionPago.vue'
+import VistaErrorPago from '@/views/pago/VistaErrorPago.vue'
+
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -11,6 +15,9 @@ const router = createRouter({
       component: HomeView,
     },
     { path: '/asientos', name: 'asientos', component: VistaSeleccionAsientos },
+    { path: '/pago', name: 'pago', component: VistaPago },
+    { path: '/confirmacion', name: 'confirmacion', component: VistaConfirmacion },
+    { path: '/error-pago', name: 'error-pago', component: VistaErrorPago },
     {
       path: '/admin/peliculas',
       name: 'admin-movies',

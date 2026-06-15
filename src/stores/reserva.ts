@@ -214,10 +214,34 @@ export const useReservaStore = defineStore('reserva', () => {
         idsSeleccionados.value.splice(indice, 1)
       }
     })
-  }
+  } 
 
   function limpiarConflicto() {
     asientosEnConflicto.value = []
+  }
+
+  // ── Pago ──
+  const metodoPago = ref<'tarjeta' | 'efectivo'>('tarjeta')
+  const codigoCupon = ref<string>('')
+  const descuento = ref<number>(0)
+  const idCupon = ref<string | null>(null)
+
+  const totalFinal = computed(() => Math.max(0, subtotal.value - descuento.value))
+
+  function aplicarCupon(codigo: string, tipo: 'porcentaje' | 'fijo', valor: number, id: string) {
+    codigoCupon.value = codigo
+    idCupon.value = id
+    if (tipo === 'porcentaje') {
+      descuento.value = Math.round(subtotal.value * (valor / 100))
+    } else {
+      descuento.value = valor
+    }
+  }
+
+  function limpiarCupon() {
+    codigoCupon.value = ''
+    idCupon.value = null
+    descuento.value = 0
   }
 
   return {
@@ -243,5 +267,13 @@ export const useReservaStore = defineStore('reserva', () => {
     asientosEnConflicto,
     aplicarConflicto,
     limpiarConflicto,
+    // Pago
+    metodoPago,
+    codigoCupon,
+    descuento,
+    idCupon,
+    totalFinal,
+    aplicarCupon,
+    limpiarCupon,
   }
 })

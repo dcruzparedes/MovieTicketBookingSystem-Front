@@ -42,6 +42,10 @@ const router = createRouter({
       component: () => import('@/views/admin/SalaFormView.vue'),
     },
     {
+      path: '/perfil',
+      name: 'profile',
+      component: () => import('@/views/perfil/ProfileView.vue'),
+    },{
       path: '/reset-password',
       name: 'reset-password',
       component: () => import('@/views/auth/ResetPasswordView.vue'),

@@ -130,6 +130,11 @@ const router = createRouter({
       name: 'admin-cupones',
       component: () => import('@/views/admin/CuponesView.vue'),
     },
+    {
+      path: '/admin/cancelaciones',
+      name: 'admin-cancelaciones',
+      component: () => import('@/views/admin/CancelacionesView.vue'),
+    },
   ],
 })
 

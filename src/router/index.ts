@@ -29,7 +29,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('@/views/HomeView.vue'),
+      component: () => import('@/views/admin/CuponesView.vue'),
     },
     {
       path: '/asientos',
@@ -99,6 +99,11 @@ const router = createRouter({
       path: '/admin/clientes',
       name: 'admin-clientes',
       component: () => import('@/views/admin/CustomersView.vue'),
+    },
+    {
+      path: '/admin/cupones',
+      name: 'admin-cupones',
+      component: () => import('@/views/admin/CuponesView.vue'),
     },
   ],
 })

@@ -6,8 +6,9 @@ import Skeleton from 'primevue/skeleton'
 import InputText from 'primevue/inputtext'
 import IconField from 'primevue/iconfield'
 import InputIcon from 'primevue/inputicon'
-import Button from 'primevue/button'
 import Badge from 'primevue/badge'
+import { useReservaStore } from '@/stores/reserva'
+const tienda = useReservaStore()
 
 interface Pelicula {
   id: number
@@ -23,7 +24,6 @@ interface Pelicula {
   ciudades?: { nombre: string[] }
   metadata: { dur: string; rating: string; year: number; color: string; accent: string }
 }
-
 interface Ciudad { id: number; nombre: string }
 interface Cine { id: number; nombre: string; direccion: string | null; id_ciudad: number }
 interface Funcion { id: number; id_pelicula: number; id_sala: number; id_cine: number; fecha_hora: string; estado: string; formato: string; disponibles: number }
@@ -38,139 +38,55 @@ const CINES: Cine[] = [
   { id: 2, nombre: 'Cinemark City SPS', direccion: 'City Center Mall', id_ciudad: 2 },
   { id: 3, nombre: 'Metrocinema Tegus', direccion: 'Multiplaza',       id_ciudad: 3 },
 ]
-const Pelis: Pelicula[] = [
-  {
-    id: 1,
-    titulo: 'There Will Be Blood',
-    id_genero: 1,
-    sinopsis: 'La historia de un buscador de petróleo de Texas y los problemas que enfrenta en el negocio al comienzo del nuevo siglo.',
-    poster_url: 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p171565_p_v8_aa.jpg',
-    id_idiomas: [1],
-    activo: true,
-    fecha_estreno: "8/16/2026",
-    generos: { nombre: 'Terror' }, 
-    idiomas: { nombre: ['Español'] },
-    ciudades: {nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa']},
-    metadata: { dur: '1h 49m', rating: '★★★★', year: 2024, color: '#1A1535', accent: '#7B2FF7' },
-  },
-  {
-    id: 2,
-    titulo: 'Inglourious Basterds',
-    id_genero: 1,
-    sinopsis: 'Es el primer año de la ocupación alemana de Francia. El oficial aliado, teniente Aldo Raine, ensambla un equipo de soldados judíos para cometer actos violentos en contra de los nazis, incluyendo la toma de cabelleras. Él y sus hombres unen fuerzas con Bridget von Hammersmark, una actriz alemana y agente encubierto, para derrocar a los líderes del Tercer Reich. Sus destinos convergen con la dueña de teatro Shosanna Dreyfus, quien busca vengar la ejecución de su familia.',
-    poster_url: 'https://m.media-amazon.com/images/M/MV5BODZhMWJlNjYtNDExNC00MTIzLTllM2ItOGQ2NGVjNDQ3MzkzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
-    id_idiomas: [1],
-    activo: true,
-    fecha_estreno: "8/16/2026",
-    generos: { nombre: 'Terror' }, 
-    idiomas: { nombre: ['Español'] },
-    ciudades: {nombre: ['Puerto Cortés','Tegucigalpa']},
-    metadata: { dur: '1h 49m', rating: '★★★★', year: 2024, color: '#1A1535', accent: '#7B2FF7' },    
-  },
-  {
-    id: 3,
-    titulo: 'Pulp Fiction',
-    id_genero: 1,
-    sinopsis: 'Vincent Vega y Jules Winnfield son sicarios con una inclinación por las discusiones filosóficas. En esta película policíaca ultramoderna con múltiples tramas, sus historias se entrelazan con las de su jefe, el gánster Marsellus Wallace, su esposa, la actriz Mía, el boxeador en apuros Butch Coolidge, el mediador Winston Wolfe y una pareja de ladrones nerviosos, Pumpkin y Honey Bunny.',
-    poster_url: 'https://m.media-amazon.com/images/M/MV5BYTViYTE3ZGQtNDBlMC00ZTAyLTkyODMtZGRiZDg0MjA2YThkXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
-    id_idiomas: [1],
-    activo: true,
-    fecha_estreno: "8/16/2026",
-    generos: { nombre: 'Terror' }, 
-    idiomas: { nombre: ['Español'] },
-    ciudades: {nombre: ['San Pedro Sula','Tegucigalpa']},
-    metadata: { dur: '1h 49m', rating: '★★★★', year: 2024, color: '#1A1535', accent: '#7B2FF7' },
-  },
-  {
-    id: 4,
-    titulo: 'Fight Club',
-    id_genero: 1,
-    sinopsis: 'Un empleado de oficina insomne, harto de su vida, se cruza con un vendedor peculiar. Ambos crean un club de lucha clandestino como forma de terapia y, poco a poco, la organización crece y sus objetivos toman otro rumbo.',
-    poster_url: 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/344/2024/08/21164326/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK-scaled.jpg',
-    id_idiomas: [1],
-    activo: true,
-    fecha_estreno: "8/16/2026",
-    generos: { nombre: 'Terror' }, 
-    idiomas: { nombre: ['Español'] },
-    ciudades: {nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa']},
-    metadata: { dur: '1h 49m', rating: '★★★★', year: 2024, color: '#1A1535', accent: '#7B2FF7' },
-  },
-  {
-    id: 5,
-    titulo: 'Everything Everywhere All At Once',
-    id_genero: 1,
-    sinopsis: 'Una heroína inesperada debe usar sus nuevos poderes para luchar contra los desconcertantes peligros del multiverso y así lograr salvar su mundo.',
-    poster_url: 'https://upload.wikimedia.org/wikipedia/en/1/1e/Everything_Everywhere_All_at_Once.jpg',
-    id_idiomas: [1],
-    activo: true,
-    fecha_estreno: "8/16/2026",
-    generos: { nombre: 'Terror' }, 
-    idiomas: { nombre: ['Español'] },
-    ciudades: {nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa']},
-    metadata: { dur: '1h 49m', rating: '★★★★', year: 2024, color: '#1A1535', accent: '#7B2FF7' },
-  },
-  {
-    id: 6,
-    titulo: 'Chainzaw Man The Reze Arc',
-    id_genero: 1,
-    sinopsis: 'En medio de una guerra sangrienta entre demonios y cazadores, comienza otra batalla en el corazón de Denji al conocer a una misteriosa chica llamada Reze. Denji se prepara para su batalla más letal.',
-    poster_url: 'https://upload.wikimedia.org/wikipedia/en/9/95/Chainsaw_Man_Reze_Arc_movie_poster.jpg',
-    id_idiomas: [1],
-    activo: true,
-    fecha_estreno: "8/16/2026",
-    generos: { nombre: 'Terror' }, 
-    idiomas: { nombre: ['Español'] },
-    ciudades: {nombre: ['Tegucigalpa']},
-    metadata: { dur: '1h 49m', rating: '★★★★', year: 2024, color: '#1A1535', accent: '#7B2FF7' },
-  },
-]
+const peliculas = ref<Pelicula[]>([
+  { id: 1, titulo: 'There Will Be Blood',               sinopsis: 'La historia de un buscador de petróleo de Texas y los problemas que enfrenta en el negocio al comienzo del nuevo siglo.', poster_url: 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p171565_p_v8_aa.jpg', id_idiomas: [1], id_genero: 1, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Drama' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 38m', rating: '★★★★★', year: 2007, color: '#1A1535', accent: '#7B2FF7' } },
+  { id: 2, titulo: 'Inglourious Basterds',               sinopsis: 'En la Francia ocupada, un oficial aliado y sus soldados judíos planean asesinar a líderes nazis, mientras la dueña de un cine trama su propia venganza.', poster_url: 'https://m.media-amazon.com/images/M/MV5BODZhMWJlNjYtNDExNC00MTIzLTllM2ItOGQ2NGVjNDQ3MzkzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idiomas: [1], id_genero: 2, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','Tegucigalpa'] },                    metadata: { dur: '2h 33m', rating: '★★★★', year: 2009, color: '#2D1A0A', accent: '#D4A017' } },
+  { id: 3, titulo: 'Pulp Fiction',                       sinopsis: 'Las vidas de dos sicarios, un boxeador y una pareja de ladrones se entrelazan en cuatro historias de violencia y redención.', poster_url: 'https://m.media-amazon.com/images/M/MV5BYTViYTE3ZGQtNDBlMC00ZTAyLTkyODMtZGRiZDg0MjA2YThkXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idiomas: [1], id_genero: 2, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['San Pedro Sula','Tegucigalpa'] },                   metadata: { dur: '2h 34m', rating: '★★★★★', year: 1994, color: '#1A0D00', accent: '#E8A000' } },
+  { id: 4, titulo: 'Fight Club',                         sinopsis: 'Un empleado insomne y un vendedor de jabón crean un club de lucha clandestino que deriva en algo mucho más peligroso.', poster_url: 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/344/2024/08/21164326/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK-scaled.jpg', id_idiomas: [1], id_genero: 3, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Thriller' },   idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 1999, color: '#0A0A0A', accent: '#CC2200' } },
+  { id: 5, titulo: 'Everything Everywhere All At Once',  sinopsis: 'Una heroína inesperada debe usar sus nuevos poderes para luchar contra los peligros del multiverso y salvar su mundo.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/1/1e/Everything_Everywhere_All_at_Once.jpg', id_idiomas: [1], id_genero: 4, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Sci-Fi' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 2022, color: '#0A1020', accent: '#4A90D9' } },
+  { id: 6, titulo: 'Chainsaw Man: The Reze Arc',         sinopsis: 'En medio de una guerra entre demonios y cazadores, Denji se enfrenta a su batalla más letal al conocer a la misteriosa Reze.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/9/95/Chainsaw_Man_Reze_Arc_movie_poster.jpg', id_idiomas: [1], id_genero: 5, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Animación' }, idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Tegucigalpa'] },                                        metadata: { dur: '1h 50m', rating: '★★★★', year: 2025, color: '#1A0000', accent: '#CC0000' } },
+])
+
 const FUNCIONES: Funcion[] = [
-  { id: 101, id_pelicula: 6, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T14:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 68 },
-  { id: 102, id_pelicula: 6, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T19:15:00Z', estado: 'activa', formato: '3D · Español',     disponibles: 91 },
-  { id: 103, id_pelicula: 6, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-13T18:00:00Z', estado: 'activa', formato: '3D · Subtitulada', disponibles: 55 },
-  { id: 104, id_pelicula: 1, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T16:30:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 42 },
-  { id: 105, id_pelicula: 1, id_sala: 2, id_cine: 1, fecha_hora: '2026-06-12T21:45:00Z', estado: 'activa', formato: 'IMAX · Español',   disponibles: 12 },
+  { id: 101, id_pelicula: 1, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T14:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 68 },
+  { id: 102, id_pelicula: 1, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T19:15:00Z', estado: 'activa', formato: '3D · Español',     disponibles: 91 },
+  { id: 103, id_pelicula: 2, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-13T18:00:00Z', estado: 'activa', formato: '3D · Subtitulada', disponibles: 55 },
+  { id: 104, id_pelicula: 3, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T16:30:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 42 },
+  { id: 105, id_pelicula: 4, id_sala: 2, id_cine: 1, fecha_hora: '2026-06-12T21:45:00Z', estado: 'activa', formato: 'IMAX · Español',   disponibles: 12 },
   { id: 201, id_pelicula: 2, id_sala: 1, id_cine: 2, fecha_hora: '2026-06-12T18:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 45 },
   { id: 202, id_pelicula: 4, id_sala: 1, id_cine: 2, fecha_hora: '2026-06-12T15:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 30 },
   { id: 301, id_pelicula: 3, id_sala: 1, id_cine: 3, fecha_hora: '2026-06-12T20:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 20 },
   { id: 302, id_pelicula: 5, id_sala: 1, id_cine: 3, fecha_hora: '2026-06-12T17:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 15 },
+  { id: 303, id_pelicula: 6, id_sala: 1, id_cine: 3, fecha_hora: '2026-06-12T21:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 8  },
 ]
-const GENEROS = ['Acción', 'Drama', 'Terror', 'Animación', 'Sci-Fi']
 
-const router = useRouter()
-const searchQuery = ref('')
-const debouncedQuery = ref('')
-const selectedCityId = ref(1)
+// ── Estado ──
+const router           = useRouter()
+const selectedCityId   = ref(1)
 const selectedCinemaId = ref<number | null>(null)
-const activeGenre = ref('')
-const selectedMovie = ref<Pelicula | null>(null)
+const selectedMovie    = ref<Pelicula | null>(null)
 const cargandoPeliculas = ref(true)
-const searchTitle = ref('')
-const selectedGenre = ref('Todos los generos')
+
+// Filtros
+const searchTitle    = ref('')
+const selectedGenero = ref('Todos los géneros')
 const selectedIdioma = ref('Todos los idiomas')
 const selectedCiudad = ref('Todas las ciudades')
-const peliculas = ref<Pelicula[]>(Pelis)
 
 setTimeout(() => { cargandoPeliculas.value = false }, 800)
 
-let searchTimeout: ReturnType<typeof setTimeout>
-watch(searchQuery, (val) => {
-  clearTimeout(searchTimeout)
-  searchTimeout = setTimeout(() => { debouncedQuery.value = val }, 300)
-})
 watch(selectedCityId, () => { selectedCinemaId.value = null })
 
+// ── Computed ──
 const filteredCinemas = computed(() => CINES.filter((c) => c.id_ciudad === selectedCityId.value))
 
 const peliculasFiltradas = computed(() =>
   peliculas.value.filter((m) => {
-    const matchesTitulos = searchTitle.value === '' || m.titulo.toLowerCase().includes(searchTitle.value.toLowerCase())
-    const matchesGeneros = selectedGenre.value === 'Todos los generos' || m.generos?.nombre.toLowerCase().includes(selectedGenre.value.toLowerCase())
-    const matchesIdiomas = selectedIdioma.value === 'Todos los idiomas' || 
-    m.idiomas?.nombre.some(i => i.toLowerCase().includes(selectedIdioma.value.toLowerCase()))
-    const matchesCiudades = selectedCiudad.value === 'Todas las ciudades' || 
-    m.ciudades?.nombre.some(c => c.toLowerCase().includes(selectedCiudad.value.toLowerCase()))
-    return matchesTitulos && matchesGeneros && matchesIdiomas && matchesCiudades
+    const matchTitulo  = searchTitle.value === '' || m.titulo.toLowerCase().includes(searchTitle.value.toLowerCase())
+    const matchGenero  = selectedGenero.value === 'Todos los géneros' || m.generos?.nombre.toLowerCase() === selectedGenero.value.toLowerCase()
+    const matchIdioma  = selectedIdioma.value === 'Todos los idiomas' || m.idiomas?.nombre.some(i => i.toLowerCase().includes(selectedIdioma.value.toLowerCase()))
+    const matchCiudad  = selectedCiudad.value === 'Todas las ciudades' || m.ciudades?.nombre.some(c => c.toLowerCase().includes(selectedCiudad.value.toLowerCase()))
+    return matchTitulo && matchGenero && matchIdioma && matchCiudad
   })
 )
 
@@ -184,9 +100,9 @@ const filteredFunctions = computed(() => {
 const funcionesPorFecha = computed(() => {
   const grupos: Record<string, Funcion[]> = {}
   filteredFunctions.value.forEach((f) => {
-    const fecha = new Date(f.fecha_hora)
+    const fecha    = new Date(f.fecha_hora)
     const fechaStr = fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })
-    const cap = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)
+    const cap      = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)
     if (!grupos[cap]) grupos[cap] = []
     grupos[cap].push(f)
   })
@@ -195,6 +111,7 @@ const funcionesPorFecha = computed(() => {
 
 const cineActual = computed(() => CINES.find((c) => c.id === selectedCinemaId.value))
 
+// ── Funciones ──
 function formatearHora(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
@@ -203,11 +120,29 @@ function seleccionarPelicula(movie: Pelicula) {
   selectedCinemaId.value = null
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
-
 function seleccionarCine(cinemaId: number) { selectedCinemaId.value = cinemaId }
 function limpiarSeleccion() { selectedMovie.value = null; selectedCinemaId.value = null }
-function irAAsientos(funcionId: number) { router.push({ path: '/asientos', query: { funcion: funcionId } }) }
-function seleccionarGenero(genre: string) { activeGenre.value = genre }
+function irAAsientos(funcionId: number) {
+  const funcion = FUNCIONES.find(f => f.id === funcionId)
+  if (!funcion) return
+
+  const pelicula = peliculas.value.find(p => p.id === funcion.id_pelicula)
+  const cine = CINES.find(c => c.id === funcion.id_cine)
+
+  tienda.seleccionarFuncion({
+    id: String(funcion.id),
+    tituloPelicula: pelicula?.titulo ?? '',
+    cine: cine?.nombre ?? '',
+    sala: `Sala ${funcion.id_sala}`,
+    fecha: new Date(funcion.fecha_hora).toLocaleDateString('es-ES', {
+      weekday: 'long', day: 'numeric', month: 'short'
+    }),
+    hora: formatearHora(funcion.fecha_hora),
+    formato: funcion.formato,
+  })
+
+  router.push('/asientos')
+}
 </script>
 
 <template>
@@ -219,35 +154,35 @@ function seleccionarGenero(genre: string) { activeGenre.value = genre }
 
         <!-- ── HERO cartelera ── -->
         <header v-if="!selectedMovie" key="hero-cartelera" class="hero">
-          <div class="hero">
           <div class="hero-inner">
-            <h1>Elige una pelicula</h1>
-            <div class="search-bar">
-              <input
-                v-model="searchTitle"
-                placeholder="Buscar pelicula"
-              />
-              <select v-model="selectedCiudad">
+            <div class="hero-eyebrow animado" style="--delay: 0ms">Cartelera semanal</div>
+            <h1 class="animado" style="--delay: 80ms">Esta noche<br />en <em>pantalla</em></h1>
+            <div class="search-bar animado" style="--delay: 160ms">
+              <IconField class="search-field">
+                <InputIcon class="pi pi-search" />
+                <InputText v-model="searchTitle" placeholder="Buscar película…" fluid />
+              </IconField>
+              <select v-model="selectedCiudad" class="select-native">
                 <option>Todas las ciudades</option>
                 <option>Puerto Cortés</option>
                 <option>San Pedro Sula</option>
                 <option>Tegucigalpa</option>
               </select>
-              <select v-model="selectedIdioma">
+              <select v-model="selectedIdioma" class="select-native">
                 <option>Todos los idiomas</option>
-                <option>Ingles</option>
+                <option>Inglés</option>
                 <option>Español</option>
               </select>
-              <select v-model="selectedGenre">
-                <option>Todos los generos</option>
-                <option>Accion</option>
+              <select v-model="selectedGenero" class="select-native">
+                <option>Todos los géneros</option>
+                <option>Acción</option>
                 <option>Drama</option>
                 <option>Terror</option>
-                <option>Animacion</option>
+                <option>Thriller</option>
+                <option>Animación</option>
                 <option>Sci-Fi</option>
               </select>
             </div>
-          </div>
           </div>
         </header>
 
@@ -256,13 +191,12 @@ function seleccionarGenero(genre: string) { activeGenre.value = genre }
           <div class="detail-inner">
             <div class="detail-left">
               <button class="back-btn animado" style="--delay: 0ms" @click="limpiarSeleccion">Cartelera</button>
-              <div>
-                <img
+              <img
+                class="detail-poster animado"
+                style="--delay: 60ms"
                 :src="selectedMovie.poster_url"
                 :alt="selectedMovie.titulo"
-                style="width: 200px; display: block"
-                />
-              </div>
+              />
             </div>
             <div class="detail-info">
               <div class="detail-chips animado" style="--delay: 80ms">
@@ -288,15 +222,15 @@ function seleccionarGenero(genre: string) { activeGenre.value = genre }
 
           <!-- ── CARTELERA ── -->
           <div v-if="!selectedMovie" key="cartelera">
-
-            <div class="eyebrow animado" style="--delay: 280ms">En cartelera ahora</div>
+            <div class="eyebrow animado" style="--delay: 240ms">En cartelera ahora</div>
 
             <!-- Skeletons -->
             <div v-if="cargandoPeliculas" class="movies-grid">
               <div v-for="i in 6" :key="i" class="movie-card-skeleton">
-                <Skeleton height="233px" border-radius="8px 8px 0 0" />
-                <div style="padding: 8px 12px 12px">
-                  <Skeleton height="10px" width="70%" />
+                <Skeleton height="320px" border-radius="8px 8px 0 0" />
+                <div style="padding: 10px 12px 14px; display:flex; flex-direction:column; gap:6px">
+                  <Skeleton height="14px" width="85%" />
+                  <Skeleton height="10px" width="50%" />
                 </div>
               </div>
             </div>
@@ -304,29 +238,22 @@ function seleccionarGenero(genre: string) { activeGenre.value = genre }
             <!-- Cards con entrada escalonada -->
             <TransitionGroup v-else name="cards" tag="div" class="movies-grid" appear>
               <div
-                v-for="movie in peliculasFiltradas"
+                v-for="(movie, index) in peliculasFiltradas"
                 :key="movie.id"
                 class="movie-card"
+                :style="{ '--card-delay': `${280 + index * 60}ms` }"
                 @click="seleccionarPelicula(movie)"
               >
-                <!-- Póster -->
                 <div
                   class="movie-poster"
-                  :style="{
-                      backgroundImage: `url(${movie.poster_url})`,
-                      backgroundSize: 'cover',
-                      backgroundPosition: 'center',
-                  }"
-                  >
+                  :style="{ backgroundImage: `url(${movie.poster_url})` }"
+                >
                   <div class="movie-poster-fade" />
                   <div class="movie-genre">{{ movie.generos?.nombre }}</div>
                 </div>
-
-                <!-- Info -->
                 <div class="movie-info">
-                  <div class="movie-meta-row">
-                    <span class="movie-title">{{ movie.titulo }}</span>
-                  </div>
+                  <div class="movie-title">{{ movie.titulo }}</div>
+                  <div class="movie-meta">{{ movie.metadata.year }} · {{ movie.metadata.dur }}</div>
                 </div>
               </div>
               <div v-if="peliculasFiltradas.length === 0" key="empty" class="empty-state">
@@ -404,19 +331,16 @@ function seleccionarGenero(genre: string) { activeGenre.value = genre }
 .home-screen { min-height: 100vh; display: flex; flex-direction: column; }
 .content { flex: 1; }
 
-/* ── Animación slide-up escalonada ── */
+/* ── Animaciones ── */
 @keyframes slideUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-
 .animado {
   opacity: 0;
   animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--delay, 0ms);
 }
-
-/* ── Cards con entrada escalonada ── */
 .cards-enter-active {
   animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--card-delay, 0ms);
@@ -425,107 +349,46 @@ function seleccionarGenero(genre: string) { activeGenre.value = genre }
 .cards-leave-active { transition: opacity .15s ease, transform .15s ease; }
 .cards-leave-to { opacity: 0; transform: scale(.97); }
 .cards-move { transition: transform .3s ease; }
-
-/* ── Fade entre secciones ── */
 .fade-enter-active, .fade-leave-active { transition: opacity .2s ease, transform .2s ease; }
 .fade-enter-from, .fade-leave-to { opacity: 0; transform: translateY(8px); }
 
 /* ── Hero ── */
 .hero {
-  background: #510000;
+  background: var(--rosewood);
   padding: 28px 24px 22px;
   border-bottom: 1px solid var(--border);
 }
-.hero-inner {
-  max-width: 980px;
-  margin: 0 auto;
-}
+.hero-inner { max-width: 980px; margin: 0 auto; }
 .hero-eyebrow {
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 2.5px;
-  text-transform: uppercase;
-  color: var(--text3);
-  margin-bottom: 8px;
-  display: flex;
-  align-items: center;
-  gap: 8px;
+  font-size: 10px; font-weight: 600; letter-spacing: 2.5px; text-transform: uppercase;
+  color: rgba(250,240,236,.45); margin-bottom: 8px; display: flex; align-items: center; gap: 8px;
 }
-.hero-eyebrow::after {
-  content: '';
-  flex: 1;
-  height: 0.5px;
-  background: var(--border);
-  max-width: 60px;
-}
+.hero-eyebrow::after { content: ''; flex: 1; height: .5px; background: rgba(250,240,236,.15); max-width: 60px; }
 .hero h1 {
-  font-size: 38px;
-  color: #ffffff;
-  line-height: 1.05;
-  margin-bottom: 16px;
+  font-family: 'DM Serif Display', serif; font-size: 38px;
+  color: #faf0ec; line-height: 1.05; margin-bottom: 16px;
 }
-.search-bar {
-  display: flex;
-  gap: 8px;
-  flex-wrap: wrap;
+.hero h1 em { font-style: italic; color: var(--tangelo); }
+
+.search-bar { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.search-field { flex: 1; min-width: 200px; }
+.select-native {
+  background: rgba(250,240,236,.08); border: 1px solid rgba(250,240,236,.15);
+  color: rgba(250,240,236,.7); padding: 10px 12px; border-radius: var(--radius);
+  font-size: 12px; font-family: 'Outfit', sans-serif; outline: none; cursor: pointer;
+  transition: border-color .2s;
 }
-.search-bar input {
-  flex: 1;
-  min-width: 180px;
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  color: var(--text);
-  padding: 10px 14px;
-  border-radius: var(--radius);
-  font-size: 13px;
-  outline: none;
-  transition: border-color 0.2s;
-}
-.search-bar input:focus {
-  border-color: var(--tangelo);
-}
-.search-bar input::placeholder {
-  color: var(--text3);
-}
-.search-bar select {
-  background: var(--bg);
-  border: 1px solid var(--border2);
-  color: var(--text2);
-  padding: 10px 12px;
-  border-radius: var(--radius);
-  font-size: 12px;
-  outline: none;
-  cursor: pointer;
-  transition: border-color 0.2s;
-}
-.search-bar select:focus {
-  border-color: var(--tangelo);
-}
-.search-bar button {
-  background: var(--sinopia);
-  border: none;
-  color: #fff;
-  padding: 10px 20px;
-  border-radius: var(--radius);
-  font-size: 13px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
-  white-space: nowrap;
-}
-.search-bar button:hover {
-  opacity: 0.88;
-}
+.select-native:focus { border-color: var(--tangelo); }
+.select-native option { background: var(--text); color: #fff; }
 
 /* ── Detail hero ── */
 .detail-hero { background: var(--surface); padding: 26px 24px; border-bottom: 1px solid var(--border); }
 .detail-inner { max-width: 980px; margin: 0 auto; display: flex; gap: 28px; align-items: flex-start; }
 .detail-left { display: flex; flex-direction: column; gap: 12px; }
 .detail-poster {
-  width: 140px; aspect-ratio: 2/3; flex-shrink: 0;
+  width: 160px; aspect-ratio: 2/3; object-fit: cover;
   border-radius: var(--radius); border: 1px solid var(--border2);
-  display: flex; align-items: center; justify-content: center;
-  font-family: 'DM Serif Display', serif; font-size: 16px; padding: 16px; text-align: center; font-style: italic;
+  display: block;
 }
 .detail-info { flex: 1; }
 .detail-title { font-family: 'DM Serif Display', serif; font-size: 36px; color: var(--text); line-height: 1; margin-top: 4px; }
@@ -538,56 +401,42 @@ function seleccionarGenero(genre: string) { activeGenre.value = genre }
 
 /* ── Page ── */
 .page { max-width: 980px; margin: 0 auto; padding: 28px 24px; }
-.eyebrow { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 12px; }
-
-/* ── Pills ── */
-.filter-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 20px; }
-.pill {
-  padding: 5px 14px; border-radius: 20px; font-size: 12px; font-weight: 500;
-  cursor: pointer; border: 1px solid var(--border2); color: var(--text2);
-  background: transparent; font-family: 'Outfit', sans-serif; transition: all .2s;
-}
-.pill.active { background: var(--rosewood); border-color: var(--rosewood); color: #faf0ec; }
+.eyebrow { font-size: 11px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
 
 /* ── Grid ── */
-.movies-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(155px, 1fr)); gap: 44px; }
+.movies-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(175px, 1fr));
+  gap: 16px;
+}
 .movie-card {
   cursor: pointer; border-radius: var(--radius); overflow: hidden;
-  background: var(--surface); border: 1px solid var(--border); transition: transform .2s, border-color .2s;
+  background: var(--surface); border: 1px solid var(--border);
+  transition: transform .2s, border-color .2s, box-shadow .2s;
 }
-.movie-card {
-    width: 240px;
-    cursor: pointer;
-    border-radius: var(--radius);
-    overflow: hidden;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+.movie-card:hover {
+  transform: translateY(-4px);
+  border-color: var(--border2);
+  box-shadow: 0 8px 24px rgba(42,10,6,.1);
 }
-.movie-card:hover { transform: translateY(-3px); border-color: var(--border2); }
 .movie-card-skeleton { border-radius: var(--radius); overflow: hidden; background: var(--surface); border: 1px solid var(--border); }
 .movie-poster {
-  width: 100%; aspect-ratio: 2/3; display: flex; flex-direction: column;
-  justify-content: flex-end; padding: 10px; position: relative; overflow: hidden;
+  width: 100%; aspect-ratio: 2/3;
+  background-size: cover; background-position: center;
+  display: flex; flex-direction: column; justify-content: flex-end;
+  padding: 10px; position: relative; overflow: hidden;
 }
 .movie-poster-fade {
-  position: absolute; bottom: 0; left: 0; right: 0; height: 65%;
-  background: linear-gradient(transparent, rgba(42,10,6,.88));
+  position: absolute; bottom: 0; left: 0; right: 0; height: 50%;
+  background: linear-gradient(transparent, rgba(42,10,6,.7));
 }
-.movie-genre { position: relative; z-index: 1; font-size: 9px; font-weight: 600; letter-spacing: 1.5px; text-transform: uppercase; color: var(--orange); margin-bottom: 3px; }
-.movie-title {
-  font-size: 15px;
-  font-weight: 700;
-  color :#000000
+.movie-genre {
+  position: relative; z-index: 1; font-size: 9px; font-weight: 600;
+  letter-spacing: 1.5px; text-transform: uppercase; color: var(--orange);
 }
-.movie-info {
-  padding: 9px 12px 12px;
-  border-top: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 7px;
-}
-.movie-times { font-family: 'DM Mono', monospace; font-size: 10px; color: var(--text3); }
+.movie-info { padding: 10px 12px 14px; border-top: 1px solid var(--border); }
+.movie-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 4px; }
+.movie-meta { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
 .empty-state { grid-column: 1/-1; padding: 60px 0; text-align: center; color: var(--text3); font-size: 14px; }
 
 /* ── Cines ── */

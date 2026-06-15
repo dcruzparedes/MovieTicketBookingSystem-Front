@@ -1,39 +1,109 @@
-<script setup lang="ts">
-import { useRouter } from 'vue-router'
-
-const router = useRouter()
-
-const emit = defineEmits(['logo-click', 'home-click'])
-
-function handleLogoClick() {
-  emit('logo-click')
-}
-
-function handleHomeClick() {
-  emit('home-click')
-}
-
-function logout() {
-  console.log('Cerrando sesión...')
-  localStorage.removeItem('token')
-  sessionStorage.removeItem('token')
-  // Redirigir al login
-  router.push('/login')
-}
-</script>
-
 <template>
   <nav class="top-nav">
     <div class="nav-container">
-      <div class="nav-logo" @click="handleLogoClick">Cine <em>Vicenta</em></div>
+
+      <!-- Logo -->
+      <div class="nav-logo" @click="handleLogoClick">
+        Cine <em>Vicenta</em>
+      </div>
+
+      <!-- Links -->
       <div class="nav-links">
         <a @click="handleHomeClick">Cartelera</a>
-        <RouterLink to="/perfil">Mi cuenta</RouterLink>
-        <button class="nav-btn" @click="logout">Iniciar Sesión</button>
+
+        <!-- Sin sesión -->
+        <template v-if="!estaAutenticado">
+          <RouterLink to="/login" class="nav-link-sutil">Iniciar sesión</RouterLink>
+          <RouterLink to="/register">
+            <Button label="Crear cuenta" size="small" />
+          </RouterLink>
+        </template>
+
+        <!-- Con sesión -->
+        <template v-else>
+          <div class="nav-usuario" @click="toggleMenu">
+            <Avatar :label="inicialUsuario" shape="circle" :style="{
+              background: 'rgba(243,80,10,0.25)',
+              color: '#faf0ec',
+              border: '1.5px solid rgba(243,80,10,0.4)',
+              width: '30px',
+              height: '30px',
+              fontSize: '13px',
+              cursor: 'pointer',
+            }" />
+            <span class="nav-nombre">{{ nombreUsuario }}</span>
+            <i class="pi pi-chevron-down nav-chevron" :class="{ rotado: menuVisible }" />
+          </div>
+
+          <Menu ref="menuRef" :model="menuItems" popup />
+        </template>
       </div>
+
     </div>
   </nav>
 </template>
+
+<script setup lang="ts">
+import { ref, computed } from 'vue'
+import { useRouter } from 'vue-router'
+import Button from 'primevue/button'
+import Avatar from 'primevue/avatar'
+import Menu from 'primevue/menu'
+
+const router = useRouter()
+const emit = defineEmits(['logo-click', 'home-click'])
+
+// ── Mock de auth — reemplazar con store de Daniel ──
+const estaAutenticado = ref(true)
+const nombreUsuario = ref('Juan Pérez')
+
+const inicialUsuario = computed(() =>
+  nombreUsuario.value?.charAt(0).toUpperCase() ?? 'U'
+)
+
+// ── Menú desplegable ──
+const menuRef = ref()
+const menuVisible = ref(false)
+
+function toggleMenu(event: MouseEvent) {
+  menuRef.value.toggle(event)
+  menuVisible.value = !menuVisible.value
+}
+
+const menuItems = [
+  {
+    label: nombreUsuario.value,
+    items: [
+      {
+        label: 'Mi perfil',
+        icon: 'pi pi-user',
+        command: () => router.push('/perfil'),
+      },
+      {
+        label: 'Mis reservas',
+        icon: 'pi pi-ticket',
+        command: () => router.push('/perfil'),
+      },
+      { separator: true },
+      {
+        label: 'Cerrar sesión',
+        icon: 'pi pi-sign-out',
+        command: logout,
+      },
+    ],
+  },
+]
+
+function logout() {
+  localStorage.removeItem('token')
+  sessionStorage.removeItem('token')
+  estaAutenticado.value = false
+  router.push('/login')
+}
+
+function handleLogoClick() { emit('logo-click') }
+function handleHomeClick() { emit('home-click') }
+</script>
 
 <style scoped>
 .top-nav {
@@ -46,6 +116,7 @@ function logout() {
   z-index: 100;
   padding: 0 24px;
 }
+
 .nav-container {
   width: 100%;
   max-width: 980px;
@@ -54,6 +125,7 @@ function logout() {
   justify-content: space-between;
   align-items: center;
 }
+
 .nav-logo {
   font-family: 'DM Serif Display', serif;
   font-size: 20px;
@@ -61,15 +133,18 @@ function logout() {
   letter-spacing: 0.3px;
   cursor: pointer;
 }
+
 .nav-logo em {
   font-style: italic;
   color: var(--tangelo);
 }
+
 .nav-links {
   display: flex;
   gap: 20px;
   align-items: center;
 }
+
 .nav-links a {
   color: rgba(250, 240, 236, 0.5);
   font-size: 13px;
@@ -78,18 +153,44 @@ function logout() {
   font-weight: 500;
   text-decoration: none;
 }
+
 .nav-links a:hover {
   color: rgba(250, 240, 236, 0.85);
 }
-.nav-btn {
-  background: var(--orange);
-  color: #fff;
-  border: none;
-  padding: 6px 16px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: 700;
+
+.nav-link-sutil {
+  color: rgba(250, 240, 236, 0.6) !important;
+  font-size: 13px !important;
+}
+
+/* ── Usuario autenticado ── */
+.nav-usuario {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   cursor: pointer;
-  font-family: 'Outfit', sans-serif;
+  padding: 4px 8px;
+  border-radius: 20px;
+  transition: background 0.2s;
+}
+
+.nav-usuario:hover {
+  background: rgba(250, 240, 236, 0.08);
+}
+
+.nav-nombre {
+  font-size: 13px;
+  color: rgba(250, 240, 236, 0.85);
+  font-weight: 500;
+}
+
+.nav-chevron {
+  font-size: 10px;
+  color: rgba(250, 240, 236, 0.45);
+  transition: transform 0.2s;
+}
+
+.nav-chevron.rotado {
+  transform: rotate(180deg);
 }
 </style>

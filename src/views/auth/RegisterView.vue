@@ -1,294 +1,350 @@
 <template>
   <div class="auth-screen">
-    <div class="auth-wrap">
-      <div class="auth-logo">Cine <em>Vicenta</em></div>
-      <div class="auth-tagline">Puerto Cortés · Honduras</div>
 
-      <div class="card">
-        <div class="card-body">
-          <!-- Tabs -->
-          <div class="auth-tabs">
-            <RouterLink to="/login" class="auth-tab">Iniciar sesión</RouterLink>
-            <span class="auth-tab active">Crear cuenta</span>
+    <!-- Panel izquierdo -->
+    <div class="auth-panel-left">
+      <div class="panel-logo">Cine <em>Vicenta</em></div>
+      <div class="panel-tagline">Puerto Cortés · Honduras</div>
+
+      <div class="frase-container">
+        <Transition name="frase" mode="out-in">
+          <div :key="fraseActual.titulo" class="frase-wrap">
+            <div class="frase-icono">{{ fraseActual.icono }}</div>
+            <blockquote class="frase-texto">{{ fraseActual.frase }}</blockquote>
+            <div class="frase-rol">— {{ fraseActual.titulo }}</div>
           </div>
+        </Transition>
+      </div>
 
-          <!-- Success state -->
-          <div v-if="registered" class="alert alert-success">
-            ✓ ¡Cuenta creada con éxito! Redirigiendo…
-          </div>
+      <div class="frase-dots">
+        <span v-for="(f, i) in frases" :key="i" class="dot" :class="{ active: i === fraseIndex }"
+          @click="fraseIndex = i" />
+      </div>
+    </div>
 
-          <!-- Form -->
-          <form v-else @submit.prevent="handleSubmit" novalidate>
-            <!-- Nombre -->
-            <div class="field">
-              <label for="nombre">Nombre completo</label>
-              <input
-                id="nombre"
-                v-model="form.nombre"
-                type="text"
-                placeholder="Juan Pérez"
-                :class="{ 'input-error': touched.nombre && errors.nombre }"
-                @blur="touch('nombre')"
-                autocomplete="name"
-              />
-              <span v-if="touched.nombre && errors.nombre" class="field-error">
-                {{ errors.nombre }}
-              </span>
+    <!-- Panel derecho -->
+    <div class="auth-panel-right">
+      <RouterLink to="/" class="btn-home">
+        <i class="pi pi-home" />
+        Inicio
+      </RouterLink>
+      <div class="auth-wrap">
+        <div class="auth-logo-mobile">Cine <em>Vicenta</em></div>
+
+        <div class="card animado" style="--delay: 0ms">
+          <div class="card-body">
+
+            <!-- Tabs -->
+            <div class="auth-tabs animado" style="--delay: 60ms">
+              <RouterLink to="/login" class="auth-tab">Iniciar sesión</RouterLink>
+              <span class="auth-tab active">Crear cuenta</span>
             </div>
 
-            <!-- Email -->
-            <div class="field">
-              <label for="email">Correo electrónico</label>
-              <input
-                id="email"
-                v-model="form.email"
-                type="email"
-                placeholder="tu@correo.com"
-                :class="{ 'input-error': touched.email && errors.email }"
-                @blur="touch('email')"
-                autocomplete="email"
-              />
-              <span v-if="touched.email && errors.email" class="field-error">
-                {{ errors.email }}
-              </span>
-            </div>
-
-            <!-- Contraseña -->
-            <div class="field">
-              <label for="password">Contraseña</label>
-              <div class="input-wrapper">
-                <input
-                  id="password"
-                  v-model="form.password"
-                  :type="showPassword ? 'text' : 'password'"
-                  placeholder="Mínimo 8 caracteres"
-                  :class="{ 'input-error': touched.password && errors.password }"
-                  @blur="touch('password')"
-                  autocomplete="new-password"
-                />
-                <button
-                  type="button"
-                  class="toggle-pw"
-                  @click="showPassword = !showPassword"
-                  :aria-label="showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-                >
-                  {{ showPassword ? '🙈' : '👁' }}
-                </button>
+            <!-- Éxito -->
+            <Transition name="fade-alert">
+              <div v-if="registered" class="alert alert-success">
+                ✓ ¡Cuenta creada con éxito! Redirigiendo…
               </div>
-              <span v-if="touched.password && errors.password" class="field-error">
-                {{ errors.password }}
-              </span>
-              <!-- Password strength bar -->
-              <div v-if="form.password" class="pw-strength">
-                <div
-                  class="pw-strength-bar"
-                  :style="{ width: strengthPercent + '%', background: strengthColor }"
-                ></div>
+            </Transition>
+
+            <!-- Form -->
+            <form v-if="!registered" @submit.prevent="handleSubmit" novalidate>
+
+              <div class="field animado" style="--delay: 100ms">
+                <label for="nombre">Nombre completo</label>
+                <input id="nombre" v-model="form.nombre" type="text" placeholder="Juan Pérez"
+                  :class="{ 'input-error': touched.nombre && errors.nombre }" @blur="touch('nombre')"
+                  autocomplete="name" />
+                <Transition name="fade-alert">
+                  <span v-if="touched.nombre && errors.nombre" class="field-error">{{ errors.nombre }}</span>
+                </Transition>
               </div>
-              <span v-if="form.password" class="field-success" :style="{ color: strengthColor }">
-                {{ strengthLabel }}
-              </span>
+
+              <div class="field animado" style="--delay: 140ms">
+                <label for="email">Correo electrónico</label>
+                <input id="email" v-model="form.email" type="email" placeholder="tu@correo.com"
+                  :class="{ 'input-error': touched.email && errors.email }" @blur="touch('email')"
+                  autocomplete="email" />
+                <Transition name="fade-alert">
+                  <span v-if="touched.email && errors.email" class="field-error">{{ errors.email }}</span>
+                </Transition>
+              </div>
+
+              <div class="field animado" style="--delay: 180ms">
+                <label for="password">Contraseña</label>
+                <div class="input-wrapper">
+                  <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
+                    placeholder="Mínimo 8 caracteres" :class="{ 'input-error': touched.password && errors.password }"
+                    @blur="touch('password')" autocomplete="new-password" />
+                  <button type="button" class="toggle-pw" @click="showPassword = !showPassword"
+                    :aria-label="showPassword ? 'Ocultar' : 'Mostrar'">
+                    {{ showPassword ? '🙈' : '👁' }}
+                  </button>
+                </div>
+                <Transition name="fade-alert">
+                  <span v-if="touched.password && errors.password" class="field-error">{{ errors.password }}</span>
+                </Transition>
+                <div v-if="form.password" class="pw-strength">
+                  <div class="pw-strength-bar" :style="{ width: strengthPercent + '%', background: strengthColor }" />
+                </div>
+                <Transition name="fade-alert">
+                  <span v-if="form.password" class="field-hint" :style="{ color: strengthColor }">
+                    {{ strengthLabel }}
+                  </span>
+                </Transition>
+              </div>
+
+              <div class="field animado" style="--delay: 220ms">
+                <label for="confirm">Confirmar contraseña</label>
+                <input id="confirm" v-model="form.confirm" :type="showPassword ? 'text' : 'password'"
+                  placeholder="Repite la contraseña" :class="{ 'input-error': touched.confirm && errors.confirm }"
+                  @blur="touch('confirm')" autocomplete="new-password" />
+                <Transition name="fade-alert">
+                  <span v-if="touched.confirm && errors.confirm" class="field-error">{{ errors.confirm }}</span>
+                </Transition>
+                <Transition name="fade-alert">
+                  <span v-if="touched.confirm && !errors.confirm && form.confirm" class="field-hint"
+                    style="color: #1e783c">
+                    ✓ Las contraseñas coinciden
+                  </span>
+                </Transition>
+              </div>
+
+              <button type="submit" class="btn btn-primary btn-full animado" style="--delay: 260ms"
+                :disabled="submitting">
+                <span v-if="submitting" class="spinner" />
+                {{ submitting ? 'Creando cuenta…' : 'Crear cuenta' }}
+              </button>
+            </form>
+
+            <div class="auth-footer animado" style="--delay: 300ms">
+              ¿Ya tienes cuenta? <RouterLink to="/login">Inicia sesión</RouterLink>
             </div>
-
-            <!-- Confirmar contraseña -->
-            <div class="field">
-              <label for="confirm">Confirmar contraseña</label>
-              <input
-                id="confirm"
-                v-model="form.confirm"
-                :type="showPassword ? 'text' : 'password'"
-                placeholder="Repite la contraseña"
-                :class="{ 'input-error': touched.confirm && errors.confirm }"
-                @blur="touch('confirm')"
-                autocomplete="new-password"
-              />
-              <span v-if="touched.confirm && errors.confirm" class="field-error">
-                {{ errors.confirm }}
-              </span>
-              <span v-if="touched.confirm && !errors.confirm && form.confirm" class="field-success">
-                ✓ Las contraseñas coinciden
-              </span>
-            </div>
-
-            <button type="submit" class="btn btn-primary btn-full" :disabled="submitting">
-              {{ submitting ? 'Creando cuenta…' : 'Crear cuenta' }}
-            </button>
-          </form>
-
-          <div class="auth-footer">
-            ¿Ya tienes cuenta? <RouterLink to="/login">Inicia sesión</RouterLink>
           </div>
         </div>
       </div>
     </div>
+
   </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
+// ── Frases ──
+const frases = [
+  { titulo: 'Tu primera vez', icono: '🎬', frase: 'Crea tu cuenta y reserva tu primer asiento en segundos. El cine te está esperando.' },
+  { titulo: 'Sin filas', icono: '🎟', frase: 'Olvídate de las colas. Selecciona tu asiento, paga en línea y listo.' },
+  { titulo: 'Cine Vicenta', icono: '🏛', frase: 'La experiencia cinematográfica de Puerto Cortés, ahora en la palma de tu mano.' },
+]
+
+const fraseIndex = ref(0)
+const fraseActual = computed(() => frases[fraseIndex.value]!)
+
+let intervalo: ReturnType<typeof setInterval>
+onMounted(() => { intervalo = setInterval(() => { fraseIndex.value = (fraseIndex.value + 1) % frases.length }, 3500) })
+onUnmounted(() => clearInterval(intervalo))
+
+// ── Form ──
 const form = reactive({ nombre: '', email: '', password: '', confirm: '' })
 const touched = reactive({ nombre: false, email: false, password: false, confirm: false })
 const showPassword = ref(false)
 const submitting = ref(false)
 const registered = ref(false)
 
-// ── Validation ─────────────────────────────────────────────
 const errors = computed(() => {
-  const e = {}
-
-  if (!form.nombre.trim()) {
-    e.nombre = 'El nombre es requerido.'
-  } else if (form.nombre.trim().length < 3) {
-    e.nombre = 'Debe tener al menos 3 caracteres.'
-  }
-
-  if (!form.email.trim()) {
-    e.email = 'El correo es requerido.'
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) {
-    e.email = 'Ingresa un correo válido.'
-  }
-
-  if (!form.password) {
-    e.password = 'La contraseña es requerida.'
-  } else if (form.password.length < 8) {
-    e.password = 'Mínimo 8 caracteres.'
-  }
-
-  if (!form.confirm) {
-    e.confirm = 'Confirma tu contraseña.'
-  } else if (form.confirm !== form.password) {
-    e.confirm = 'Las contraseñas no coinciden.'
-  }
-
+  const e: Record<string, string> = {}
+  if (!form.nombre.trim()) e.nombre = 'El nombre es requerido.'
+  else if (form.nombre.trim().length < 3) e.nombre = 'Debe tener al menos 3 caracteres.'
+  if (!form.email.trim()) e.email = 'El correo es requerido.'
+  else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email)) e.email = 'Ingresa un correo válido.'
+  if (!form.password) e.password = 'La contraseña es requerida.'
+  else if (form.password.length < 8) e.password = 'Mínimo 8 caracteres.'
+  if (!form.confirm) e.confirm = 'Confirma tu contraseña.'
+  else if (form.confirm !== form.password) e.confirm = 'Las contraseñas no coinciden.'
   return e
 })
 
 const isFormValid = computed(() => Object.keys(errors.value).length === 0)
 
-// ── Password strength ───────────────────────────────────────
+// ── Fortaleza ──
 const strength = computed(() => {
   const pw = form.password
   if (!pw) return 0
-  let score = 0
-  if (pw.length >= 8) score++
-  if (pw.length >= 12) score++
-  if (/[A-Z]/.test(pw)) score++
-  if (/[0-9]/.test(pw)) score++
-  if (/[^A-Za-z0-9]/.test(pw)) score++
-  return score
+  let s = 0
+  if (pw.length >= 8) s++
+  if (pw.length >= 12) s++
+  if (/[A-Z]/.test(pw)) s++
+  if (/[0-9]/.test(pw)) s++
+  if (/[^A-Za-z0-9]/.test(pw)) s++
+  return s
 })
-
 const strengthPercent = computed(() => (strength.value / 5) * 100)
-const strengthLabel = computed(
-  () => ['', 'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte'][strength.value],
-)
-const strengthColor = computed(
-  () => ['', '#d92200', '#f37100', '#e6a800', '#1e783c', '#1e783c'][strength.value],
-)
+const strengthLabel = computed(() => ['', 'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte'][strength.value])
+const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e783c', '#1e783c'][strength.value])
 
-// ── Helpers ─────────────────────────────────────────────────
-function touch(field) {
-  touched[field] = true
-}
+function touch(field: keyof typeof touched) { touched[field] = true }
+function touchAll() { Object.keys(touched).forEach((k) => (touched[k as keyof typeof touched] = true)) }
 
-function touchAll() {
-  Object.keys(touched).forEach((k) => (touched[k] = true))
-}
+watch(() => form.password, () => { if (touched.confirm) touched.confirm = true })
 
 async function handleSubmit() {
   touchAll()
   if (!isFormValid.value) return
-
   submitting.value = true
-  // Aquí irá la llamada al backend en el futuro
   await new Promise((r) => setTimeout(r, 900))
   submitting.value = false
   registered.value = true
-
   setTimeout(() => router.push('/'), 1800)
 }
-
-// Touch confirm reactively when password changes after confirm was touched
-watch(
-  () => form.password,
-  () => {
-    if (touched.confirm) touched.confirm = true
-  },
-)
 </script>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=Outfit:wght@300;400;500;600;700&display=swap');
-
-:root {
-  --bg: #faf4f0;
-  --surface: #ffffff;
-  --border: rgba(92, 0, 6, 0.09);
-  --border2: rgba(92, 0, 6, 0.17);
-  --text: #2a0a06;
-  --text2: #7a3020;
-  --text3: #b87060;
-  --tangelo: #f3500a;
-  --sinopia: #d92200;
-  --rosewood: #5a0006;
-  --radius: 8px;
-}
-
+/* ── Layout ── */
 .auth-screen {
   display: flex;
-  align-items: center;
-  justify-content: center;
   min-height: 100vh;
-  background: #faf4f0;
   font-family: 'Outfit', sans-serif;
 }
 
-.auth-wrap {
-  width: 400px;
+/* ── Panel izquierdo ── */
+.auth-panel-left {
+  width: 420px;
+  flex-shrink: 0;
+  background: var(--rosewood);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 48px 40px;
 }
 
-.auth-logo {
+.panel-logo {
   font-family: 'DM Serif Display', serif;
-  font-size: 38px;
-  color: #5a0006;
-  letter-spacing: 0.5px;
+  font-size: 32px;
+  color: #faf0ec;
+  letter-spacing: .3px;
+  margin-bottom: 4px;
   text-align: center;
-  margin-bottom: 2px;
-}
-.auth-logo em {
-  font-style: italic;
-  color: #f3500a;
 }
 
-.auth-tagline {
-  text-align: center;
-  font-size: 12px;
-  color: #b87060;
-  letter-spacing: 2px;
+.panel-logo em {
+  font-style: italic;
+  color: var(--tangelo);
+}
+
+.panel-tagline {
+  font-size: 10px;
+  color: rgba(250, 240, 236, .35);
+  letter-spacing: 2.5px;
   text-transform: uppercase;
-  margin-bottom: 24px;
+  text-align: center;
+  margin-bottom: 52px;
+}
+
+.frase-container {
+  width: 100%;
+  min-height: 160px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 28px;
+}
+
+.frase-wrap {
+  text-align: center;
+}
+
+.frase-icono {
+  font-size: 36px;
+  margin-bottom: 16px;
+}
+
+.frase-texto {
+  font-family: 'DM Serif Display', serif;
+  font-size: 19px;
+  font-style: italic;
+  color: #faf0ec;
+  line-height: 1.55;
+  margin: 0 0 14px;
+  opacity: .92;
+}
+
+.frase-rol {
+  font-size: 11px;
+  color: rgba(250, 240, 236, .4);
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.frase-dots {
+  display: flex;
+  gap: 7px;
+}
+
+.dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(250, 240, 236, .25);
+  cursor: pointer;
+  transition: background .3s, transform .3s;
+}
+
+.dot.active {
+  background: var(--tangelo);
+  transform: scale(1.3);
+}
+
+/* ── Panel derecho ── */
+.auth-panel-right {
+  flex: 1;
+  background: var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+}
+
+.auth-wrap {
+  width: 380px;
+}
+
+.auth-logo-mobile {
+  font-family: 'DM Serif Display', serif;
+  font-size: 28px;
+  color: var(--rosewood);
+  text-align: center;
+  margin-bottom: 20px;
+  display: none;
+}
+
+.auth-logo-mobile em {
+  font-style: italic;
+  color: var(--tangelo);
 }
 
 /* Card */
 .card {
-  background: #fff;
-  border: 1px solid rgba(92, 0, 6, 0.09);
-  border-radius: 8px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
 }
+
 .card-body {
-  padding: 20px;
+  padding: 24px;
 }
 
 /* Tabs */
 .auth-tabs {
   display: flex;
-  border-bottom: 1px solid rgba(92, 0, 6, 0.17);
+  border-bottom: 1px solid var(--border2);
   margin-bottom: 20px;
 }
+
 .auth-tab {
   flex: 1;
   padding: 9px;
@@ -296,60 +352,84 @@ watch(
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
-  color: #b87060;
+  color: var(--text3);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  transition: all 0.2s;
+  transition: all .2s;
   text-decoration: none;
   font-family: 'Outfit', sans-serif;
 }
+
 .auth-tab.active {
-  color: #d92200;
-  border-bottom-color: #d92200;
+  color: var(--sinopia);
+  border-bottom-color: var(--sinopia);
 }
+
 .auth-tab:not(.active):hover {
-  color: #7a3020;
+  color: var(--text2);
+}
+
+/* Alert */
+.alert {
+  border-radius: var(--radius);
+  padding: 12px 16px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+
+.alert-success {
+  background: rgba(30, 120, 60, .08);
+  border: 1px solid rgba(30, 120, 60, .25);
+  color: #1e783c;
 }
 
 /* Fields */
 .field {
   margin-bottom: 16px;
 }
+
 .field label {
   display: block;
   font-size: 12px;
-  color: #7a3020;
+  color: var(--text2);
   margin-bottom: 5px;
   font-weight: 500;
 }
+
 .field input {
   width: 100%;
-  background: #faf4f0;
-  border: 1px solid rgba(92, 0, 6, 0.17);
-  color: #2a0a06;
+  background: var(--bg);
+  border: 1px solid var(--border2);
+  color: var(--text);
   padding: 10px 13px;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-size: 14px;
   font-family: 'Outfit', sans-serif;
   outline: none;
-  transition: border-color 0.15s;
+  transition: border-color .15s;
 }
+
 .field input:focus {
-  border-color: #f3500a;
+  border-color: var(--tangelo);
 }
+
 .field input::placeholder {
-  color: #b87060;
+  color: var(--text3);
 }
+
 .field input.input-error {
-  border-color: #d92200;
+  border-color: var(--sinopia);
 }
 
 .input-wrapper {
   position: relative;
 }
+
 .input-wrapper input {
   padding-right: 40px;
 }
+
 .toggle-pw {
   position: absolute;
   right: 10px;
@@ -366,44 +446,29 @@ watch(
 .field-error {
   display: block;
   font-size: 11px;
-  color: #d92200;
-  margin-top: 4px;
-}
-.field-success {
-  display: block;
-  font-size: 11px;
-  color: #1e783c;
+  color: var(--sinopia);
   margin-top: 4px;
 }
 
-/* Password strength */
+.field-hint {
+  display: block;
+  font-size: 11px;
+  margin-top: 4px;
+}
+
+/* Fortaleza */
 .pw-strength {
   height: 3px;
-  background: rgba(92, 0, 6, 0.09);
+  background: var(--border);
   border-radius: 2px;
   margin-top: 6px;
   overflow: hidden;
 }
+
 .pw-strength-bar {
   height: 100%;
   border-radius: 2px;
-  transition:
-    width 0.3s,
-    background 0.3s;
-}
-
-/* Alert */
-.alert {
-  border-radius: 8px;
-  padding: 12px 16px;
-  font-size: 13px;
-  line-height: 1.5;
-  margin-bottom: 16px;
-}
-.alert-success {
-  background: rgba(30, 120, 60, 0.08);
-  border: 1px solid rgba(30, 120, 60, 0.25);
-  color: #1e783c;
+  transition: width .3s, background .3s;
 }
 
 /* Button */
@@ -411,40 +476,154 @@ watch(
   border: none;
   cursor: pointer;
   font-family: 'Outfit', sans-serif;
-  border-radius: 8px;
+  border-radius: var(--radius);
   font-weight: 600;
-  transition: opacity 0.2s;
+  transition: opacity .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
+
 .btn-primary {
-  background: #d92200;
+  background: var(--sinopia);
   color: #fff;
   padding: 11px 24px;
   font-size: 14px;
 }
+
 .btn-primary:hover:not(:disabled) {
-  opacity: 0.88;
+  opacity: .88;
 }
+
 .btn-primary:disabled {
-  opacity: 0.5;
+  opacity: .5;
   cursor: not-allowed;
 }
+
 .btn-full {
   width: 100%;
+}
+
+/* Spinner */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, .3);
+  border-top-color: #fff;
+  animation: girar .6s linear infinite;
+}
+
+@keyframes girar {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Footer */
 .auth-footer {
   text-align: center;
   font-size: 12px;
-  color: #b87060;
+  color: var(--text3);
   margin-top: 14px;
 }
+
 .auth-footer a {
-  color: #d92200;
+  color: var(--sinopia);
   text-decoration: none;
-  cursor: pointer;
 }
+
 .auth-footer a:hover {
   text-decoration: underline;
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+.frase-enter-active {
+  transition: opacity .5s ease, transform .5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.frase-leave-active {
+  transition: opacity .3s ease, transform .3s ease;
+}
+
+.frase-enter-from {
+  opacity: 0;
+  transform: translateY(14px);
+}
+
+.frase-leave-to {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.fade-alert-enter-active {
+  transition: opacity .2s ease, transform .2s ease;
+}
+
+.fade-alert-leave-active {
+  transition: opacity .15s ease;
+}
+
+.fade-alert-enter-from {
+  opacity: 0;
+  transform: translateY(-4px);
+}
+
+.btn-home {
+  position: absolute;
+  top: 20px;
+  right: 24px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--sinopia);
+  text-decoration: none;
+  font-family: 'Outfit', sans-serif;
+  background: rgba(217, 34, 0, 0.07);
+  border: 1px solid rgba(217, 34, 0, 0.2);
+  padding: 6px 12px;
+  border-radius: 20px;
+  transition: all 0.2s;
+}
+
+.btn-home:hover {
+  background: rgba(217, 34, 0, 0.14);
+  border-color: rgba(217, 34, 0, 0.35);
+}
+
+.fade-alert-leave-to {
+  opacity: 0;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .auth-panel-left {
+    display: none;
+  }
+
+  .auth-logo-mobile {
+    display: block;
+  }
 }
 </style>

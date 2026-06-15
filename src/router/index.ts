@@ -96,6 +96,11 @@ const router = createRouter({
       component: () => import('@/views/admin/SalaFormView.vue'),
     },
     {
+      path: '/admin/funciones/nueva',
+      name: 'admin-funcion-crear',
+      component: () => import('@/views/admin/FuncionFormView.vue'),
+    },
+    {
       path: '/admin/clientes',
       name: 'admin-clientes',
       component: () => import('@/views/admin/CustomersView.vue'),

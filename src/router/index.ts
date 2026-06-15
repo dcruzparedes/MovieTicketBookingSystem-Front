@@ -101,6 +101,21 @@ const router = createRouter({
       component: () => import('@/views/admin/CiudadesView.vue'),
     },
     {
+      path: '/admin/funciones',
+      name: 'admin-funciones',
+      component: () => import('@/views/admin/FuncionesView.vue'),
+    },
+    {
+      path: '/admin/funciones/nueva',
+      name: 'admin-funcion-crear',
+      component: () => import('@/views/admin/FuncionFormView.vue'),
+    },
+    {
+      path: '/admin/funciones/:id/editar',
+      name: 'admin-funcion-editar',
+      component: () => import('@/views/admin/EditFuncionView.vue'),
+    },
+    {
       path: '/admin/clientes',
       name: 'admin-clientes',
       component: () => import('@/views/admin/CustomersView.vue'),

@@ -60,7 +60,7 @@
       <div class="confirmacion-acciones animado" style="--delay: 300ms">
         <Button label="Ver más películas" icon="pi pi-film" @click="enrutador.push('/')" />
         <Button label="Mis reservas" icon="pi pi-ticket" severity="secondary" outlined
-          @click="enrutador.push('/perfil')" />
+          @click="enrutador.push({ path: '/perfil', query: { tab: 'reservas' } })" />
         <Button icon="pi pi-print" severity="secondary" text v-tooltip="'Imprimir ticket'" @click="imprimir" />
       </div>
 

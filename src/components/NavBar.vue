@@ -82,7 +82,7 @@ const menuItems = [
       {
         label: 'Mis reservas',
         icon: 'pi pi-ticket',
-        command: () => router.push('/perfil'),
+        command: () => router.push({ path: '/perfil', query: { tab: 'reservas' } }),
       },
       { separator: true },
       {

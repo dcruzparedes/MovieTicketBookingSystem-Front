@@ -75,6 +75,45 @@
                 </form>
               </div>
 
+              <!-- TAB: RESERVAS -->
+              <div v-else-if="activeTab === 'reservas'" key="reservas">
+                <div class="section-title">Mis reservas</div>
+                <p class="section-desc">Consulta el historial y el estado de tus reservas de funciones.</p>
+
+                <div v-if="reservas.length === 0" class="empty-reservas">
+                  Todavía no tienes reservas. ¡Explora la cartelera y reserva tu próxima función!
+                </div>
+
+                <div v-else class="reservas-list">
+                  <div v-for="reserva in reservas" :key="reserva.id" class="reserva-card">
+                    <img class="reserva-poster" :src="reserva.posterUrl" :alt="reserva.pelicula" />
+
+                    <div class="reserva-info">
+                      <div class="reserva-header">
+                        <div class="reserva-titulo">{{ reserva.pelicula }}</div>
+                        <Tag :value="reserva.estado" :severity="estadoSeverity(reserva.estado)" />
+                      </div>
+                      <div class="reserva-codigo">{{ reserva.numero }}</div>
+
+                      <div class="reserva-detalles">
+                        <div class="reserva-dato"><i class="pi pi-building" /> {{ reserva.cine }}</div>
+                        <div class="reserva-dato"><i class="pi pi-th-large" /> {{ reserva.sala }}</div>
+                        <div class="reserva-dato"><i class="pi pi-calendar" /> {{ reserva.fecha }}</div>
+                        <div class="reserva-dato"><i class="pi pi-clock" /> {{ reserva.hora }} · {{ reserva.formato }}</div>
+                      </div>
+
+                      <div class="reserva-footer">
+                        <div class="reserva-asientos">
+                          <Tag v-for="codigo in reserva.asientos" :key="codigo" :value="codigo" severity="warn"
+                            style="font-family: 'DM Mono', monospace; font-size: 11px" />
+                        </div>
+                        <div class="reserva-total">L. {{ reserva.total.toFixed(2) }}</div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
               <!-- TAB: NOTIFICACIONES -->
               <div v-else-if="activeTab === 'notificaciones'" key="notificaciones">
                 <div class="section-title">Notificaciones</div>
@@ -183,21 +222,95 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Divider from 'primevue/divider'
+import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import BtnHome from '@/components/BtnHome.vue'
 
-const activeTab = ref('perfil')
+const route = useRoute()
 
 const menuItems = [
   { tab: 'perfil', icon: 'pi-user', label: 'Mi perfil' },
+  { tab: 'reservas', icon: 'pi-ticket', label: 'Mis reservas' },
   { tab: 'notificaciones', icon: 'pi-bell', label: 'Notificaciones' },
   { tab: 'password', icon: 'pi-lock', label: 'Contraseña' },
 ]
+
+const tabsValidos = menuItems.map((item) => item.tab)
+const tabInicial = typeof route.query.tab === 'string' && tabsValidos.includes(route.query.tab)
+  ? route.query.tab
+  : 'perfil'
+const activeTab = ref(tabInicial)
+
+// ── Reservas ──
+interface Reserva {
+  id: number
+  numero: string
+  pelicula: string
+  posterUrl: string
+  cine: string
+  sala: string
+  fecha: string
+  hora: string
+  formato: string
+  asientos: string[]
+  total: number
+  estado: 'Confirmada' | 'Completada' | 'Cancelada'
+}
+
+const reservas = ref<Reserva[]>([
+  {
+    id: 1,
+    numero: 'RES-2026-0421',
+    pelicula: 'There Will Be Blood',
+    posterUrl: 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p171565_p_v8_aa.jpg',
+    cine: 'Cine Vicenta',
+    sala: 'Sala 4',
+    fecha: 'Viernes 12 jun, 2026',
+    hora: '19:15',
+    formato: '3D · Español',
+    asientos: ['B5', 'B6'],
+    total: 360,
+    estado: 'Confirmada',
+  },
+  {
+    id: 2,
+    numero: 'RES-2026-0388',
+    pelicula: 'Pulp Fiction',
+    posterUrl: 'https://m.media-amazon.com/images/M/MV5BYTViYTE3ZGQtNDBlMC00ZTAyLTkyODMtZGRiZDg0MjA2YThkXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
+    cine: 'Metrocinema Tegus',
+    sala: 'Sala 1',
+    fecha: 'Lunes 8 jun, 2026',
+    hora: '20:00',
+    formato: '2D · Español',
+    asientos: ['D3'],
+    total: 120,
+    estado: 'Completada',
+  },
+  {
+    id: 3,
+    numero: 'RES-2026-0356',
+    pelicula: 'Fight Club',
+    posterUrl: 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/344/2024/08/21164326/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK-scaled.jpg',
+    cine: 'Cine Vicenta',
+    sala: 'Sala 2',
+    fecha: 'Martes 2 jun, 2026',
+    hora: '21:45',
+    formato: 'IMAX · Español',
+    asientos: ['G7', 'G8'],
+    total: 360,
+    estado: 'Cancelada',
+  },
+])
+
+function estadoSeverity(estado: Reserva['estado']) {
+  return { Confirmada: 'success', Completada: 'info', Cancelada: 'danger' }[estado] as 'success' | 'info' | 'danger'
+}
 
 // ── Perfil ──
 const INITIAL_PROFILE = {
@@ -466,6 +579,103 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e7
 .setting-desc {
   font-size: 12px;
   color: var(--text3);
+}
+
+/* ── Reservas ── */
+.empty-reservas {
+  padding: 32px 0;
+  text-align: center;
+  color: var(--text3);
+  font-size: 13px;
+}
+
+.reservas-list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.reserva-card {
+  display: flex;
+  gap: 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+
+.reserva-poster {
+  width: 64px;
+  aspect-ratio: 2/3;
+  object-fit: cover;
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.reserva-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.reserva-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reserva-titulo {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.reserva-codigo {
+  font-family: 'DM Mono', monospace;
+  font-size: 11px;
+  color: var(--text3);
+  margin-top: 2px;
+  margin-bottom: 10px;
+}
+
+.reserva-detalles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.reserva-dato {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text2);
+}
+
+.reserva-dato .pi {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.reserva-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.reserva-asientos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.reserva-total {
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--sinopia);
 }
 
 /* ── Fields ── */

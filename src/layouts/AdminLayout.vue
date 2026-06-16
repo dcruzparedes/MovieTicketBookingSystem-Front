@@ -19,7 +19,7 @@ const navGroups = [
     label: 'Comercial',
     items: [
       { label: 'Cupones', icon: 'pi-tag', to: '/admin/cupones' },
-      { label: 'Cancelaciones', icon: 'pi-arrow-circle-left', to: '/admin/cancelacion' }, // pi-undo no existe
+      { label: 'Cancelaciones', icon: 'pi-arrow-circle-left', to: '/admin/cancelaciones' }, // pi-undo no existe
     ],
   },
   {
@@ -31,7 +31,7 @@ const navGroups = [
   {
     label: 'Reportes',
     items: [
-      { label: 'Reservas', icon: 'pi-chart-bar', to: '/admin/reportes' },
+      { label: 'Reservas', icon: 'pi-chart-bar', to: '/admin/reservas' },
       { label: 'Pagos', icon: 'pi-wallet', to: '/admin/pagos' },
     ],
   },

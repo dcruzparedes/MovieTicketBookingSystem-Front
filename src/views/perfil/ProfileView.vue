@@ -91,10 +91,13 @@
                     <div class="reserva-info">
                       <div class="reserva-header">
                         <div class="reserva-titulo">{{ reserva.pelicula }}</div>
+                        <div>
                         <Tag :value="reserva.estado" :severity="estadoSeverity(reserva.estado)" />
+                        <button v-if="reserva.estado === 'Confirmada'" class="btn-danger" style="margin-left: 8px;" @click="reservaSeleccionada=reserva; cancelarReserva=true">Cancelar</button>
+                        <Tag v-if="reserva.estado === 'Cancelada'" style="margin-left: 8px;" :severity="estadoSeverity(reserva.estado)">Pendiente</Tag>
+                        </div>
                       </div>
                       <div class="reserva-codigo">{{ reserva.numero }}</div>
-
                       <div class="reserva-detalles">
                         <div class="reserva-dato"><i class="pi pi-building" /> {{ reserva.cine }}</div>
                         <div class="reserva-dato"><i class="pi pi-th-large" /> {{ reserva.sala }}</div>
@@ -218,6 +221,33 @@
       </div>
     </div>
   </div>
+  <div v-if="cancelarReserva" class="modal-container">
+  <div class="modal-overlay" id="modal-cancel">
+  <div class="modal-box" style="padding: 20px;">
+    <div class="modal-title" style="margin-bottom: 10px; font-weight: 600;">¿Cancelar esta reserva?</div>
+    <div class="alert-warn" style="padding: 15px;">Política vigente: más de 48h → 100% de reembolso · 24–48h → 50% · menos de 24h → sin reembolso.</div>
+    <div class="modal-body" v-if="reservaSeleccionada">
+  <strong style="font-weight: 600;">
+    {{ reservaSeleccionada.numero }} — {{ reservaSeleccionada.pelicula }}
+  </strong>
+
+  <div style="color: #510000;">
+    {{ reservaSeleccionada.fecha }} · {{ reservaSeleccionada.hora }} · Asientos {{ reservaSeleccionada.asientos.join(', ') }}
+  </div>
+
+  <br />
+
+  <div style="color: #510000;">
+    Esta acción no se puede deshacer. El reembolso se procesará en 3–5 días hábiles.
+  </div>
+</div>
+    <div class="modal-actions">
+      <button class="btn-ghost" @click="cerrarModal()">Volver</button>
+      <button class="btn-danger" @click="updateReserva()">Confirmar cancelación</button>
+    </div>
+  </div>
+  </div>
+</div>
 </template>
 
 <script setup lang="ts">
@@ -231,9 +261,10 @@ import Divider from 'primevue/divider'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import BtnHome from '@/components/BtnHome.vue'
+import { P } from 'vue-router/dist/index-BQLwgiyK.js'
 
 const route = useRoute()
-
+const cancelarReserva = ref(false)
 const menuItems = [
   { tab: 'perfil', icon: 'pi-user', label: 'Mi perfil' },
   { tab: 'reservas', icon: 'pi-ticket', label: 'Mis reservas' },
@@ -327,6 +358,7 @@ const pTouched = reactive({ nombre: false, email: false, telefono: false })
 const profileSubmitting = ref(false)
 const profileSaved = ref(false)
 const profileError = ref('')
+const reservaSeleccionada = ref<Reserva | null>(null)
 
 const pErrors = computed(() => {
   const e: Record<string, string> = {}
@@ -398,7 +430,7 @@ const isPwValid = computed(() => Object.keys(pwErrors.value).length === 0)
 
 function pwTouch(f: keyof typeof pwTouched) { pwTouched[f] = true }
 function pwTouchAll() { Object.keys(pwTouched).forEach((k) => (pwTouched[k as keyof typeof pwTouched] = true)) }
-
+  
 function resetPwForm() {
   pw.current = ''; pw.newPw = ''; pw.confirm = ''
   Object.keys(pwTouched).forEach((k) => (pwTouched[k as keyof typeof pwTouched] = false))
@@ -425,6 +457,19 @@ async function savePassword() {
   }
 }
 
+function cerrarModal(){
+  cancelarReserva.value = false
+  reservaSeleccionada.value = null
+}
+
+function updateReserva(){
+  const res = reservas.value.find(r => r?.id === reservaSeleccionada.value?.id);
+  if(res){
+    res.estado = 'Cancelada'
+  }
+  cancelarReserva.value = false
+}
+
 // ── Fortaleza ──
 const strength = computed(() => {
   const p = pw.newPw; if (!p) return 0
@@ -439,6 +484,13 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e7
 </script>
 
 <style scoped>
+/* ── ALERTS ── */
+.alert-warn { 
+  background: rgba(243,113,0,.08); 
+  border: 1px solid rgba(243,113,0,.25); 
+  color: var(--orange); 
+}
+
 .profile-screen {
   display: flex;
   flex-direction: column;
@@ -493,6 +545,38 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e7
   align-items: flex-start;
 }
 
+.btn-danger { 
+  background: rgba(146,0,4,.1); 
+  color: var(--darkred); 
+  border-radius: 10px;
+  border: 1px solid rgba(146,0,4,.2); 
+  padding: 8px 16px; 
+  font-size: 12px; 
+}
+
+.btn-danger:hover { 
+  background: rgba(165, 165, 165, 0.1); 
+  color: var(--darkred); 
+  border: 1px solid rgba(146,0,4,.2); 
+}
+
+.btn-danger:active { 
+  background: rgba(146,0,4,.1); 
+  color: var(--darkred); 
+  border: 1px solid rgba(146,0,4,.2); 
+}
+
+.btn-ghost { 
+  background: transparent; 
+  color: var(--text2); 
+  border: 1px solid var(--border2); 
+  padding: 9px 18px; 
+  font-size: 13px; 
+  border-radius: 10px;
+  font-weight: 400; 
+}
+.btn-ghost:hover { background: var(--bg); }
+
 /* ── Sidebar ── */
 .profile-sidebar {
   width: 200px;
@@ -541,6 +625,68 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e7
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius);
+  padding: 24px;
+}
+
+/* Modal */
+.modal-container {
+  
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 10, 6, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-size: 20px;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  font-family: 'Outfit', sans-serif;
+}
+
+.close-btn:hover {
+  color: var(--text);
+}
+
+.modal-body {
   padding: 24px;
 }
 

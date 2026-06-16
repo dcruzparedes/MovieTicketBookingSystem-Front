@@ -140,6 +140,16 @@ const router = createRouter({
       name: 'admin-cancelaciones',
       component: () => import('@/views/admin/CancelacionesView.vue'),
     },
+    {
+      path: '/admin/reservas',
+      name: 'admin-reservas',
+      component: () => import('@/views/admin/ReservasView.vue'),
+    },
+    {
+      path: '/admin/pagos',
+      name: 'admin-pagos',
+      component: () => import('@/views/admin/PagosView.vue'),
+    },
   ],
 })
 

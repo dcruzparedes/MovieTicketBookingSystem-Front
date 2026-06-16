@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MovieForm from '@/components/admin/MovieForm.vue'
@@ -85,8 +85,21 @@ function agregarCupon() {
   showModal.value = false
 }
 
-const vista = ref<'lista' | 'form'>('lista')
+const currentPage = ref(1)
+const itemsPerPage = 10
 
+const totalPages = computed(() => Math.ceil(cupones.value.length / itemsPerPage))
+
+const cuponesPaginados = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage
+  const end = start + itemsPerPage
+  return cupones.value.slice(start, end)
+})
+
+function setPage(page: number) {
+  if (page < 1 || page > totalPages.value) return
+  currentPage.value = page
+}
 </script>
 
 <template>
@@ -101,7 +114,7 @@ const vista = ref<'lista' | 'form'>('lista')
         <table class="tbl">
             <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Vencimiento</th><th>Usos</th><th>Estado</th></tr></thead>
             <tbody>
-                <tr v-for="cupon in cupones">
+                <tr v-for="cupon in cuponesPaginados">
                     <td><strong style="font-family:'DM Mono',monospace">{{cupon.codigo}}</strong></td><td>{{cupon.tipo}}</td><td>{{cupon.valor}}</td><td>{{cupon.fecha_expiracion}}</td><td>{{cupon.usos_actuales}} / {{cupon.usos_maximos}}</td><td>
                         <ToggleSwitch 
                         :model-value="cupon.activo" 
@@ -109,7 +122,29 @@ const vista = ref<'lista' | 'form'>('lista')
                 </tr>
             </tbody>
         </table>
-        </div></div>
+        </div>
+    </div>
+    <div v-if="totalPages > 1" class="pagination">
+        <button class="page-btn" :disabled="currentPage === 1" @click="setPage(currentPage - 1)">
+        ‹
+        </button>
+        <button
+        v-for="page in totalPages"
+        :key="page"
+        class="page-btn"
+        :class="{ active: currentPage === page }"
+        @click="setPage(page)"
+        >
+        {{ page }}
+        </button>
+        <button
+        class="page-btn"
+        :disabled="currentPage === totalPages"
+        @click="setPage(currentPage + 1)"
+        >
+        ›
+        </button>
+    </div>
     </div>
     </div>
 
@@ -372,4 +407,39 @@ const vista = ref<'lista' | 'form'>('lista')
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field-error { font-size: 11px; color: var(--sinopia); margin-top: 4px; }
 .field-success { font-size: 11px; color: #1e783c; margin-top: 4px; }
+
+.pagination {
+  display: flex;
+  gap: 5px;
+  margin-top: 16px;
+  padding: 0 14px;
+  align-items: center;
+}
+
+.page-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 6px;
+  border: 1px solid var(--border2);
+  background: transparent;
+  color: var(--text2);
+  font-size: 12px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'Outfit', sans-serif;
+  transition: all 0.2s;
+}
+
+.page-btn:hover:not(.active) {
+  background: var(--bg);
+}
+
+.page-btn.active {
+  background: var(--sinopia);
+  color: #fff;
+  border-color: var(--sinopia);
+  font-weight: 700;
+}
 </style>

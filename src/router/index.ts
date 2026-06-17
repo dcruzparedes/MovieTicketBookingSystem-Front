@@ -111,6 +111,11 @@ const router = createRouter({
       component: () => import('@/views/admin/SalaFormView.vue'),
     },
     {
+      path: '/admin/salas/:id/editar',
+      name: 'admin-sala-editar',
+      component: () => import('@/views/admin/EditSalaView.vue'),
+    },
+    {
       path: '/admin/ciudades',
       name: 'admin-ciudades',
       component: () => import('@/views/admin/CiudadesView.vue'),

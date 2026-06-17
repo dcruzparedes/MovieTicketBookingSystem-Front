@@ -44,8 +44,7 @@ function goToNewSala() {
 }
 
 function editSala(id: number) {
-  // TODO: Implement EditSalaView
-  console.log('Editar sala:', id)
+  router.push(`/admin/salas/${id}/editar`)
 }
 
 function clearFilter() {

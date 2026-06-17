@@ -31,10 +31,10 @@ const emit = defineEmits<{
 const isEditing = computed(() => !!props.initialData)
 
 const cinemas = [
-  { id: '1', name: 'Cine Vicenta Zona 10', city: 'Ciudad de Guatemala' },
-  { id: '2', name: 'Cine Vicenta Miraflores', city: 'Ciudad de Guatemala' },
-  { id: '3', name: 'Cine Vicenta Pradera', city: 'Quetzaltenango' },
-  { id: '4', name: 'Cine Vicenta Antigua', city: 'Antigua Guatemala' },
+  { id: '1', name: 'Cine Vicenta Zona 10', city: 'San Pedro Sula' },
+  { id: '2', name: 'Cine Vicenta Miraflores', city: 'Tegucigalpa' },
+  { id: '3', name: 'Cine Vicenta Pradera', city: 'Yuscarán' },
+  { id: '4', name: 'Cine Vicenta Antigua', city: 'Santa Bárbara' },
 ]
 
 const form = reactive<SalaFields>({

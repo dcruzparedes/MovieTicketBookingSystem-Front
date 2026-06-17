@@ -11,15 +11,15 @@ interface Ciudad {
 }
 
 const ciudades = ref<Ciudad[]>([
-  { id: 1, name: 'Ciudad de Guatemala', active: true },
-  { id: 2, name: 'Quetzaltenango', active: true },
-  { id: 3, name: 'Antigua Guatemala', active: true },
-  { id: 4, name: 'Escuintla', active: false },
-  { id: 5, name: 'Cobán', active: true },
-  { id: 6, name: 'Huehuetenango', active: true },
-  { id: 7, name: 'Chiquimula', active: false },
-  { id: 8, name: 'Puerto Barrios', active: true },
-  { id: 9, name: 'Mazatenango', active: true },
+  { id: 1, name: 'San Pedro Sula', active: true },
+  { id: 2, name: 'Francisco Morazán', active: true },
+  { id: 3, name: 'Siguatepeque', active: true },
+  { id: 4, name: 'Tegucigalpa', active: false },
+  { id: 5, name: 'Copán', active: true },
+  { id: 6, name: 'Olancho', active: true },
+  { id: 7, name: 'Gracias a Dios', active: false },
+  { id: 8, name: 'La Paz', active: true },
+  { id: 9, name: 'Lempira', active: true },
 ])
 
 const loadingIds = ref(new Set<number>())
@@ -109,7 +109,9 @@ async function toggleActive(city: Ciudad) {
           <tbody>
             <tr v-for="ciudad in ciudades" :key="ciudad.id">
               <td class="id-cell">{{ ciudad.id }}</td>
-              <td><strong>{{ ciudad.name }}</strong></td>
+              <td>
+                <strong>{{ ciudad.name }}</strong>
+              </td>
               <td>
                 <div class="status-cell">
                   <ToggleSwitch
@@ -172,7 +174,8 @@ async function toggleActive(city: Ciudad) {
           <div class="modal-body">
             <p class="confirm-text">
               ¿Estás seguro de que deseas eliminar
-              <strong>{{ deletingCity?.name }}</strong>? Esta acción no se puede deshacer.
+              <strong>{{ deletingCity?.name }}</strong
+              >? Esta acción no se puede deshacer.
             </p>
             <div class="confirm-actions">
               <button class="btn btn-danger" @click="confirmDelete">Sí, eliminar</button>

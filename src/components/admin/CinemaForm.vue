@@ -32,15 +32,15 @@ const emit = defineEmits<{
 const isEditing = computed(() => !!props.initialData)
 
 const cities = [
-  { id: '1', name: 'Ciudad de Guatemala' },
-  { id: '2', name: 'Quetzaltenango' },
-  { id: '3', name: 'Antigua Guatemala' },
-  { id: '4', name: 'Escuintla' },
-  { id: '5', name: 'Cobán' },
-  { id: '6', name: 'Huehuetenango' },
-  { id: '7', name: 'Chiquimula' },
-  { id: '8', name: 'Puerto Barrios' },
-  { id: '9', name: 'Mazatenango' },
+  { id: '1', name: 'San Pedro Sula' },
+  { id: '2', name: 'Tegucigalpa' },
+  { id: '3', name: 'Yuscarán' },
+  { id: '4', name: 'Santa Bárbara' },
+  { id: '5', name: 'Copán' },
+  { id: '6', name: 'Lempira' },
+  { id: '7', name: 'Gracias a Dios' },
+  { id: '8', name: 'Siguatepeque' },
+  { id: '9', name: 'La Paz' },
 ]
 
 const form = reactive<CinemaFields>({

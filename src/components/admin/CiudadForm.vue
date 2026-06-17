@@ -44,7 +44,7 @@ function handleSubmit() {
         id="ciudad-name"
         v-model="form.name"
         type="text"
-        placeholder="ej. Ciudad de Guatemala"
+        placeholder="ej. San Pedro Sula"
         :class="{ 'input-error': errors.name }"
         autofocus
       />

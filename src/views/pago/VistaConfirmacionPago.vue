@@ -1,69 +1,72 @@
 <template>
   <div class="vista-confirmacion">
-    <div class="confirmacion-card animado" style="--delay: 0ms">
+    <NavBar />
+    <div class="confirmacion-layout">
+      <div class="confirmacion-card animado" style="--delay: 0ms">
 
-      <!-- Ícono de éxito -->
-      <div class="icono-wrap animado" style="--delay: 80ms">
-        <Avatar icon="pi pi-check" size="xlarge" :style="{
-          background: 'rgba(30,120,60,0.1)',
-          color: '#1e783c',
-          border: '1.5px solid rgba(30,120,60,0.3)',
-          width: '64px',
-          height: '64px',
-          fontSize: '26px'
-        }" shape="circle" />
+        <!-- Ícono de éxito -->
+        <div class="icono-wrap animado" style="--delay: 80ms">
+          <Avatar icon="pi pi-check" size="xlarge" :style="{
+            background: 'rgba(30,120,60,0.1)',
+            color: '#1e783c',
+            border: '1.5px solid rgba(30,120,60,0.3)',
+            width: '64px',
+            height: '64px',
+            fontSize: '26px'
+          }" shape="circle" />
+        </div>
+
+        <div class="confirmacion-titulo animado" style="--delay: 140ms">¡Reserva confirmada!</div>
+        <div class="confirmacion-sub animado" style="--delay: 180ms">
+          <i class="pi pi-envelope" style="font-size: 12px" />
+          Te enviamos los detalles a tu correo electrónico
+        </div>
+
+        <!-- Ticket -->
+        <div class="ticket-card animado" style="--delay: 220ms">
+          <div class="ticket-codigo">{{ numeroReserva }}</div>
+
+          <div class="ticket-fila">
+            <span><i class="pi pi-video" /> Película</span>
+            <span>{{ tienda.funcionActual?.tituloPelicula ?? 'Alien: Romulus' }}</span>
+          </div>
+          <div class="ticket-fila">
+            <span><i class="pi pi-calendar" /> Fecha</span>
+            <span>Viernes 12 Jun, 2026</span>
+          </div>
+          <div class="ticket-fila">
+            <span><i class="pi pi-clock" /> Hora</span>
+            <span>19:15 · 3D</span>
+          </div>
+          <div class="ticket-fila">
+            <span><i class="pi pi-map-marker" /> Sala</span>
+            <span>Sala 4 — Cine Vicenta</span>
+          </div>
+          <div class="ticket-fila">
+            <span><i class="pi pi-th-large" /> Asientos</span>
+            <span class="ticket-asientos">
+              <Tag v-for="codigo in tienda.asientosSeleccionados" :key="codigo" :value="codigo" severity="warn"
+                style="font-family: 'DM Mono', monospace; font-size: 11px" />
+            </span>
+          </div>
+
+          <Divider />
+
+          <div class="ticket-total">
+            <span>Total pagado</span>
+            <span class="ticket-total-val">L. {{ tienda.totalFinal.toFixed(2) }}</span>
+          </div>
+        </div>
+
+        <!-- Acciones -->
+        <div class="confirmacion-acciones animado" style="--delay: 300ms">
+          <Button label="Ver más películas" icon="pi pi-film" @click="enrutador.push('/')" />
+          <Button label="Mis reservas" icon="pi pi-ticket" severity="secondary" outlined
+            @click="enrutador.push({ path: '/perfil', query: { tab: 'reservas' } })" />
+          <Button icon="pi pi-print" severity="secondary" text v-tooltip="'Imprimir ticket'" @click="imprimir" />
+        </div>
+
       </div>
-
-      <div class="confirmacion-titulo animado" style="--delay: 140ms">¡Reserva confirmada!</div>
-      <div class="confirmacion-sub animado" style="--delay: 180ms">
-        <i class="pi pi-envelope" style="font-size: 12px" />
-        Te enviamos los detalles a tu correo electrónico
-      </div>
-
-      <!-- Ticket -->
-      <div class="ticket-card animado" style="--delay: 220ms">
-        <div class="ticket-codigo">{{ numeroReserva }}</div>
-
-        <div class="ticket-fila">
-          <span><i class="pi pi-video" /> Película</span>
-          <span>{{ tienda.funcionActual?.tituloPelicula ?? 'Alien: Romulus' }}</span>
-        </div>
-        <div class="ticket-fila">
-          <span><i class="pi pi-calendar" /> Fecha</span>
-          <span>Viernes 12 Jun, 2026</span>
-        </div>
-        <div class="ticket-fila">
-          <span><i class="pi pi-clock" /> Hora</span>
-          <span>19:15 · 3D</span>
-        </div>
-        <div class="ticket-fila">
-          <span><i class="pi pi-map-marker" /> Sala</span>
-          <span>Sala 4 — Cine Vicenta</span>
-        </div>
-        <div class="ticket-fila">
-          <span><i class="pi pi-th-large" /> Asientos</span>
-          <span class="ticket-asientos">
-            <Tag v-for="codigo in tienda.asientosSeleccionados" :key="codigo" :value="codigo" severity="warn"
-              style="font-family: 'DM Mono', monospace; font-size: 11px" />
-          </span>
-        </div>
-
-        <Divider />
-
-        <div class="ticket-total">
-          <span>Total pagado</span>
-          <span class="ticket-total-val">L. {{ tienda.totalFinal.toFixed(2) }}</span>
-        </div>
-      </div>
-
-      <!-- Acciones -->
-      <div class="confirmacion-acciones animado" style="--delay: 300ms">
-        <Button label="Ver más películas" icon="pi pi-film" @click="enrutador.push('/')" />
-        <Button label="Mis reservas" icon="pi pi-ticket" severity="secondary" outlined
-          @click="enrutador.push({ path: '/perfil', query: { tab: 'reservas' } })" />
-        <Button icon="pi pi-print" severity="secondary" text v-tooltip="'Imprimir ticket'" @click="imprimir" />
-      </div>
-
     </div>
   </div>
 </template>
@@ -75,6 +78,7 @@ import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
 import Avatar from 'primevue/avatar'
+import NavBar from '@/components/NavBar.vue'
 import { useReservaStore } from '@/stores/reserva'
 
 const tienda = useReservaStore()
@@ -94,6 +98,12 @@ function imprimir() {
 .vista-confirmacion {
   min-height: 100vh;
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.confirmacion-layout {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;

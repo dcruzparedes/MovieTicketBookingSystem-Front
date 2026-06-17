@@ -1,20 +1,27 @@
 <template>
+  <!-- NavBar con menú de usuario -->
+  <NavBar @logo-click="irAHome" @home-click="irAHome" />
   <div class="diseno-asientos">
-
     <!-- Toast conflicto -->
     <Toast position="top-center" group="conflicto" @close="tienda.limpiarConflicto()" />
 
     <!-- Mapa principal -->
     <div class="principal-asientos animado" style="--delay: 0ms">
+      <button class="back-btn" @click="irAHome">Funciones</button>
       <div class="meta-funcion">
-        {{ tienda.funcionActual?.fecha }} ·
-        {{ tienda.funcionActual?.hora }} ·
+        <i class="pi pi-calendar" style="font-size: 11px" />
+        {{ tienda.funcionActual?.fecha }} · {{ tienda.funcionActual?.hora }} ·
         {{ tienda.funcionActual?.formato }} ·
         {{ tienda.funcionActual?.sala }}
       </div>
       <AsientosMap />
-      <Button label="Simular conflicto" severity="secondary" size="small" style="margin-top: 12px"
-        @click="simularConflicto" />
+      <Button
+        label="Simular conflicto"
+        severity="secondary"
+        size="small"
+        style="margin-top: 12px"
+        @click="simularConflicto"
+      />
     </div>
 
     <!-- Panel lateral -->
@@ -24,7 +31,9 @@
           <span class="etiqueta-pedido">Tu pedido</span>
         </template>
 
-        <div class="titulo-pelicula">{{ tienda.funcionActual?.tituloPelicula ?? 'Alien: Romulus' }}</div>
+        <div class="titulo-pelicula">
+          {{ tienda.funcionActual?.tituloPelicula ?? 'Alien: Romulus' }}
+        </div>
         <div class="meta-pedido">
           <i class="pi pi-calendar" style="font-size: 11px" /> Vie 12 Jun · 19:15 · 3D
         </div>
@@ -37,8 +46,14 @@
         <!-- Asientos seleccionados -->
         <div class="contenedor-asientos-sel">
           <TransitionGroup name="chips" tag="div" class="chips-wrap">
-            <Chip v-for="codigo in tienda.asientosSeleccionados" :key="codigo" :label="codigo" removable
-              class="chip-asiento" @remove="tienda.alternarAsiento(codigo)" />
+            <Chip
+              v-for="codigo in tienda.asientosSeleccionados"
+              :key="codigo"
+              :label="codigo"
+              removable
+              class="chip-asiento"
+              @remove="tienda.alternarAsiento(codigo)"
+            />
           </TransitionGroup>
           <span v-if="!tienda.asientosSeleccionados.length" class="pista-vacia">
             <i class="pi pi-info-circle" style="font-size: 11px" />
@@ -64,8 +79,13 @@
           <span class="total-val">L. {{ tienda.subtotal.toFixed(2) }}</span>
         </div>
 
-        <Button label="Continuar al pago" :disabled="tienda.asientosSeleccionados.length === 0" fluid
-          style="margin-top: 14px" @click="irAPago" />
+        <Button
+          label="Continuar al pago"
+          :disabled="tienda.asientosSeleccionados.length === 0"
+          fluid
+          style="margin-top: 14px"
+          @click="irAPago"
+        />
 
         <!-- Temporizador -->
         <div class="caja-temporizador" :class="{ urgente: tienda.segundosRestantes < 120 }">
@@ -74,10 +94,15 @@
             <span class="etiqueta-temporizador">Tiempo restante</span>
           </div>
           <div class="valor-temporizador">{{ tienda.temporizadorFormateado }}</div>
-          <ProgressBar :value="progresoTemporizador" :show-value="false" class="timer-bar"
-            :style="{ '--bar-color': tienda.segundosRestantes < 120 ? 'var(--sinopia)' : 'var(--darkred)' }" />
+          <ProgressBar
+            :value="progresoTemporizador"
+            :show-value="false"
+            class="timer-bar"
+            :style="{
+              '--bar-color': tienda.segundosRestantes < 120 ? 'var(--sinopia)' : 'var(--darkred)',
+            }"
+          />
         </div>
-
       </Panel>
     </div>
   </div>
@@ -95,14 +120,14 @@ import Panel from 'primevue/panel'
 import ProgressBar from 'primevue/progressbar'
 import AsientosMap from '@/components/asientos/AsientosMap.vue'
 import { useReservaStore } from '@/stores/reserva'
+// NavBar para mostrar el menú de usuario
+import NavBar from '@/components/NavBar.vue'
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
 const toast = useToast()
 
-const progresoTemporizador = computed(() =>
-  Math.round((tienda.segundosRestantes / 600) * 100)
-)
+const progresoTemporizador = computed(() => Math.round((tienda.segundosRestantes / 600) * 100))
 
 onMounted(() => {
   tienda.construirMapaAsientos(8, 10)
@@ -116,6 +141,11 @@ onUnmounted(() => {
 function irAPago() {
   if (tienda.asientosSeleccionados.length === 0) return
   enrutador.push('/pago')
+}
+
+function irAHome() {
+  tienda.limpiarSeleccion()
+  enrutador.push('/')
 }
 
 function simularConflicto() {
@@ -151,6 +181,30 @@ function simularConflicto() {
   display: flex;
   align-items: center;
   gap: 6px;
+}
+
+/* ── Back btn ── */
+.back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: none;
+  border: none;
+  color: var(--text3);
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'Outfit', sans-serif;
+  padding: 8px 0;
+  margin-bottom: 12px;
+  transition: color 0.2s;
+}
+
+.back-btn::before {
+  content: '←';
+}
+
+.back-btn:hover {
+  color: var(--text2);
 }
 
 /* ── Panel lateral ── */
@@ -246,7 +300,9 @@ function simularConflicto() {
   padding: 12px;
   text-align: center;
   margin-top: 12px;
-  transition: background .3s, border-color .3s;
+  transition:
+    background 0.3s,
+    border-color 0.3s;
 }
 
 .caja-temporizador.urgente {
@@ -302,24 +358,24 @@ function simularConflicto() {
 
 /* Chips entrando/saliendo */
 .chips-enter-active {
-  transition: all .2s ease;
+  transition: all 0.2s ease;
 }
 
 .chips-leave-active {
-  transition: all .15s ease;
+  transition: all 0.15s ease;
 }
 
 .chips-enter-from {
   opacity: 0;
-  transform: scale(.8);
+  transform: scale(0.8);
 }
 
 .chips-leave-to {
   opacity: 0;
-  transform: scale(.8);
+  transform: scale(0.8);
 }
 
 .chips-move {
-  transition: transform .2s ease;
+  transition: transform 0.2s ease;
 }
 </style>

@@ -1,30 +1,33 @@
 <template>
   <div class="vista-error-pago">
-    <div class="error-card">
+    <NavBar @logo-click="cancelar" @home-click="cancelar" />
+    <div class="error-layout">
+      <div class="error-card animado" style="--delay: 0ms">
 
-      <!-- Ícono de error -->
-      <div class="icono-error">✕</div>
+        <!-- Ícono de error -->
+        <div class="icono-error animado" style="--delay: 80ms">✕</div>
 
-      <div class="error-titulo">Pago no procesado</div>
-      <div class="error-sub">
-        Tu tarjeta fue rechazada. Los asientos siguen reservados por
-        <span class="timer-inline">{{ tienda.temporizadorFormateado }}</span>
-      </div>
-
-      <!-- Detalle del error -->
-      <Message severity="error" :closable="false" class="error-mensaje">
-        <div class="error-detalle">
-          <span class="error-lbl">Motivo:</span>
-          {{ mensajeError }}
+        <div class="error-titulo animado" style="--delay: 140ms">Pago no procesado</div>
+        <div class="error-sub animado" style="--delay: 180ms">
+          Tu tarjeta fue rechazada. Los asientos siguen reservados por
+          <span class="timer-inline">{{ tienda.temporizadorFormateado }}</span>
         </div>
-      </Message>
 
-      <!-- Acciones -->
-      <div class="error-acciones">
-        <Button label="Intentar de nuevo" @click="enrutador.push('/pago')" />
-        <Button label="Cancelar" severity="secondary" outlined @click="cancelar" />
+        <!-- Detalle del error -->
+        <Message severity="error" :closable="false" class="error-mensaje animado" style="--delay: 240ms">
+          <div class="error-detalle">
+            <span class="error-lbl">Motivo:</span>
+            {{ mensajeError }}
+          </div>
+        </Message>
+
+        <!-- Acciones -->
+        <div class="error-acciones animado" style="--delay: 300ms">
+          <Button label="Intentar de nuevo" @click="enrutador.push('/pago')" />
+          <Button label="Cancelar" severity="secondary" outlined @click="cancelar" />
+        </div>
+
       </div>
-
     </div>
   </div>
 </template>
@@ -34,6 +37,7 @@ import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
+import NavBar from '@/components/NavBar.vue'
 import { useReservaStore } from '@/stores/reserva'
 
 const tienda = useReservaStore()
@@ -53,6 +57,12 @@ function cancelar() {
 .vista-error-pago {
   min-height: 100vh;
   background: var(--bg);
+  display: flex;
+  flex-direction: column;
+}
+
+.error-layout {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -120,5 +130,24 @@ function cancelar() {
   display: flex;
   gap: 10px;
   justify-content: center;
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.45s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
 }
 </style>

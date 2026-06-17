@@ -1,5 +1,6 @@
 <template>
   <div class="vista-pago">
+    <NavBar @logo-click="irAHome" @home-click="irAHome" />
     <div class="pago-layout">
 
       <!-- Columna izquierda: formulario -->
@@ -81,6 +82,7 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
+import NavBar from '@/components/NavBar.vue'
 import MetodoPago from '@/components/pago/MetodoPago.vue'
 import CuponDescuento from '@/components/pago/CuponDescuento.vue'
 import ResumenReserva from '@/components/pago/ResumenReserva.vue'
@@ -95,6 +97,11 @@ function confirmarPago() {
 
 function simularError() {
   enrutador.push('/error-pago')
+}
+
+function irAHome() {
+  tienda.limpiarSeleccion()
+  enrutador.push('/')
 }
 </script>
 

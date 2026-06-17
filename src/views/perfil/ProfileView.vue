@@ -1,11 +1,8 @@
 <template>
   <div class="profile-screen">
+    <NavBar />
     <div class="content">
       <div class="page">
-
-        <div class="btn-home-wrapper">
-          <BtnHome />
-        </div>
 
         <div class="eyebrow animado" style="--delay: 0ms">Mi cuenta</div>
 
@@ -197,7 +194,7 @@
                       :feedback="false" :invalid="pwTouched.confirm && !!pwErrors.confirm" fluid toggle-mask
                       @blur="pwTouch('confirm')" />
                     <Transition name="fade-alert">
-                      <small v-if="pwTouched.confirm && pwErrors.confirm" class="field-error">{{ pwErrors.confirm
+                      <small v-if="pwTouched.confirm && !!pwErrors.confirm" class="field-error">{{ pwErrors.confirm
                         }}</small>
                     </Transition>
                     <Transition name="fade-alert">
@@ -260,8 +257,7 @@ import Message from 'primevue/message'
 import Divider from 'primevue/divider'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
-import BtnHome from '@/components/BtnHome.vue'
-import { P } from 'vue-router/dist/index-BQLwgiyK.js'
+import NavBar from '@/components/NavBar.vue'
 
 const route = useRoute()
 const cancelarReserva = ref(false)
@@ -508,12 +504,6 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e7
   margin: 0 auto;
   padding: 28px 24px;
   position: relative;
-}
-
-.btn-home-wrapper {
-  position: absolute;
-  top: 28px;
-  right: 24px;
 }
 
 .eyebrow {

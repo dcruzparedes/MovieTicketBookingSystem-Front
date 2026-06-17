@@ -136,6 +136,26 @@ const router = createRouter({
       component: () => import('@/views/admin/CustomersView.vue'),
     },
     {
+      path: '/admin/generos',
+      name: 'admin-generos',
+      component: () => import('@/views/admin/GenerosView.vue'),
+    },
+    {
+      path: '/admin/idiomas',
+      name: 'admin-idiomas',
+      component: () => import('@/views/admin/IdiomasView.vue'),
+    },
+    {
+      path: '/admin/roles',
+      name: 'admin-roles',
+      component: () => import('@/views/admin/RolesView.vue'),
+    },
+    {
+      path: '/admin/reembolsos',
+      name: 'admin-reembolsos',
+      component: () => import('@/views/admin/ReembolsosView.vue'),
+    },
+    {
       path: '/admin/cupones',
       name: 'admin-cupones',
       component: () => import('@/views/admin/CuponesView.vue'),

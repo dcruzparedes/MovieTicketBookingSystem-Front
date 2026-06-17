@@ -11,12 +11,12 @@ import { useReservaStore } from '@/stores/reserva'
 const tienda = useReservaStore()
 
 interface Pelicula {
-  id: number
+  id: string
   titulo: string
   sinopsis: string | null
   poster_url: string
-  id_idiomas: number[] | null
-  id_genero: number | null
+  id_idioma: string | null
+  id_genero: string | null
   fecha_estreno: string | null
   activo: boolean
   generos?: { nombre: string }
@@ -24,46 +24,46 @@ interface Pelicula {
   ciudades?: { nombre: string[] }
   metadata: { dur: string; rating: string; year: number; color: string; accent: string }
 }
-interface Ciudad { id: number; nombre: string }
-interface Cine { id: number; nombre: string; direccion: string | null; id_ciudad: number }
-interface Funcion { id: number; id_pelicula: number; id_sala: number; id_cine: number; fecha_hora: string; estado: string; formato: string; disponibles: number }
+interface Ciudad { id: string; nombre: string }
+interface Cine { id: string; nombre: string; direccion: string | null; id_ciudad: string }
+interface Funcion { id: string; id_pelicula: string; id_sala: string; id_cine: string; fecha_hora: string; estado: string; formato: string; disponibles: number }
 
 const CIUDADES: Ciudad[] = [
-  { id: 1, nombre: 'Puerto Cortés' },
-  { id: 2, nombre: 'San Pedro Sula' },
-  { id: 3, nombre: 'Tegucigalpa' },
+  { id: '1', nombre: 'Puerto Cortés' },
+  { id: '2', nombre: 'San Pedro Sula' },
+  { id: '3', nombre: 'Tegucigalpa' },
 ]
 const CINES: Cine[] = [
-  { id: 1, nombre: 'Cine Vicenta',      direccion: 'Barrio El Centro', id_ciudad: 1 },
-  { id: 2, nombre: 'Cinemark City SPS', direccion: 'City Center Mall', id_ciudad: 2 },
-  { id: 3, nombre: 'Metrocinema Tegus', direccion: 'Multiplaza',       id_ciudad: 3 },
+  { id: '1', nombre: 'Cine Vicenta',      direccion: 'Barrio El Centro', id_ciudad: '1' },
+  { id: '2', nombre: 'Cinemark City SPS', direccion: 'City Center Mall', id_ciudad: '2' },
+  { id: '3', nombre: 'Metrocinema Tegus', direccion: 'Multiplaza',       id_ciudad: '3' },
 ]
 const peliculas = ref<Pelicula[]>([
-  { id: 1, titulo: 'There Will Be Blood',               sinopsis: 'La historia de un buscador de petróleo de Texas y los problemas que enfrenta en el negocio al comienzo del nuevo siglo.', poster_url: 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p171565_p_v8_aa.jpg', id_idiomas: [1], id_genero: 1, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Drama' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 38m', rating: '★★★★★', year: 2007, color: '#1A1535', accent: '#7B2FF7' } },
-  { id: 2, titulo: 'Inglourious Basterds',               sinopsis: 'En la Francia ocupada, un oficial aliado y sus soldados judíos planean asesinar a líderes nazis, mientras la dueña de un cine trama su propia venganza.', poster_url: 'https://m.media-amazon.com/images/M/MV5BODZhMWJlNjYtNDExNC00MTIzLTllM2ItOGQ2NGVjNDQ3MzkzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idiomas: [1], id_genero: 2, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','Tegucigalpa'] },                    metadata: { dur: '2h 33m', rating: '★★★★', year: 2009, color: '#2D1A0A', accent: '#D4A017' } },
-  { id: 3, titulo: 'Pulp Fiction',                       sinopsis: 'Las vidas de dos sicarios, un boxeador y una pareja de ladrones se entrelazan en cuatro historias de violencia y redención.', poster_url: 'https://m.media-amazon.com/images/M/MV5BYTViYTE3ZGQtNDBlMC00ZTAyLTkyODMtZGRiZDg0MjA2YThkXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idiomas: [1], id_genero: 2, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['San Pedro Sula','Tegucigalpa'] },                   metadata: { dur: '2h 34m', rating: '★★★★★', year: 1994, color: '#1A0D00', accent: '#E8A000' } },
-  { id: 4, titulo: 'Fight Club',                         sinopsis: 'Un empleado insomne y un vendedor de jabón crean un club de lucha clandestino que deriva en algo mucho más peligroso.', poster_url: 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/344/2024/08/21164326/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK-scaled.jpg', id_idiomas: [1], id_genero: 3, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Thriller' },   idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 1999, color: '#0A0A0A', accent: '#CC2200' } },
-  { id: 5, titulo: 'Everything Everywhere All At Once',  sinopsis: 'Una heroína inesperada debe usar sus nuevos poderes para luchar contra los peligros del multiverso y salvar su mundo.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/1/1e/Everything_Everywhere_All_at_Once.jpg', id_idiomas: [1], id_genero: 4, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Sci-Fi' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 2022, color: '#0A1020', accent: '#4A90D9' } },
-  { id: 6, titulo: 'Chainsaw Man: The Reze Arc',         sinopsis: 'En medio de una guerra entre demonios y cazadores, Denji se enfrenta a su batalla más letal al conocer a la misteriosa Reze.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/9/95/Chainsaw_Man_Reze_Arc_movie_poster.jpg', id_idiomas: [1], id_genero: 5, fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Animación' }, idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Tegucigalpa'] },                                        metadata: { dur: '1h 50m', rating: '★★★★', year: 2025, color: '#1A0000', accent: '#CC0000' } },
+  { id: '1', titulo: 'There Will Be Blood',               sinopsis: 'La historia de un buscador de petróleo de Texas y los problemas que enfrenta en el negocio al comienzo del nuevo siglo.', poster_url: 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p171565_p_v8_aa.jpg', id_idioma: '1', id_genero: '1', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Drama' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 38m', rating: '★★★★★', year: 2007, color: '#1A1535', accent: '#7B2FF7' } },
+  { id: '2', titulo: 'Inglourious Basterds',               sinopsis: 'En la Francia ocupada, un oficial aliado y sus soldados judíos planean asesinar a líderes nazis, mientras la dueña de un cine trama su propia venganza.', poster_url: 'https://m.media-amazon.com/images/M/MV5BODZhMWJlNjYtNDExNC00MTIzLTllM2ItOGQ2NGVjNDQ3MzkzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idioma: '1', id_genero: '2', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','Tegucigalpa'] },                    metadata: { dur: '2h 33m', rating: '★★★★', year: 2009, color: '#2D1A0A', accent: '#D4A017' } },
+  { id: '3', titulo: 'Pulp Fiction',                       sinopsis: 'Las vidas de dos sicarios, un boxeador y una pareja de ladrones se entrelazan en cuatro historias de violencia y redención.', poster_url: 'https://m.media-amazon.com/images/M/MV5BYTViYTE3ZGQtNDBlMC00ZTAyLTkyODMtZGRiZDg0MjA2YThkXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idioma: '1', id_genero: '2', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['San Pedro Sula','Tegucigalpa'] },                   metadata: { dur: '2h 34m', rating: '★★★★★', year: 1994, color: '#1A0D00', accent: '#E8A000' } },
+  { id: '4', titulo: 'Fight Club',                         sinopsis: 'Un empleado insomne y un vendedor de jabón crean un club de lucha clandestino que deriva en algo mucho más peligroso.', poster_url: 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/344/2024/08/21164326/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK-scaled.jpg', id_idioma: '1', id_genero: '3', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Thriller' },   idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 1999, color: '#0A0A0A', accent: '#CC2200' } },
+  { id: '5', titulo: 'Everything Everywhere All At Once',  sinopsis: 'Una heroína inesperada debe usar sus nuevos poderes para luchar contra los peligros del multiverso y salvar su mundo.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/1/1e/Everything_Everywhere_All_at_Once.jpg', id_idioma: '1', id_genero: '4', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Sci-Fi' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 2022, color: '#0A1020', accent: '#4A90D9' } },
+  { id: '6', titulo: 'Chainsaw Man: The Reze Arc',         sinopsis: 'En medio de una guerra entre demonios y cazadores, Denji se enfrenta a su batalla más letal al conocer a la misteriosa Reze.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/9/95/Chainsaw_Man_Reze_Arc_movie_poster.jpg', id_idioma: '1', id_genero: '5', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Animación' }, idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Tegucigalpa'] },                                        metadata: { dur: '1h 50m', rating: '★★★★', year: 2025, color: '#1A0000', accent: '#CC0000' } },
 ])
 
 const FUNCIONES: Funcion[] = [
-  { id: 101, id_pelicula: 1, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T14:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 68 },
-  { id: 102, id_pelicula: 1, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T19:15:00Z', estado: 'activa', formato: '3D · Español',     disponibles: 91 },
-  { id: 103, id_pelicula: 2, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-13T18:00:00Z', estado: 'activa', formato: '3D · Subtitulada', disponibles: 55 },
-  { id: 104, id_pelicula: 3, id_sala: 4, id_cine: 1, fecha_hora: '2026-06-12T16:30:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 42 },
-  { id: 105, id_pelicula: 4, id_sala: 2, id_cine: 1, fecha_hora: '2026-06-12T21:45:00Z', estado: 'activa', formato: 'IMAX · Español',   disponibles: 12 },
-  { id: 201, id_pelicula: 2, id_sala: 1, id_cine: 2, fecha_hora: '2026-06-12T18:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 45 },
-  { id: 202, id_pelicula: 4, id_sala: 1, id_cine: 2, fecha_hora: '2026-06-12T15:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 30 },
-  { id: 301, id_pelicula: 3, id_sala: 1, id_cine: 3, fecha_hora: '2026-06-12T20:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 20 },
-  { id: 302, id_pelicula: 5, id_sala: 1, id_cine: 3, fecha_hora: '2026-06-12T17:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 15 },
-  { id: 303, id_pelicula: 6, id_sala: 1, id_cine: 3, fecha_hora: '2026-06-12T21:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 8  },
+  { id: '101', id_pelicula: '1', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-12T14:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 68 },
+  { id: '102', id_pelicula: '1', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-12T19:15:00Z', estado: 'activa', formato: '3D · Español',     disponibles: 91 },
+  { id: '103', id_pelicula: '2', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-13T18:00:00Z', estado: 'activa', formato: '3D · Subtitulada', disponibles: 55 },
+  { id: '104', id_pelicula: '3', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-12T16:30:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 42 },
+  { id: '105', id_pelicula: '4', id_sala: '2', id_cine: '1', fecha_hora: '2026-06-12T21:45:00Z', estado: 'activa', formato: 'IMAX · Español',   disponibles: 12 },
+  { id: '201', id_pelicula: '2', id_sala: '1', id_cine: '2', fecha_hora: '2026-06-12T18:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 45 },
+  { id: '202', id_pelicula: '4', id_sala: '1', id_cine: '2', fecha_hora: '2026-06-12T15:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 30 },
+  { id: '301', id_pelicula: '3', id_sala: '1', id_cine: '3', fecha_hora: '2026-06-12T20:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 20 },
+  { id: '302', id_pelicula: '5', id_sala: '1', id_cine: '3', fecha_hora: '2026-06-12T17:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 15 },
+  { id: '303', id_pelicula: '6', id_sala: '1', id_cine: '3', fecha_hora: '2026-06-12T21:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 8  },
 ]
 
 // ── Estado ──
 const router           = useRouter()
-const selectedCityId   = ref(1)
-const selectedCinemaId = ref<number | null>(null)
+const selectedCityId   = ref<string>('1')
+const selectedCinemaId = ref<string | null>(null)
 const selectedMovie    = ref<Pelicula | null>(null)
 const cargandoPeliculas = ref(true)
 

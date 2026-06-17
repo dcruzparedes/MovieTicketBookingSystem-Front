@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import UserForm from '@/components/admin/UserForm.vue'
 
 interface Customer {
   id: number
@@ -180,6 +181,7 @@ const customers = ref<Customer[]>([
   },
 ])
 
+const showModal = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('Todos')
 const currentPage = ref(1)
@@ -207,12 +209,35 @@ function setPage(page: number) {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
 }
+
+function openModal() {
+  showModal.value = true
+}
+
+function closeModal() {
+  showModal.value = false
+}
+
+function onUserSaved(data: any) {
+  const newUser: Customer = {
+    id: customers.value.length + 1,
+    nombre: data.nombre,
+    email: data.email,
+    estado: 'Activo',
+    created_at: new Date().toISOString().split('T')[0],
+    reservas_count: 0,
+    telefono: data.telefono,
+  }
+  customers.value.push(newUser)
+  closeModal()
+}
 </script>
 
 <template>
   <AdminLayout>
     <div class="page-header">
       <h1 class="page-title">Clientes</h1>
+      <button class="btn btn-primary" @click="openModal">+ Nuevo usuario</button>
     </div>
 
     <div class="page-body">
@@ -292,6 +317,19 @@ function setPage(page: number) {
         </div>
       </div>
     </div>
+
+    <!-- Modal nuevo usuario -->
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
+      <div class="modal-box">
+        <div class="modal-header">
+          <h2 class="modal-title">Nuevo usuario</h2>
+          <button class="close-btn" @click="closeModal">✕</button>
+        </div>
+        <div class="modal-body">
+          <UserForm @saved="onUserSaved" @cancel="closeModal" />
+        </div>
+      </div>
+    </div>
   </AdminLayout>
 </template>
 
@@ -299,6 +337,27 @@ function setPage(page: number) {
 .page-header {
   padding: 24px 28px 0;
   margin-bottom: 20px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 26px;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.btn-primary {
+  background: var(--sinopia);
+  color: #fff;
+  border: none;
+  cursor: pointer;
+  padding: 10px 20px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 14px;
 }
 
 .page-title {
@@ -462,4 +521,11 @@ function setPage(page: number) {
   border-color: var(--sinopia);
   font-weight: 700;
 }
+/* Modal */
+.modal-overlay { position: fixed; inset: 0; background: rgba(42, 10, 6, 0.5); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 24px; }
+.modal-box { background: var(--surface); border: 1px solid var(--border2); border-radius: 12px; width: 100%; max-width: 440px; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; align-items: center; justify-content: space-between; padding: 20px 24px 16px; border-bottom: 1px solid var(--border); }
+.modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); font-weight: 400; }
+.close-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 20px; }
+.modal-body { padding: 24px; }
 </style>

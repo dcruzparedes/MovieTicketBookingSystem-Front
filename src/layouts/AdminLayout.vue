@@ -8,9 +8,11 @@ const navGroups = [
   {
     label: 'Catálogo',
     items: [
-      { label: 'Películas', icon: 'pi-video', to: '/admin/peliculas' },  // pi-film no existe
+      { label: 'Películas', icon: 'pi-video', to: '/admin/peliculas' },
+      { label: 'Géneros', icon: 'pi-list', to: '/admin/generos' },
+      { label: 'Idiomas', icon: 'pi-globe', to: '/admin/idiomas' },
       { label: 'Cines', icon: 'pi-building', to: '/admin/cines' },
-      { label: 'Salas', icon: 'pi-objects-column', to: '/admin/salas' },   // pi-th-large no existe
+      { label: 'Salas', icon: 'pi-objects-column', to: '/admin/salas' },
       { label: 'Ciudades', icon: 'pi-map-marker', to: '/admin/ciudades' },
       { label: 'Funciones', icon: 'pi-calendar', to: '/admin/funciones' },
     ],
@@ -19,13 +21,15 @@ const navGroups = [
     label: 'Comercial',
     items: [
       { label: 'Cupones', icon: 'pi-tag', to: '/admin/cupones' },
-      { label: 'Cancelaciones', icon: 'pi-arrow-circle-left', to: '/admin/cancelaciones' }, // pi-undo no existe
+      { label: 'Cancelaciones', icon: 'pi-arrow-circle-left', to: '/admin/cancelaciones' },
+      { label: 'Reembolsos', icon: 'pi-dollar', to: '/admin/reembolsos' },
     ],
   },
   {
     label: 'Usuarios',
     items: [
       { label: 'Clientes', icon: 'pi-users', to: '/admin/clientes' },
+      { label: 'Roles', icon: 'pi-user-edit', to: '/admin/roles' },
     ],
   },
   {

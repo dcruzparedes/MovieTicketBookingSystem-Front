@@ -135,7 +135,7 @@ function confirmCancel() {
               <td>{{ funcion.salaNombre }}</td>
               <td>{{ funcion.fecha }}</td>
               <td>{{ funcion.hora }}</td>
-              <td>Q {{ funcion.precio }}</td>
+              <td>Lps. {{ funcion.precio }}</td>
               <td>
                 <span class="badge" :class="funcion.cancelada ? 'badge-cancelada' : 'badge-programada'">
                   {{ funcion.cancelada ? 'Cancelada' : 'Programada' }}

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { useRouter } from 'vue-router'
 import PosterUpload from '@/components/PosterUpload.vue'
+import { uploadPoster } from '@/services/storageService'
 
 const router = useRouter()
 
@@ -37,6 +38,8 @@ const errors = reactive<FormErrors>({
 })
 
 const posterFile = ref<File | null>(null)
+const isSubmitting = ref(false)
+const submitError = ref('')
 
 const genres = ['Acción', 'Animación', 'Drama', 'Sci-Fi', 'Terror']
 const languages = ['Español', 'Subtitulada']
@@ -51,10 +54,27 @@ function validate(): boolean {
   return Object.values(errors).every((e) => !e)
 }
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!validate()) return
-  // TODO: enviar al API junto con posterFile.value
-  router.push('/admin/peliculas')
+
+  isSubmitting.value = true
+  submitError.value = ''
+
+  try {
+    let posterUrl: string | null = null
+    if (posterFile.value) {
+      posterUrl = await uploadPoster(posterFile.value)
+    }
+
+    // TODO: POST /api/peliculas con { ...form, posterUrl }
+    console.log('Película lista para enviar:', { ...form, posterUrl })
+
+    router.push('/admin/peliculas')
+  } catch (err) {
+    submitError.value = err instanceof Error ? err.message : 'Error al subir el póster'
+  } finally {
+    isSubmitting.value = false
+  }
 }
 
 function goBack() {
@@ -133,9 +153,14 @@ function goBack() {
             <span v-if="errors.synopsis" class="field-error">{{ errors.synopsis }}</span>
           </div>
 
+          <p v-if="submitError" class="submit-error">{{ submitError }}</p>
           <div class="form-actions">
-            <button type="submit" class="btn btn-primary">Guardar película</button>
-            <button type="button" class="btn btn-ghost" @click="goBack">Cancelar</button>
+            <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
+              {{ isSubmitting ? 'Guardando…' : 'Guardar película' }}
+            </button>
+            <button type="button" class="btn btn-ghost" :disabled="isSubmitting" @click="goBack">
+              Cancelar
+            </button>
           </div>
         </div>
 
@@ -294,10 +319,21 @@ function goBack() {
   gap: 12px;
 }
 
+.submit-error {
+  font-size: 12px;
+  color: var(--sinopia);
+  margin-bottom: 10px;
+}
+
 .form-actions {
   display: flex;
   gap: 10px;
   margin-top: 8px;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn {

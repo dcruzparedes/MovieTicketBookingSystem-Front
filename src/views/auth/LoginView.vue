@@ -25,10 +25,7 @@
 
     <!-- Panel derecho: formulario -->
     <div class="auth-panel-right">
-      <RouterLink to="/" class="btn-home">
-        <i class="pi pi-home" />
-        Inicio
-      </RouterLink>
+      <BtnHome class="btn-home-pos" />
       <div class="auth-wrap">
         <div class="auth-logo-mobile">Cine <em>Vicenta</em></div>
 
@@ -110,6 +107,7 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import BtnHome from '@/components/BtnHome.vue'
 
 const router = useRouter()
 
@@ -200,8 +198,9 @@ async function handleSubmit() {
       return
     }
     redirectByRole(selectedRole.value)
-  } catch (err: any) {
-    serverError.value = err?.response?.data?.message ?? 'Ocurrió un error. Intenta de nuevo.'
+  } catch (err) {
+    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+    serverError.value = message ?? 'Ocurrió un error. Intenta de nuevo.'
   } finally {
     submitting.value = false
   }
@@ -232,7 +231,7 @@ async function handleSubmit() {
 .panel-logo {
   font-family: 'DM Serif Display', serif;
   font-size: 32px;
-  color: #faf0ec;
+  color: var(--cream);
   letter-spacing: .3px;
   margin-bottom: 4px;
   text-align: center;
@@ -275,7 +274,7 @@ async function handleSubmit() {
   font-family: 'DM Serif Display', serif;
   font-size: 19px;
   font-style: italic;
-  color: #faf0ec;
+  color: var(--cream);
   line-height: 1.55;
   margin: 0 0 14px;
   opacity: .92;
@@ -475,28 +474,10 @@ async function handleSubmit() {
   padding-right: 40px;
 }
 
-.btn-home {
+.btn-home-pos {
   position: absolute;
   top: 20px;
   right: 24px;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--sinopia);
-  text-decoration: none;
-  font-family: 'Outfit', sans-serif;
-  background: rgba(217, 34, 0, 0.07);
-  border: 1px solid rgba(217, 34, 0, 0.2);
-  padding: 6px 12px;
-  border-radius: 20px;
-  transition: all 0.2s;
-}
-
-.btn-home:hover {
-  background: rgba(217, 34, 0, 0.14);
-  border-color: rgba(217, 34, 0, 0.35);
 }
 
 .toggle-pw {

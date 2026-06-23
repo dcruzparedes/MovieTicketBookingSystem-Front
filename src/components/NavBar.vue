@@ -22,15 +22,7 @@
         <!-- Con sesión -->
         <template v-else>
           <div class="nav-usuario" @click="toggleMenu">
-            <Avatar :label="inicialUsuario" shape="circle" :style="{
-              background: 'rgba(243,80,10,0.25)',
-              color: '#faf0ec',
-              border: '1.5px solid rgba(243,80,10,0.4)',
-              width: '30px',
-              height: '30px',
-              fontSize: '13px',
-              cursor: 'pointer',
-            }" />
+            <Avatar :label="inicialUsuario" shape="circle" class="nav-avatar" />
             <span class="nav-nombre">{{ nombreUsuario }}</span>
             <i class="pi pi-chevron-down nav-chevron" :class="{ rotado: menuVisible }" />
           </div>
@@ -135,7 +127,7 @@ function handleHomeClick() {
 .nav-logo {
   font-family: 'DM Serif Display', serif;
   font-size: 20px;
-  color: #faf0ec;
+  color: var(--cream);
   letter-spacing: 0.3px;
   cursor: pointer;
 }
@@ -182,6 +174,16 @@ function handleHomeClick() {
 
 .nav-usuario:hover {
   background: rgba(250, 240, 236, 0.08);
+}
+
+.nav-avatar {
+  width: 30px;
+  height: 30px;
+  font-size: 13px;
+  cursor: pointer;
+  background: rgba(243, 80, 10, 0.25) !important;
+  color: var(--cream) !important;
+  border: 1.5px solid rgba(243, 80, 10, 0.4);
 }
 
 .nav-nombre {

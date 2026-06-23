@@ -2,7 +2,7 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import SalaForm from '@/components/admin/SalaForm.vue'
+import SalaForm, { type SalaFields } from '@/components/admin/SalaForm.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -20,7 +20,7 @@ const salas = [
 const salaId = computed(() => Number(route.params.id))
 const sala = computed(() => salas.find((s) => s.id === salaId.value) ?? null)
 
-function onSaved(data: any) {
+function onSaved(data: SalaFields) {
   // TODO: PUT /api/salas/:id con data
   console.log('PUT /api/salas/' + salaId.value, data)
   router.push('/admin/salas')
@@ -33,20 +33,20 @@ function goBack() {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <button class="back-btn" @click="goBack">Volver</button>
       <h1 class="page-title">Editar sala</h1>
     </div>
 
     <div class="page-body">
       <!-- Sala no encontrada -->
-      <div v-if="!sala" class="not-found">
+      <div v-if="!sala" class="not-found animado" style="--delay: 80ms">
         <p class="not-found-text">No se encontró la sala con ID {{ salaId }}.</p>
         <button class="btn btn-ghost" @click="goBack">Volver a la lista</button>
       </div>
 
       <!-- Formulario precargado -->
-      <div v-else class="card">
+      <div v-else class="card animado" style="--delay: 80ms">
         <SalaForm
           :initial-data="{
             cinemaId: String(sala.id_cine),
@@ -141,5 +141,24 @@ function goBack() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
 }
 </style>

@@ -53,13 +53,13 @@ function viewSalas(id: number) {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Cines</h1>
       <button class="btn btn-primary" @click="goToNewCinema">+ Nuevo cine</button>
     </div>
 
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -70,8 +70,8 @@ function viewSalas(id: number) {
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="cinema in cinemas" :key="cinema.id">
+          <TransitionGroup tag="tbody" name="rows" appear>
+            <tr v-for="(cinema, index) in cinemas" :key="cinema.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td>
                 <strong>{{ cinema.nombre }}</strong>
               </td>
@@ -89,10 +89,10 @@ function viewSalas(id: number) {
                 </div>
               </td>
             </tr>
-            <tr v-if="cinemas.length === 0">
+            <tr v-if="cinemas.length === 0" key="empty">
               <td colspan="5" class="empty-state">No hay cines registrados.</td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -220,5 +220,43 @@ function viewSalas(id: number) {
 
 .btn-sm {
   font-size: 12px;
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+
+.rows-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.rows-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.rows-move {
+  transition: transform 0.3s ease;
 }
 </style>

@@ -97,7 +97,7 @@
                       <div class="reserva-codigo">{{ reserva.numero }}</div>
                       <div class="reserva-detalles">
                         <div class="reserva-dato"><i class="pi pi-building" /> {{ reserva.cine }}</div>
-                        <div class="reserva-dato"><i class="pi pi-th-large" /> {{ reserva.sala }}</div>
+                        <div class="reserva-dato"><i class="pi pi-objects-column" /> {{ reserva.sala }}</div>
                         <div class="reserva-dato"><i class="pi pi-calendar" /> {{ reserva.fecha }}</div>
                         <div class="reserva-dato"><i class="pi pi-clock" /> {{ reserva.hora }} · {{ reserva.formato }}</div>
                       </div>
@@ -199,7 +199,7 @@
                     </Transition>
                     <Transition name="fade-alert">
                       <small v-if="pwTouched.confirm && !pwErrors.confirm && pw.confirm" class="field-hint"
-                        style="color: #1e783c">
+                        style="color: var(--success)">
                         ✓ Las contraseñas coinciden
                       </small>
                     </Transition>
@@ -228,13 +228,13 @@
     {{ reservaSeleccionada.numero }} — {{ reservaSeleccionada.pelicula }}
   </strong>
 
-  <div style="color: #510000;">
+  <div style="color: var(--rosewood);">
     {{ reservaSeleccionada.fecha }} · {{ reservaSeleccionada.hora }} · Asientos {{ reservaSeleccionada.asientos.join(', ') }}
   </div>
 
   <br />
 
-  <div style="color: #510000;">
+  <div style="color: var(--rosewood);">
     Esta acción no se puede deshacer. El reembolso se procesará en 3–5 días hábiles.
   </div>
 </div>
@@ -386,8 +386,9 @@ async function saveProfile() {
     await new Promise((r) => setTimeout(r, 800))
     profileSaved.value = true
     setTimeout(() => (profileSaved.value = false), 4000)
-  } catch (err: any) {
-    profileError.value = err?.response?.data?.message ?? 'No se pudieron guardar los cambios.'
+  } catch (err) {
+    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+    profileError.value = message ?? 'No se pudieron guardar los cambios.'
   } finally {
     profileSubmitting.value = false
   }
@@ -446,8 +447,9 @@ async function savePassword() {
     pwSaved.value = true
     resetPwForm()
     setTimeout(() => (pwSaved.value = false), 4000)
-  } catch (err: any) {
-    pwError.value = err?.response?.data?.message ?? 'No se pudo actualizar la contraseña.'
+  } catch (err) {
+    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+    pwError.value = message ?? 'No se pudo actualizar la contraseña.'
   } finally {
     pwSubmitting.value = false
   }
@@ -476,7 +478,7 @@ const strength = computed(() => {
 })
 const strengthPercent = computed(() => (strength.value / 5) * 100)
 const strengthLabel = computed(() => ['', 'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte'][strength.value])
-const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e783c', '#1e783c'][strength.value])
+const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', 'var(--success)', 'var(--success)'][strength.value])
 </script>
 
 <style scoped>

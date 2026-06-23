@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import ToggleSwitch from '@/components/ToggleSwitch.vue'
 
 
 interface Reserva{
@@ -168,11 +167,11 @@ function setPage(page: number) {
 <template>
     <AdminLayout>
     <div id="admin-cacnelacion">
-    <div class="admin-header">
+    <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Reportes de Reservas</div>
     <button class="btn btn-primary btn-sm">+ Exportar a CSV</button>
     </div>
-    <div class="card" style="margin-bottom:14px; margin-right: 28px; margin-left: 28px;">
+    <div class="card animado" style="--delay: 60ms; margin-bottom:14px; margin-right: 28px; margin-left: 28px;">
         <div class="card-body">
             <div style="display:flex;gap:10px;flex-wrap:wrap">
                 <input v-model="fechaDesde" type="date" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none" />
@@ -184,21 +183,21 @@ function setPage(page: number) {
         </div>
     </div>
     <div class="admin-body">
-        <div class="card">
+        <div class="card animado" style="--delay: 120ms">
         <div class="card-body" style="padding:0">
         <table class="tbl">
             <thead><tr><th class="id-th">ID</th><th>Numero Reserva</th><th>Usuario</th><th>Fecha de Funcion</th><th>Cine</th><th>Pelicula</th><th>Estado</th></tr></thead>
-            <tbody>
-                <tr v-for="reserva in reservasPaginadas">
+            <TransitionGroup tag="tbody" name="rows" appear>
+                <tr v-for="(reserva, index) in reservasPaginadas" :key="reserva.id" :style="{ '--row-delay': `${index * 40}ms` }">
                     <td><strong style="font-family:'DM Mono',monospace">{{reserva.id}}</strong></td>
-                    <td>{{reserva.numero_reserva}}</td>
+                    <td style="font-family:'DM Mono',monospace">{{reserva.numero_reserva}}</td>
                     <td>{{getUsuario(reserva.id_usuario)}}</td>
                     <td>{{getFuncion(reserva.id_funcion, 'fecha')}}</td>
                     <td>{{getFuncion(reserva.id_funcion, 'cine')}}</td>
                     <td>{{getFuncion(reserva.id_funcion, 'pelicula')}}</td>
                     <td>{{reserva.estado}}</td>
                 </tr>
-            </tbody>
+            </TransitionGroup>
         </table>
         </div>
     </div>
@@ -228,14 +227,14 @@ function setPage(page: number) {
     </AdminLayout>
 </template>
 
-<style>
+<style scoped>
 .status-label {
   font-size: 12px;
   font-weight: 500;
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -325,7 +324,7 @@ function setPage(page: number) {
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -462,4 +461,23 @@ function setPage(page: number) {
   border-color: var(--sinopia);
   font-weight: 700;
 }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

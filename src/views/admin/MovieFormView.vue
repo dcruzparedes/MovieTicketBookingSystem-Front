@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import PosterUpload from '@/components/PosterUpload.vue'
 import { uploadPoster } from '@/services/storageService'
 
@@ -84,14 +86,14 @@ function goBack() {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <button class="back-btn" @click="goBack">Volver</button>
       <h1 class="page-title">Nueva película</h1>
     </div>
     <div class="page-body">
       <form class="form-grid" novalidate @submit.prevent="handleSubmit">
         <!-- Columna izquierda: información general -->
-        <div class="card">
+        <div class="card animado" style="--delay: 80ms">
           <p class="section-label">Información general</p>
 
           <div class="field">
@@ -166,12 +168,12 @@ function goBack() {
 
         <!-- Columna derecha: póster + S3 -->
         <div class="right-col">
-          <div class="card">
+          <div class="card animado" style="--delay: 120ms">
             <p class="section-label">Imagen del póster</p>
             <PosterUpload v-model="posterFile" />
           </div>
 
-          <div class="card" style="margin-top: 14px">
+          <div class="card animado" style="--delay: 160ms; margin-top: 14px">
             <p class="section-label">Almacenamiento S3</p>
             <div class="field">
               <label for="s3-bucket">Bucket</label>
@@ -364,5 +366,24 @@ function goBack() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
 }
 </style>

@@ -90,13 +90,13 @@ async function toggleActive(city: Ciudad) {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Ciudades</h1>
       <button class="btn btn-primary" @click="openCreateModal">+ Nueva ciudad</button>
     </div>
 
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -106,8 +106,8 @@ async function toggleActive(city: Ciudad) {
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="ciudad in ciudades" :key="ciudad.id">
+          <TransitionGroup tag="tbody" name="rows" appear>
+            <tr v-for="(ciudad, index) in ciudades" :key="ciudad.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td class="id-cell">{{ ciudad.id }}</td>
               <td>
                 <strong>{{ ciudad.name }}</strong>
@@ -135,10 +135,10 @@ async function toggleActive(city: Ciudad) {
                 </div>
               </td>
             </tr>
-            <tr v-if="ciudades.length === 0">
+            <tr v-if="ciudades.length === 0" key="empty">
               <td colspan="4" class="empty-state">No hay ciudades registradas.</td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -271,7 +271,7 @@ async function toggleActive(city: Ciudad) {
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -412,5 +412,43 @@ async function toggleActive(city: Ciudad) {
 .confirm-actions {
   display: flex;
   gap: 10px;
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+
+.rows-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.rows-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.rows-move {
+  transition: transform 0.3s ease;
 }
 </style>

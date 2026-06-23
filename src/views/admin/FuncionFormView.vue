@@ -18,13 +18,13 @@ function goBack() {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <button class="back-btn" @click="goBack">Volver</button>
       <h1 class="page-title">Nueva función</h1>
     </div>
 
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <FuncionForm @saved="handleSaved" @cancel="goBack" />
       </div>
     </div>
@@ -76,5 +76,24 @@ function goBack() {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
 }
 </style>

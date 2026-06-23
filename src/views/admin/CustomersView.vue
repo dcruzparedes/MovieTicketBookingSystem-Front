@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import UserForm from '@/components/admin/UserForm.vue'
+import UserForm, { type UserFields } from '@/components/admin/UserForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
 
 interface Customer {
@@ -221,13 +221,13 @@ function closeModal() {
   showModal.value = false
 }
 
-function onUserSaved(data: any) {
+function onUserSaved(data: UserFields) {
   const newUser: Customer = {
     id: customers.value.length + 1,
     nombre: data.nombre,
     email: data.email,
     estado: 'Activo',
-    created_at: new Date().toISOString().split('T')[0],
+    created_at: new Date().toISOString().split('T')[0] ?? '',
     reservas_count: 0,
     telefono: data.telefono,
   }
@@ -252,14 +252,14 @@ async function toggleActive(customer: Customer) {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Clientes</h1>
       <button class="btn btn-primary" @click="openModal">+ Nuevo usuario</button>
     </div>
 
     <div class="page-body">
       <!-- Filtros -->
-      <div class="card filter-card">
+      <div class="card filter-card animado" style="--delay: 60ms">
         <div class="filter-row">
           <input
             v-model="searchQuery"
@@ -277,7 +277,7 @@ async function toggleActive(customer: Customer) {
       </div>
 
       <!-- Tabla -->
-      <div class="card table-card">
+      <div class="card table-card animado" style="--delay: 120ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -288,8 +288,8 @@ async function toggleActive(customer: Customer) {
               <th>Reservas</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="customer in pagedCustomers" :key="customer.id">
+          <TransitionGroup tag="tbody" name="rows" appear>
+            <tr v-for="(customer, index) in pagedCustomers" :key="customer.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td>
                 <strong>{{ customer.nombre }}</strong>
               </td>
@@ -309,10 +309,10 @@ async function toggleActive(customer: Customer) {
               <td>{{ customer.created_at }}</td>
               <td>{{ customer.reservas_count }}</td>
             </tr>
-            <tr v-if="pagedCustomers.length === 0">
+            <tr v-if="pagedCustomers.length === 0" key="empty">
               <td colspan="5" class="empty-state">No se encontraron clientes</td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
 
         <!-- Paginación -->
@@ -380,13 +380,6 @@ async function toggleActive(customer: Customer) {
   border-radius: var(--radius);
   font-weight: 600;
   font-size: 14px;
-}
-
-.page-title {
-  font-family: 'DM Serif Display', serif;
-  font-size: 26px;
-  color: var(--text);
-  font-weight: 400;
 }
 
 .page-body {
@@ -501,7 +494,7 @@ async function toggleActive(customer: Customer) {
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -550,4 +543,23 @@ async function toggleActive(customer: Customer) {
 .modal-title { font-family: 'DM Serif Display', serif; font-size: 20px; color: var(--text); font-weight: 400; }
 .close-btn { background: none; border: none; cursor: pointer; color: var(--text3); font-size: 20px; }
 .modal-body { padding: 24px; }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

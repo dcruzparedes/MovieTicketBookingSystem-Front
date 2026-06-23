@@ -1,18 +1,22 @@
 <template>
-  <div class="admin-layout">
-    <div class="admin-sidebar">
-      <div class="admin-logo">Cine <em>Vicenta</em><span>Recepcionista</span></div>
-      <div :class="['admin-nav-item', seccionActiva === 'buscar' && 'active']" @click="seccionActiva = 'buscar'">🔍
-        Buscar cliente</div>
-      <div :class="['admin-nav-item', seccionActiva === 'reservar' && 'active']" @click="seccionActiva = 'reservar'">🎟
-        Nueva reserva</div>
-      <div :class="['admin-nav-item', seccionActiva === 'cancelar' && 'active']" @click="seccionActiva = 'cancelar'">✕
-        Cancelar reserva</div>
-      <div style="flex:1"></div>
-      <div class="admin-nav-item" @click="enrutador.push('/')">← Salir</div>
-    </div>
-
-    <div class="admin-content">
+  <AdminLayout subtitle="Recepcionista">
+    <template #nav>
+      <button type="button" :class="['nav-item', { active: seccionActiva === 'buscar' }]"
+        @click="seccionActiva = 'buscar'">
+        <i class="pi pi-search nav-icon" />
+        Buscar cliente
+      </button>
+      <button type="button" :class="['nav-item', { active: seccionActiva === 'reservar' }]"
+        @click="seccionActiva = 'reservar'">
+        <i class="pi pi-ticket nav-icon" />
+        Nueva reserva
+      </button>
+      <button type="button" :class="['nav-item', { active: seccionActiva === 'cancelar' }]"
+        @click="seccionActiva = 'cancelar'">
+        <i class="pi pi-times-circle nav-icon" />
+        Cancelar reserva
+      </button>
+    </template>
 
       <!-- ── BUSCAR CLIENTE ── -->
       <div v-if="seccionActiva === 'buscar'">
@@ -168,8 +172,7 @@
         </div>
       </div>
 
-    </div>
-  </div>
+  </AdminLayout>
 
   <!-- Modal confirmación cancelación -->
   <Dialog v-model:visible="mostrarConfirmCancelacion" header="¿Cancelar esta reserva?" :modal="true"
@@ -191,7 +194,6 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -203,9 +205,9 @@ import Tag from 'primevue/tag'
 import Message from 'primevue/message'
 import Select from 'primevue/select'
 import Dialog from 'primevue/dialog'
+import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useReservaStore } from '@/stores/reserva'
 
-const enrutador = useRouter()
 const toast = useToast()
 const tienda = useReservaStore()
 
@@ -302,75 +304,6 @@ function ejecutarCancelacion() {
 </script>
 
 <style scoped>
-.admin-layout {
-  display: flex;
-  min-height: 100vh;
-}
-
-.admin-sidebar {
-  width: 218px;
-  background: var(--rosewood);
-  flex-shrink: 0;
-  padding: 18px 12px;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-}
-
-.admin-logo {
-  font-family: 'DM Serif Display', serif;
-  font-size: 18px;
-  color: #faf0ec;
-  padding: 0 8px 14px;
-  border-bottom: 1px solid rgba(250, 240, 236, .12);
-  margin-bottom: 12px;
-}
-
-.admin-logo em {
-  font-style: italic;
-  color: var(--tangelo);
-}
-
-.admin-logo span {
-  font-size: 9px;
-  color: rgba(250, 240, 236, .35);
-  display: block;
-  font-family: 'Outfit', sans-serif;
-  font-weight: 500;
-  letter-spacing: 1.5px;
-  text-transform: uppercase;
-  margin-top: 2px;
-}
-
-.admin-nav-item {
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-size: 13px;
-  color: rgba(250, 240, 236, .55);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  transition: all .2s;
-}
-
-.admin-nav-item:hover {
-  background: rgba(250, 240, 236, .08);
-  color: rgba(250, 240, 236, .85);
-}
-
-.admin-nav-item.active {
-  background: rgba(243, 113, 0, .25);
-  color: #faf0ec;
-  font-weight: 500;
-}
-
-.admin-content {
-  flex: 1;
-  overflow-y: auto;
-  background: var(--bg);
-}
-
 .admin-header {
   padding: 24px 28px 0;
   display: flex;

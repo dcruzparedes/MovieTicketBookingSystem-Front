@@ -23,17 +23,17 @@ function updateState(reembolso: Reembolso, newState: Reembolso['state']) {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Reembolsos</h1>
     </div>
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr><th>#</th><th>Pago ID</th><th>Monto</th><th>Estado</th><th>Fecha</th><th>Acciones</th></tr>
           </thead>
-          <tbody>
-            <tr v-for="reembolso in reembolsos" :key="reembolso.id">
+          <TransitionGroup tag="tbody" name="rows" appear>
+            <tr v-for="(reembolso, index) in reembolsos" :key="reembolso.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td class="id-cell">{{ reembolso.id }}</td>
               <td>{{ reembolso.paymentId }}</td>
               <td>{{ reembolso.amount }}</td>
@@ -50,7 +50,7 @@ function updateState(reembolso: Reembolso, newState: Reembolso['state']) {
                 </div>
               </td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -76,6 +76,25 @@ function updateState(reembolso: Reembolso, newState: Reembolso['state']) {
 .btn-sm { font-size: 12px; }
 .status-badge { font-size: 11px; padding: 4px 8px; border-radius: 4px; font-weight: 600; text-transform: uppercase; }
 .status-badge.pendiente { background: var(--bg); color: var(--text3); }
-.status-badge.aprobado { background: #e6f4ea; color: #1e783c; }
-.status-badge.rechazado { background: #fce8e6; color: var(--sinopia); }
+.status-badge.aprobado { background: rgba(30, 120, 60, 0.1); color: var(--success); }
+.status-badge.rechazado { background: var(--red-bg); color: var(--sinopia); }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

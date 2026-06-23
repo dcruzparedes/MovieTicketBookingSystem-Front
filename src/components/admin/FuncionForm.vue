@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, watch, withDefaults } from 'vue'
+import { computed, reactive, watch } from 'vue'
 
 interface FuncionFields {
   peliculaId: string
@@ -194,7 +194,7 @@ function handleSubmit() {
       </div>
 
       <div class="field">
-        <label for="ff-precio">Precio base (Q)</label>
+        <label for="ff-precio">Precio base (L.)</label>
         <input
           id="ff-precio"
           v-model="form.precio"
@@ -263,7 +263,7 @@ function handleSubmit() {
           <span class="summary-icon">💰</span>
           <div class="summary-text">
             <span class="summary-key">Precio base</span>
-            <span class="summary-val">{{ form.precio ? 'Q ' + form.precio : '—' }}</span>
+            <span class="summary-val">{{ form.precio ? 'L. ' + form.precio : '—' }}</span>
           </div>
         </div>
       </div>

@@ -44,7 +44,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, withDefaults } from 'vue'
+import { computed } from 'vue'
 import { useReservaStore } from '@/stores/reserva'
 import type { Asiento } from '@/stores/reserva'
 
@@ -66,7 +66,7 @@ const asientosPreview = computed<Asiento[]>(() => {
   const cantCols = Math.max(1, Math.min(30, props.columnas ?? 10))
   const resultado: Asiento[] = []
   for (let r = 0; r < cantFilas; r++) {
-    const fila = ROW_LABELS[r]
+    const fila = ROW_LABELS[r] ?? ''
     for (let c = 1; c <= cantCols; c++) {
       resultado.push({
         id: `p-${fila}${c}`,

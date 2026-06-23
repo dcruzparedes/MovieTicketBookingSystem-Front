@@ -8,7 +8,7 @@
         <div class="icono-wrap animado" style="--delay: 80ms">
           <Avatar icon="pi pi-check" size="xlarge" :style="{
             background: 'rgba(30,120,60,0.1)',
-            color: '#1e783c',
+            color: 'var(--success)',
             border: '1.5px solid rgba(30,120,60,0.3)',
             width: '64px',
             height: '64px',
@@ -43,7 +43,7 @@
             <span>Sala 4 — Cine Vicenta</span>
           </div>
           <div class="ticket-fila">
-            <span><i class="pi pi-th-large" /> Asientos</span>
+            <span><i class="pi pi-objects-column" /> Asientos</span>
             <span class="ticket-asientos">
               <Tag v-for="codigo in tienda.asientosSeleccionados" :key="codigo" :value="codigo" severity="warn"
                 style="font-family: 'DM Mono', monospace; font-size: 11px" />
@@ -60,7 +60,7 @@
 
         <!-- Acciones -->
         <div class="confirmacion-acciones animado" style="--delay: 300ms">
-          <Button label="Ver más películas" icon="pi pi-film" @click="enrutador.push('/')" />
+          <Button label="Ver más películas" icon="pi pi-video" @click="enrutador.push('/')" />
           <Button label="Mis reservas" icon="pi pi-ticket" severity="secondary" outlined
             @click="enrutador.push({ path: '/perfil', query: { tab: 'reservas' } })" />
           <Button icon="pi pi-print" severity="secondary" text v-tooltip="'Imprimir ticket'" @click="imprimir" />

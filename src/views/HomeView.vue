@@ -120,9 +120,9 @@ function seleccionarPelicula(movie: Pelicula) {
   selectedCinemaId.value = null
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
-function seleccionarCine(cinemaId: number) { selectedCinemaId.value = cinemaId }
+function seleccionarCine(cinemaId: string) { selectedCinemaId.value = cinemaId }
 function limpiarSeleccion() { selectedMovie.value = null; selectedCinemaId.value = null }
-function irAAsientos(funcionId: number) {
+function irAAsientos(funcionId: string) {
   const funcion = FUNCIONES.find(f => f.id === funcionId)
   if (!funcion) return
 
@@ -366,7 +366,7 @@ function irAAsientos(funcionId: number) {
 .hero-eyebrow::after { content: ''; flex: 1; height: .5px; background: rgba(250,240,236,.15); max-width: 60px; }
 .hero h1 {
   font-family: 'DM Serif Display', serif; font-size: 38px;
-  color: #faf0ec; line-height: 1.05; margin-bottom: 16px;
+  color: var(--cream); line-height: 1.05; margin-bottom: 16px;
 }
 .hero h1 em { font-style: italic; color: var(--tangelo); }
 
@@ -461,7 +461,7 @@ function irAAsientos(funcionId: number) {
 .funcion-btn:hover { border-color: var(--tangelo); background: rgba(243,80,10,.04); }
 .funcion-time { font-size: 16px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; }
 .funcion-format { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.funcion-avail { font-size: 11px; color: #1e783c; margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+.funcion-avail { font-size: 11px; color: var(--success); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
 .funcion-avail.low { color: var(--orange); }
 .empty-showtimes { padding: 40px 0; color: var(--text3); font-size: 14px; }
 

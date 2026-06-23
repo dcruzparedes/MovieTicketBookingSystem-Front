@@ -64,13 +64,13 @@ async function toggleActive(movie: Movie) {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Películas</h1>
       <button class="btn btn-primary" @click="openModal">+ Nueva película</button>
     </div>
 
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -82,8 +82,8 @@ async function toggleActive(movie: Movie) {
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody>
-            <tr v-for="movie in movies" :key="movie.id">
+          <TransitionGroup tag="tbody" name="rows" appear>
+            <tr v-for="(movie, index) in movies" :key="movie.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td><strong>{{ movie.title }}</strong></td>
               <td>{{ movie.genre }}</td>
               <td>{{ movie.language }}</td>
@@ -109,7 +109,7 @@ async function toggleActive(movie: Movie) {
                 </button>
               </td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -208,7 +208,7 @@ async function toggleActive(movie: Movie) {
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -306,5 +306,43 @@ async function toggleActive(movie: Movie) {
 
 .modal-body {
   padding: 24px;
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+
+.rows-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.rows-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.rows-move {
+  transition: transform 0.3s ease;
 }
 </style>

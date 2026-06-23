@@ -19,7 +19,7 @@
     <!-- Cupón aplicado -->
     <div v-else class="cupon-aplicado">
       <div class="cupon-aplicado-info">
-        <i class="pi pi-tag" style="color: #1e783c" />
+        <i class="pi pi-tag" style="color: var(--success)" />
         <div>
           <div class="cupon-codigo">{{ tienda.codigoCupon }}</div>
           <div class="cupon-ahorro">Ahorrás L. {{ tienda.descuento.toFixed(2) }}</div>
@@ -126,7 +126,7 @@ function quitar() {
 
 .cupon-ahorro {
   font-size: 11px;
-  color: #1e783c;
+  color: var(--success);
   margin-top: 2px;
 }
 

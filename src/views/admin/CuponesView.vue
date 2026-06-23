@@ -1,10 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import MovieForm from '@/components/admin/MovieForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
-import { list } from '@primeuix/themes/aura/autocomplete'
 
 
 interface Cupon{
@@ -106,21 +103,21 @@ function setPage(page: number) {
     <AdminLayout>
     <!-- CUPONES -->
     <div id="admin-cupones">
-    <div class="admin-header">
+    <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Cupones</div>
     <button class="btn btn-primary btn-sm" @click="showModal = true">+ Nuevo cupón</button></div>
     <div class="admin-body">
-        <div class="card"><div class="card-body" style="padding:0">
+        <div class="card animado" style="--delay: 80ms"><div class="card-body" style="padding:0">
         <table class="tbl">
             <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Vencimiento</th><th>Usos</th><th>Estado</th></tr></thead>
-            <tbody>
-                <tr v-for="cupon in cuponesPaginados">
+            <TransitionGroup tag="tbody" name="rows" appear>
+                <tr v-for="(cupon, index) in cuponesPaginados" :key="cupon.id" :style="{ '--row-delay': `${index * 40}ms` }">
                     <td><strong style="font-family:'DM Mono',monospace">{{cupon.codigo}}</strong></td><td>{{cupon.tipo}}</td><td>{{cupon.valor}}</td><td>{{cupon.fecha_expiracion}}</td><td>{{cupon.usos_actuales}} / {{cupon.usos_maximos}}</td><td>
                         <ToggleSwitch 
                         :model-value="cupon.activo" 
                         @update:model-value="(valor) => toggleActive(cupon, valor)"></ToggleSwitch></td>
                 </tr>
-            </tbody>
+            </TransitionGroup>
         </table>
         </div>
     </div>
@@ -197,14 +194,14 @@ function setPage(page: number) {
     </AdminLayout>
 </template>
 
-<style>
+<style scoped>
 .status-label {
   font-size: 12px;
   font-weight: 500;
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -290,7 +287,7 @@ function setPage(page: number) {
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -406,7 +403,7 @@ function setPage(page: number) {
 .field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field-error { font-size: 11px; color: var(--sinopia); margin-top: 4px; }
-.field-success { font-size: 11px; color: #1e783c; margin-top: 4px; }
+.field-success { font-size: 11px; color: var(--success); margin-top: 4px; }
 
 .pagination {
   display: flex;
@@ -442,4 +439,23 @@ function setPage(page: number) {
   border-color: var(--sinopia);
   font-weight: 700;
 }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

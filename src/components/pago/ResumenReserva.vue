@@ -65,7 +65,7 @@ const tienda = useReservaStore()
 
 .resumen-lbl { color: var(--text3); flex-shrink: 0; }
 .resumen-val { color: var(--text); font-weight: 500; text-align: right; }
-.resumen-val.descuento { color: #1e783c; }
+.resumen-val.descuento { color: var(--success); }
 
 .resumen-asientos {
   display: flex;

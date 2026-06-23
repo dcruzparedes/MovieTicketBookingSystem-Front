@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import ToggleSwitch from '@/components/ToggleSwitch.vue'
 
 
 interface Pago{
@@ -92,16 +91,16 @@ function setPage(page: number) {
 <template>
     <AdminLayout>
     <div id="admin-pagos">
-    <div class="admin-header">
+    <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Reportes de Pagos</div>
     </div>
     <div class="admin-body">
-        <div class="card">
+        <div class="card animado" style="--delay: 80ms">
         <div class="card-body" style="padding:0">
         <table class="tbl">
             <thead><tr><th>ID</th><th>Cliente</th><th>Metodo</th><th>Fecha</th><th>Monto</th><th>Estado</th></tr></thead>
-            <tbody>
-                <tr v-for="pago in pagosPaginados">
+            <TransitionGroup tag="tbody" name="rows" appear>
+                <tr v-for="(pago, index) in pagosPaginados" :key="pago.id" :style="{ '--row-delay': `${index * 40}ms` }">
                     <td><strong style="font-family:'DM Mono',monospace">{{pago.id}}</strong></td>
                     <td>{{pago.cliente}}</td>
                     <td>{{pago.metodo}}</td>
@@ -109,10 +108,10 @@ function setPage(page: number) {
                     <td>{{pago.monto_final}}</td>
                     <td>{{pago.estado}}</td>
                 </tr>
-            </tbody>
+            </TransitionGroup>
         </table>
         <div style="border-top:1px solid var(--border2);padding:12px 14px;display:flex;justify-content:flex-end;gap:28px">
-            <div style="font-size:12px;color:var(--text2)">Pagos: <strong style="color:#1e783c;font-family:'DM Mono',monospace">+ L. {{pagosP}}</strong></div>
+            <div style="font-size:12px;color:var(--text2)">Pagos: <strong style="color:var(--success);font-family:'DM Mono',monospace">+ L. {{pagosP}}</strong></div>
             <div style="font-size:12px;color:var(--text2)">Reembolsos: <strong style="color:var(--sinopia);font-family:'DM Mono',monospace">− L. {{pagosR}}</strong></div>
             <div style="font-size:12px;color:var(--text2)">Neto: <strong style="color:var(--darkred);font-family:'DM Mono',monospace">L. {{pagosN}}</strong></div>
         </div>
@@ -145,14 +144,14 @@ function setPage(page: number) {
     </AdminLayout>
 </template>
 
-<style>
+<style scoped>
 .status-label {
   font-size: 12px;
   font-weight: 500;
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -242,7 +241,7 @@ function setPage(page: number) {
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -379,4 +378,23 @@ function setPage(page: number) {
   border-color: var(--sinopia);
   font-weight: 700;
 }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

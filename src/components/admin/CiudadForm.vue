@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive, computed, withDefaults } from 'vue'
+import { reactive, computed } from 'vue'
 
 interface CiudadFields {
   name: string

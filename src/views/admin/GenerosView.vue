@@ -61,18 +61,18 @@ async function toggleActive(genero: Genero) {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Géneros</h1>
       <button class="btn btn-primary" @click="openCreateModal">+ Nuevo género</button>
     </div>
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr><th>#</th><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
           </thead>
-          <tbody>
-            <tr v-for="genero in generos" :key="genero.id">
+          <TransitionGroup tag="tbody" name="rows" appear>
+            <tr v-for="(genero, index) in generos" :key="genero.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td class="id-cell">{{ genero.id }}</td>
               <td><strong>{{ genero.name }}</strong></td>
               <td>
@@ -88,7 +88,7 @@ async function toggleActive(genero: Genero) {
                 </div>
               </td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -132,7 +132,7 @@ async function toggleActive(genero: Genero) {
 .id-cell { color: var(--text3); font-size: 12px; width: 40px; }
 .status-cell { display: flex; align-items: center; gap: 8px; }
 .status-label { font-size: 12px; font-weight: 500; }
-.status-label.active { color: #1e783c; }
+.status-label.active { color: var(--success); }
 .status-label.inactive { color: var(--text3); }
 .action-group { display: flex; gap: 6px; }
 .btn { border: none; cursor: pointer; font-family: 'Outfit', sans-serif; border-radius: var(--radius); font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
@@ -154,4 +154,23 @@ async function toggleActive(genero: Genero) {
 .confirm-text { font-size: 14px; color: var(--text2); line-height: 1.55; margin-bottom: 20px; }
 .confirm-text strong { color: var(--text); }
 .confirm-actions { display: flex; gap: 10px; }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

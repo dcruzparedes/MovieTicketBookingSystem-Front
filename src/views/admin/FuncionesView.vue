@@ -102,7 +102,7 @@ function confirmCancel() {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Funciones</h1>
       <button class="btn btn-primary" @click="router.push('/admin/funciones/nueva')">
         + Nueva función
@@ -110,7 +110,7 @@ function confirmCancel() {
     </div>
 
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -124,18 +124,19 @@ function confirmCancel() {
               <th>Acciones</th>
             </tr>
           </thead>
-          <tbody>
+          <TransitionGroup tag="tbody" name="rows" appear>
             <tr
-              v-for="funcion in funciones"
+              v-for="(funcion, index) in funciones"
               :key="funcion.id"
               :class="{ 'row-cancelled': funcion.cancelada }"
+              :style="{ '--row-delay': `${index * 40}ms` }"
             >
               <td><strong>{{ funcion.peliculaTitulo }}</strong></td>
               <td>{{ funcion.cinemaNombre }}</td>
               <td>{{ funcion.salaNombre }}</td>
               <td>{{ funcion.fecha }}</td>
               <td>{{ funcion.hora }}</td>
-              <td>Lps. {{ funcion.precio }}</td>
+              <td style="font-family: 'DM Mono', monospace">L. {{ funcion.precio }}</td>
               <td>
                 <span class="badge" :class="funcion.cancelada ? 'badge-cancelada' : 'badge-programada'">
                   {{ funcion.cancelada ? 'Cancelada' : 'Programada' }}
@@ -160,10 +161,10 @@ function confirmCancel() {
                 </div>
               </td>
             </tr>
-            <tr v-if="funciones.length === 0">
+            <tr v-if="funciones.length === 0" key="empty">
               <td colspan="8" class="empty-state">No hay funciones registradas.</td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -333,7 +334,7 @@ function confirmCancel() {
 
 .badge-programada {
   background: rgba(30, 120, 60, 0.1);
-  color: #1e783c;
+  color: var(--success);
 }
 
 .badge-cancelada {
@@ -485,8 +486,8 @@ function confirmCancel() {
 
 /* Warning box */
 .warning-box {
-  background: rgba(217, 100, 0, 0.07);
-  border: 1px solid rgba(217, 100, 0, 0.25);
+  background: var(--orange-bg);
+  border: 1px solid rgba(243, 113, 0, 0.25);
   border-radius: var(--radius);
   padding: 14px;
   display: flex;
@@ -510,7 +511,7 @@ function confirmCancel() {
 .warning-title {
   font-size: 13px;
   font-weight: 600;
-  color: #7a3800;
+  color: var(--orange);
 }
 
 .warning-list {
@@ -523,7 +524,7 @@ function confirmCancel() {
 
 .warning-list li {
   font-size: 12px;
-  color: #7a3800;
+  color: var(--orange);
   line-height: 1.4;
 }
 
@@ -567,5 +568,43 @@ function confirmCancel() {
 .confirm-actions {
   display: flex;
   gap: 10px;
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+
+.rows-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.rows-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.rows-move {
+  transition: transform 0.3s ease;
 }
 </style>

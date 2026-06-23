@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import ToggleSwitch from '@/components/ToggleSwitch.vue'
 
 
 interface Politica{
@@ -78,15 +77,15 @@ function editarPolitica() {
 <template>
     <AdminLayout>
     <div id="admin-cupones">
-    <div class="admin-header">
+    <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Políticas de Cancelación</div>
     <button class="btn btn-primary btn-sm" @click="showModal = true">+ Nueva Política</button></div>
     <div class="admin-body">
-        <div class="card"><div class="card-body" style="padding:0">
+        <div class="card animado" style="--delay: 80ms"><div class="card-body" style="padding:0">
         <table class="tbl">
             <thead><tr><th class="id-th">ID</th><th>Horas Antes Maximo</th><th>Horas Antes Minimo</th><th>Porcentaje de Reembolso</th><th>Acciones</th></tr></thead>
-            <tbody>
-                <tr v-for="politica in politicas">
+            <TransitionGroup tag="tbody" name="rows" appear>
+                <tr v-for="(politica, index) in politicas" :key="politica.id" :style="{ '--row-delay': `${index * 40}ms` }">
                     <td><strong style="font-family:'DM Mono',monospace">{{politica.id}}</strong></td>
                     <td>{{politica.horas_antes_maximo}}</td>
                     <td>{{politica.horas_antes_minimo}}</td>
@@ -97,7 +96,7 @@ function editarPolitica() {
                     >Editar</button>
                     </td>
                 </tr>
-            </tbody>
+            </TransitionGroup>
         </table>
         </div></div>
     </div>
@@ -173,14 +172,14 @@ function editarPolitica() {
     </AdminLayout>
 </template>
 
-<style>
+<style scoped>
 .status-label {
   font-size: 12px;
   font-weight: 500;
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -270,7 +269,7 @@ function editarPolitica() {
 }
 
 .status-label.active {
-  color: #1e783c;
+  color: var(--success);
 }
 
 .status-label.inactive {
@@ -386,5 +385,24 @@ function editarPolitica() {
 .field textarea { resize: vertical; min-height: 80px; line-height: 1.5; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .field-error { font-size: 11px; color: var(--sinopia); margin-top: 4px; }
-.field-success { font-size: 11px; color: #1e783c; margin-top: 4px; }
+.field-success { font-size: 11px; color: var(--success); margin-top: 4px; }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

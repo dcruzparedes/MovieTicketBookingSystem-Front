@@ -40,7 +40,7 @@
             <div class="card-body" style="text-align: center">
               <Avatar icon="pi pi-envelope" size="xlarge" shape="circle" :style="{
                 background: 'rgba(30,120,60,0.1)',
-                color: '#1e783c',
+                color: 'var(--success)',
                 border: '1.5px solid rgba(30,120,60,0.3)',
                 width: '64px', height: '64px',
                 margin: '0 auto 16px',
@@ -130,8 +130,9 @@ async function handleSubmit() {
     await new Promise((r) => setTimeout(r, 900))
     sent.value = true
     startCooldown()
-  } catch (err: any) {
-    serverError.value = err?.response?.data?.message ?? 'Ocurrió un error. Intenta de nuevo.'
+  } catch (err) {
+    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+    serverError.value = message ?? 'Ocurrió un error. Intenta de nuevo.'
   } finally {
     submitting.value = false
   }
@@ -188,7 +189,7 @@ onUnmounted(() => { clearInterval(intervalo); if (cooldownTimer) clearInterval(c
 .panel-logo {
   font-family: 'DM Serif Display', serif;
   font-size: 32px;
-  color: #faf0ec;
+  color: var(--cream);
   letter-spacing: .3px;
   margin-bottom: 4px;
   text-align: center;
@@ -230,7 +231,7 @@ onUnmounted(() => { clearInterval(intervalo); if (cooldownTimer) clearInterval(c
   font-family: 'DM Serif Display', serif;
   font-size: 19px;
   font-style: italic;
-  color: #faf0ec;
+  color: var(--cream);
   line-height: 1.55;
   margin: 0 0 14px;
   opacity: .92;

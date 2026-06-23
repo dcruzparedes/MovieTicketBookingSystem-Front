@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, reactive, withDefaults } from 'vue'
+import { computed, reactive } from 'vue'
 
 interface CinemaFields {
   cityId: string

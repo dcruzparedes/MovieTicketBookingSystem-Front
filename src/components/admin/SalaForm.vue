@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { computed, reactive, withDefaults } from 'vue'
+import { computed, reactive } from 'vue'
 import AsientosMap from '@/components/asientos/AsientosMap.vue'
 
-interface SalaFields {
+export interface SalaFields {
   cinemaId: string
   name: string
   rows: number

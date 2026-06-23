@@ -59,20 +59,20 @@ function goBack() {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <button class="back-btn" @click="goBack">Volver</button>
       <h1 class="page-title">Editar cine</h1>
     </div>
 
     <div class="page-body">
       <!-- Cine no encontrado -->
-      <div v-if="!cinema" class="not-found">
+      <div v-if="!cinema" class="not-found animado" style="--delay: 80ms">
         <p class="not-found-text">No se encontró el cine con ID {{ cinemaId }}.</p>
         <button class="btn btn-ghost" @click="goBack">Volver a la lista</button>
       </div>
 
       <!-- Formulario precargado -->
-      <div v-else class="card">
+      <div v-else class="card animado" style="--delay: 80ms">
         <CinemaForm
           :initial-data="{
             cityId: cinema.cityId,
@@ -168,5 +168,24 @@ function goBack() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
 }
 </style>

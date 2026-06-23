@@ -44,18 +44,18 @@ function confirmDelete() {
 
 <template>
   <AdminLayout>
-    <div class="page-header">
+    <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Roles</h1>
       <button class="btn btn-primary" @click="openCreateModal">+ Nuevo rol</button>
     </div>
     <div class="page-body">
-      <div class="card">
+      <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr><th>#</th><th>Nombre</th><th>Acciones</th></tr>
           </thead>
-          <tbody>
-            <tr v-for="rol in roles" :key="rol.id">
+          <TransitionGroup tag="tbody" name="rows" appear>
+            <tr v-for="(rol, index) in roles" :key="rol.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td class="id-cell">{{ rol.id }}</td>
               <td><strong>{{ rol.name }}</strong></td>
               <td>
@@ -65,7 +65,7 @@ function confirmDelete() {
                 </div>
               </td>
             </tr>
-          </tbody>
+          </TransitionGroup>
         </table>
       </div>
     </div>
@@ -127,4 +127,23 @@ function confirmDelete() {
 .confirm-text { font-size: 14px; color: var(--text2); line-height: 1.55; margin-bottom: 20px; }
 .confirm-text strong { color: var(--text); }
 .confirm-actions { display: flex; gap: 10px; }
+
+/* ── Animaciones ── */
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animado {
+  opacity: 0;
+  animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--delay, 0ms);
+}
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+.rows-leave-active { transition: opacity 0.15s ease, transform 0.15s ease; }
+.rows-leave-to { opacity: 0; transform: scale(0.97); }
+.rows-move { transition: transform 0.3s ease; }
 </style>

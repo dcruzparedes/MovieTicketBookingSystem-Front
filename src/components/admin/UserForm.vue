@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { reactive } from 'vue'
 
-interface UserFields {
+export interface UserFields {
   nombre: string
   email: string
   telefono: string
@@ -110,7 +110,7 @@ function handleSubmit() {
       <select id="user-rol" v-model="form.id_rol" :class="{ 'input-error': errors.id_rol }">
         <option value="" disabled>Seleccionar rol…</option>
         <option v-for="rol in roles" :key="rol.id" :value="rol.id">
-          {{ rol.id }} - {{ rol.nombre }}
+          {{ rol.nombre }}
         </option>
       </select>
       <span v-if="errors.id_rol" class="field-error">{{ errors.id_rol }}</span>

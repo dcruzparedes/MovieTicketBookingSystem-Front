@@ -58,7 +58,7 @@
             <Column field="pelicula" header="Película" />
             <Column field="total" header="Total">
               <template #body="{ data }">
-                <span style="font-family: 'DM Mono', monospace; color: #1e783c">{{ data.total }}</span>
+                <span style="font-family: 'DM Mono', monospace; color: var(--success)">{{ data.total }}</span>
               </template>
             </Column>
             <Column field="estado" header="Estado">
@@ -82,8 +82,8 @@
                 Ver todas <i class="pi pi-arrow-right" style="font-size: 10px" />
               </RouterLink>
             </div>
-            <div class="funciones-lista">
-              <div v-for="f in funcionesHoy" :key="f.id" class="funcion-item">
+            <TransitionGroup tag="div" name="rows" class="funciones-lista" appear>
+              <div v-for="(f, index) in funcionesHoy" :key="f.id" class="funcion-item" :style="{ '--row-delay': `${200 + index * 40}ms` }">
                 <div class="funcion-hora">{{ f.hora }}</div>
                 <div class="funcion-info">
                   <div class="funcion-titulo">{{ f.pelicula }}</div>
@@ -93,7 +93,7 @@
                   :severity="f.ocupacion > 80 ? 'danger' : f.ocupacion > 50 ? 'warn' : 'success'"
                   style="font-size: 11px; flex-shrink: 0" />
               </div>
-            </div>
+            </TransitionGroup>
           </div>
 
           <!-- Accesos rápidos -->
@@ -127,9 +127,9 @@ const fechaHoy = computed(() =>
 )
 
 const stats = [
-  { label: 'Reservas hoy', valor: '47', icon: 'pi-ticket', bg: 'rgba(243,80,10,.1)', color: 'var(--tangelo)', delta: '+12% vs ayer', deltaColor: '#1e783c', deltaIcon: 'pi-arrow-up' },
-  { label: 'Ingresos hoy', valor: 'L. 5,640', icon: 'pi-wallet', bg: 'rgba(30,120,60,.1)', color: '#1e783c', delta: '+8% vs ayer', deltaColor: '#1e783c', deltaIcon: 'pi-arrow-up' },
-  { label: 'Películas activas', valor: '6', icon: 'pi-film', bg: 'rgba(90,0,6,.08)', color: 'var(--rosewood)', delta: null, deltaColor: '', deltaIcon: '' },
+  { label: 'Reservas hoy', valor: '47', icon: 'pi-ticket', bg: 'rgba(243,80,10,.1)', color: 'var(--tangelo)', delta: '+12% vs ayer', deltaColor: 'var(--success)', deltaIcon: 'pi-arrow-up' },
+  { label: 'Ingresos hoy', valor: 'L. 5,640', icon: 'pi-wallet', bg: 'rgba(30,120,60,.1)', color: 'var(--success)', delta: '+8% vs ayer', deltaColor: 'var(--success)', deltaIcon: 'pi-arrow-up' },
+  { label: 'Películas activas', valor: '6', icon: 'pi-video', bg: 'rgba(90,0,6,.08)', color: 'var(--rosewood)', delta: null, deltaColor: '', deltaIcon: '' },
   { label: 'Funciones hoy', valor: '12', icon: 'pi-calendar', bg: 'rgba(217,34,0,.08)', color: 'var(--sinopia)', delta: '3 casi llenas', deltaColor: 'var(--orange)', deltaIcon: 'pi-exclamation-triangle' },
 ]
 
@@ -394,5 +394,24 @@ const accesosRapidos = [
   opacity: 0;
   animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--delay, 0ms);
+}
+
+.rows-enter-active {
+  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation-delay: var(--row-delay, 0ms);
+  opacity: 0;
+}
+
+.rows-leave-active {
+  transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.rows-leave-to {
+  opacity: 0;
+  transform: scale(0.97);
+}
+
+.rows-move {
+  transition: transform 0.3s ease;
 }
 </style>

@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { useRoute, useRouter } from 'vue-router'
 
+withDefaults(defineProps<{ subtitle?: string }>(), { subtitle: 'Administrador' })
+
 const route = useRoute()
 const router = useRouter()
 
@@ -53,20 +55,22 @@ function logout() {
 <template>
   <div class="admin-wrap">
     <aside class="sidebar">
-      <div class="sidebar-logo">
+      <RouterLink to="/admin" class="sidebar-logo">
         Cine <em>Vicenta</em>
-        <span>Administrador</span>
-      </div>
+        <span>{{ subtitle }}</span>
+      </RouterLink>
 
       <nav class="sidebar-nav">
-        <template v-for="group in navGroups" :key="group.label">
-          <p class="nav-group">{{ group.label }}</p>
-          <RouterLink v-for="item in group.items" :key="item.to" :to="item.to" class="nav-item"
-            :class="{ active: isActive(item.to) }">
-            <i :class="['pi', item.icon, 'nav-icon']" />
-            {{ item.label }}
-          </RouterLink>
-        </template>
+        <slot name="nav">
+          <template v-for="group in navGroups" :key="group.label">
+            <p class="nav-group">{{ group.label }}</p>
+            <RouterLink v-for="item in group.items" :key="item.to" :to="item.to" class="nav-item"
+              :class="{ active: isActive(item.to) }">
+              <i :class="['pi', item.icon, 'nav-icon']" />
+              {{ item.label }}
+            </RouterLink>
+          </template>
+        </slot>
       </nav>
 
       <button class="nav-item logout" @click="logout">
@@ -100,10 +104,17 @@ function logout() {
 .sidebar-logo {
   font-family: 'DM Serif Display', serif;
   font-size: 18px;
-  color: #faf0ec;
+  color: var(--cream);
   padding: 0 8px 14px;
   border-bottom: 1px solid rgba(250, 240, 236, 0.12);
   margin-bottom: 12px;
+  display: block;
+  text-decoration: none;
+  transition: opacity 0.2s;
+}
+
+.sidebar-logo:hover {
+  opacity: 0.85;
 }
 
 .sidebar-logo em {
@@ -138,6 +149,25 @@ function logout() {
   font-weight: 600;
 }
 
+.logout {
+  color: rgba(250, 240, 236, 0.3);
+  margin-top: 8px;
+}
+
+.logout:hover {
+  color: rgba(250, 240, 236, 0.6);
+}
+
+.admin-content {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--bg);
+}
+</style>
+
+<!-- Sin "scoped": el contenido de <slot name="nav"> proporcionado por quien consume
+     este layout se compila con el alcance del componente padre, no el de este archivo. -->
+<style>
 .nav-item {
   display: flex;
   align-items: center;
@@ -164,27 +194,12 @@ function logout() {
 
 .nav-item.active {
   background: rgba(243, 113, 0, 0.25);
-  color: #faf0ec;
+  color: var(--cream);
   font-weight: 500;
 }
 
 .nav-icon {
   font-size: 13px;
   flex-shrink: 0;
-}
-
-.logout {
-  color: rgba(250, 240, 236, 0.3);
-  margin-top: 8px;
-}
-
-.logout:hover {
-  color: rgba(250, 240, 236, 0.6);
-}
-
-.admin-content {
-  flex: 1;
-  overflow-y: auto;
-  background: var(--bg);
 }
 </style>

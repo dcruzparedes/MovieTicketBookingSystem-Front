@@ -34,7 +34,7 @@
           <div class="card-body" style="text-align: center">
             <Avatar icon="pi pi-check" size="xlarge" shape="circle" :style="{
               background: 'rgba(30,120,60,0.1)',
-              color: '#1e783c',
+              color: 'var(--success)',
               border: '1.5px solid rgba(30,120,60,0.3)',
               width: '64px', height: '64px',
               margin: '0 auto 16px',
@@ -84,7 +84,7 @@
                 </Transition>
                 <Transition name="fade-alert">
                   <small v-if="touched.confirm && !errors.confirm && form.confirm" class="field-hint"
-                    style="color: #1e783c">
+                    style="color: var(--success)">
                     ✓ Las contraseñas coinciden
                   </small>
                 </Transition>
@@ -165,7 +165,7 @@ const strength = computed(() => {
 })
 const strengthPercent = computed(() => (strength.value / 5) * 100)
 const strengthLabel = computed(() => ['', 'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte'][strength.value])
-const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', '#1e783c', '#1e783c'][strength.value])
+const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', 'var(--success)', 'var(--success)'][strength.value])
 
 async function handleSubmit() {
   touchAll()
@@ -173,10 +173,13 @@ async function handleSubmit() {
   if (!isValid.value) return
   submitting.value = true
   try {
+    // TODO: PUT /auth/reset-password { token, password }
+    console.log('PUT /auth/reset-password', { token: resetToken.value, password: form.password })
     await new Promise((r) => setTimeout(r, 900))
     saved.value = true
-  } catch (err: any) {
-    serverError.value = err?.response?.data?.message ?? 'El enlace expiró o es inválido. Solicita uno nuevo.'
+  } catch (err) {
+    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
+    serverError.value = message ?? 'El enlace expiró o es inválido. Solicita uno nuevo.'
   } finally {
     submitting.value = false
   }
@@ -206,7 +209,7 @@ async function handleSubmit() {
 .panel-logo {
   font-family: 'DM Serif Display', serif;
   font-size: 32px;
-  color: #faf0ec;
+  color: var(--cream);
   letter-spacing: .3px;
   margin-bottom: 4px;
   text-align: center;
@@ -248,7 +251,7 @@ async function handleSubmit() {
   font-family: 'DM Serif Display', serif;
   font-size: 19px;
   font-style: italic;
-  color: #faf0ec;
+  color: var(--cream);
   line-height: 1.55;
   margin: 0 0 14px;
   opacity: .92;

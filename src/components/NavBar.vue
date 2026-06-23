@@ -101,8 +101,14 @@ function logout() {
   router.push('/login')
 }
 
-function handleLogoClick() { emit('logo-click') }
-function handleHomeClick() { emit('home-click') }
+function handleLogoClick() {
+  emit('logo-click')
+  router.push('/')
+}
+function handleHomeClick() {
+  emit('home-click')
+  router.push('/')
+}
 </script>
 
 <style scoped>

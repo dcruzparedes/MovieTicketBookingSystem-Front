@@ -2,6 +2,7 @@
 import { ref, computed } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import UserForm from '@/components/admin/UserForm.vue'
+import ToggleSwitch from '@/components/ToggleSwitch.vue'
 
 interface Customer {
   id: number
@@ -181,6 +182,8 @@ const customers = ref<Customer[]>([
   },
 ])
 
+const loadingIds = ref(new Set<number>())
+
 const showModal = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('Todos')
@@ -231,6 +234,20 @@ function onUserSaved(data: any) {
   customers.value.push(newUser)
   closeModal()
 }
+
+async function toggleActive(customer: Customer) {
+  loadingIds.value.add(customer.id)
+  const previous = customer.estado
+  customer.estado = customer.estado === 'Activo' ? 'Inactivo' : 'Activo' // optimistic update
+  try {
+    // TODO: PATCH /api/clientes/:id { estado: customer.estado }
+    await new Promise((r) => setTimeout(r, 600))
+  } catch {
+    customer.estado = previous // rollback on error
+  } finally {
+    loadingIds.value.delete(customer.id)
+  }
+}
 </script>
 
 <template>
@@ -278,11 +295,16 @@ function onUserSaved(data: any) {
               </td>
               <td>{{ customer.email }}</td>
               <td>
-                <span
-                  :class="['badge', customer.estado === 'Activo' ? 'badge-green' : 'badge-gray']"
-                >
-                  {{ customer.estado }}
-                </span>
+                <div class="status-cell">
+                  <ToggleSwitch
+                    :model-value="customer.estado === 'Activo'"
+                    :loading="loadingIds.has(customer.id)"
+                    @update:model-value="toggleActive(customer)"
+                  />
+                  <span class="status-label" :class="customer.estado === 'Activo' ? 'active' : 'inactive'">
+                    {{ customer.estado }}
+                  </span>
+                </div>
               </td>
               <td>{{ customer.created_at }}</td>
               <td>{{ customer.reservas_count }}</td>
@@ -467,23 +489,23 @@ function onUserSaved(data: any) {
   color: var(--text3);
 }
 
-/* Badges */
-.badge {
-  display: inline-block;
-  padding: 2px 9px;
-  border-radius: 20px;
-  font-size: 11px;
+.status-cell {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.status-label {
+  font-size: 12px;
   font-weight: 500;
 }
 
-.badge-green {
-  background: rgba(30, 120, 60, 0.12);
+.status-label.active {
   color: #1e783c;
 }
 
-.badge-gray {
-  background: rgba(42, 10, 6, 0.07);
-  color: var(--text2);
+.status-label.inactive {
+  color: var(--text3);
 }
 
 /* Pagination */

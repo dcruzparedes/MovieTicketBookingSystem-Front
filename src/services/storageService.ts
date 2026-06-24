@@ -38,7 +38,7 @@ function buildS3Key(file: File): string {
 export async function uploadPoster(file: File): Promise<string> {
   const key = buildS3Key(file)
 
-  const presignRes = await fetch(`${API_BASE}/api/storage/presigned-url`, {
+  const presignRes = await fetch(`${API_BASE}/storage/presigned-url`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ key, contentType: file.type }),

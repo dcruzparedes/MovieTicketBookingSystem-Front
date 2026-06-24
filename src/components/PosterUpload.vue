@@ -3,6 +3,8 @@ import { ref, watch } from 'vue'
 
 const props = defineProps<{
   modelValue: File | null
+  uploading?: boolean
+  uploadedUrl?: string
 }>()
 
 const emit = defineEmits<{
@@ -69,9 +71,16 @@ function remove() {
     />
 
     <!-- Vista previa -->
-    <div v-if="preview" class="preview-wrap">
-      <img :src="preview" alt="Póster" class="poster-img" />
-      <button type="button" class="remove-btn" @click="remove">Quitar imagen</button>
+    <div v-if="preview || uploadedUrl" class="preview-wrap">
+      <div class="preview-img-wrap">
+        <img :src="uploadedUrl || preview" alt="Póster" class="poster-img" />
+        <div v-if="uploading" class="upload-overlay">
+          <div class="spinner" />
+        </div>
+      </div>
+      <span v-if="uploading" class="upload-status">Subiendo a S3…</span>
+      <span v-else-if="uploadedUrl" class="upload-status upload-status--ok">Póster guardado</span>
+      <button v-if="!uploading" type="button" class="remove-btn" @click="remove">Quitar imagen</button>
     </div>
 
     <!-- Zona de carga -->
@@ -149,13 +158,51 @@ function remove() {
   gap: 12px;
 }
 
-.poster-img {
+.preview-img-wrap {
+  position: relative;
   width: 100%;
   max-width: 200px;
+}
+
+.poster-img {
+  width: 100%;
   aspect-ratio: 2 / 3;
   object-fit: cover;
   border-radius: var(--radius);
   border: 1px solid var(--border2);
+  display: block;
+}
+
+.upload-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  border-radius: var(--radius);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #fff;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.upload-status {
+  font-size: 11px;
+  color: var(--text3);
+}
+
+.upload-status--ok {
+  color: var(--success, #22c55e);
 }
 
 .remove-btn {

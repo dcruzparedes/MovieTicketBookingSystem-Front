@@ -1,6 +1,5 @@
 <template>
   <div class="auth-screen">
-
     <!-- Panel izquierdo -->
     <div class="auth-panel-left">
       <div class="panel-logo">Cine <em>Vicenta</em></div>
@@ -17,8 +16,13 @@
       </div>
 
       <div class="frase-dots">
-        <span v-for="(f, i) in frases" :key="i" class="dot" :class="{ active: i === fraseIndex }"
-          @click="fraseIndex = i" />
+        <span
+          v-for="(f, i) in frases"
+          :key="i"
+          class="dot"
+          :class="{ active: i === fraseIndex }"
+          @click="fraseIndex = i"
+        />
       </div>
     </div>
 
@@ -30,7 +34,6 @@
 
         <div class="card animado" style="--delay: 0ms">
           <div class="card-body">
-
             <!-- Tabs -->
             <div class="auth-tabs animado" style="--delay: 60ms">
               <RouterLink to="/login" class="auth-tab">Iniciar sesión</RouterLink>
@@ -44,45 +47,82 @@
               </div>
             </Transition>
 
+            <!-- Error -->
+            <Transition name="fade-alert">
+              <div v-if="apiError" class="alert alert-error">
+                {{ apiError }}
+              </div>
+            </Transition>
+
             <!-- Form -->
             <form v-if="!registered" @submit.prevent="handleSubmit" novalidate>
-
               <div class="field animado" style="--delay: 100ms">
                 <label for="nombre">Nombre completo</label>
-                <input id="nombre" v-model="form.nombre" type="text" placeholder="Juan Pérez"
-                  :class="{ 'input-error': touched.nombre && errors.nombre }" @blur="touch('nombre')"
-                  autocomplete="name" />
+                <input
+                  id="nombre"
+                  v-model="form.nombre"
+                  type="text"
+                  placeholder="Juan Pérez"
+                  :class="{ 'input-error': touched.nombre && errors.nombre }"
+                  @blur="touch('nombre')"
+                  autocomplete="name"
+                />
                 <Transition name="fade-alert">
-                  <span v-if="touched.nombre && errors.nombre" class="field-error">{{ errors.nombre }}</span>
+                  <span v-if="touched.nombre && errors.nombre" class="field-error">{{
+                    errors.nombre
+                  }}</span>
                 </Transition>
               </div>
 
               <div class="field animado" style="--delay: 140ms">
                 <label for="email">Correo electrónico</label>
-                <input id="email" v-model="form.email" type="email" placeholder="tu@correo.com"
-                  :class="{ 'input-error': touched.email && errors.email }" @blur="touch('email')"
-                  autocomplete="email" />
+                <input
+                  id="email"
+                  v-model="form.email"
+                  type="email"
+                  placeholder="tu@correo.com"
+                  :class="{ 'input-error': touched.email && errors.email }"
+                  @blur="touch('email')"
+                  autocomplete="email"
+                />
                 <Transition name="fade-alert">
-                  <span v-if="touched.email && errors.email" class="field-error">{{ errors.email }}</span>
+                  <span v-if="touched.email && errors.email" class="field-error">{{
+                    errors.email
+                  }}</span>
                 </Transition>
               </div>
 
               <div class="field animado" style="--delay: 180ms">
                 <label for="password">Contraseña</label>
                 <div class="input-wrapper">
-                  <input id="password" v-model="form.password" :type="showPassword ? 'text' : 'password'"
-                    placeholder="Mínimo 8 caracteres" :class="{ 'input-error': touched.password && errors.password }"
-                    @blur="touch('password')" autocomplete="new-password" />
-                  <button type="button" class="toggle-pw" @click="showPassword = !showPassword"
-                    :aria-label="showPassword ? 'Ocultar' : 'Mostrar'">
+                  <input
+                    id="password"
+                    v-model="form.password"
+                    :type="showPassword ? 'text' : 'password'"
+                    placeholder="Mínimo 8 caracteres"
+                    :class="{ 'input-error': touched.password && errors.password }"
+                    @blur="touch('password')"
+                    autocomplete="new-password"
+                  />
+                  <button
+                    type="button"
+                    class="toggle-pw"
+                    @click="showPassword = !showPassword"
+                    :aria-label="showPassword ? 'Ocultar' : 'Mostrar'"
+                  >
                     {{ showPassword ? '🙈' : '👁' }}
                   </button>
                 </div>
                 <Transition name="fade-alert">
-                  <span v-if="touched.password && errors.password" class="field-error">{{ errors.password }}</span>
+                  <span v-if="touched.password && errors.password" class="field-error">{{
+                    errors.password
+                  }}</span>
                 </Transition>
                 <div v-if="form.password" class="pw-strength">
-                  <div class="pw-strength-bar" :style="{ width: strengthPercent + '%', background: strengthColor }" />
+                  <div
+                    class="pw-strength-bar"
+                    :style="{ width: strengthPercent + '%', background: strengthColor }"
+                  />
                 </div>
                 <Transition name="fade-alert">
                   <span v-if="form.password" class="field-hint" :style="{ color: strengthColor }">
@@ -93,22 +133,37 @@
 
               <div class="field animado" style="--delay: 220ms">
                 <label for="confirm">Confirmar contraseña</label>
-                <input id="confirm" v-model="form.confirm" :type="showPassword ? 'text' : 'password'"
-                  placeholder="Repite la contraseña" :class="{ 'input-error': touched.confirm && errors.confirm }"
-                  @blur="touch('confirm')" autocomplete="new-password" />
+                <input
+                  id="confirm"
+                  v-model="form.confirm"
+                  :type="showPassword ? 'text' : 'password'"
+                  placeholder="Repite la contraseña"
+                  :class="{ 'input-error': touched.confirm && errors.confirm }"
+                  @blur="touch('confirm')"
+                  autocomplete="new-password"
+                />
                 <Transition name="fade-alert">
-                  <span v-if="touched.confirm && errors.confirm" class="field-error">{{ errors.confirm }}</span>
+                  <span v-if="touched.confirm && errors.confirm" class="field-error">{{
+                    errors.confirm
+                  }}</span>
                 </Transition>
                 <Transition name="fade-alert">
-                  <span v-if="touched.confirm && !errors.confirm && form.confirm" class="field-hint"
-                    style="color: var(--success)">
+                  <span
+                    v-if="touched.confirm && !errors.confirm && form.confirm"
+                    class="field-hint"
+                    style="color: var(--success)"
+                  >
                     ✓ Las contraseñas coinciden
                   </span>
                 </Transition>
               </div>
 
-              <button type="submit" class="btn btn-primary btn-full animado" style="--delay: 260ms"
-                :disabled="submitting">
+              <button
+                type="submit"
+                class="btn btn-primary btn-full animado"
+                style="--delay: 260ms"
+                :disabled="submitting"
+              >
                 <span v-if="submitting" class="spinner" />
                 {{ submitting ? 'Creando cuenta…' : 'Crear cuenta' }}
               </button>
@@ -121,7 +176,6 @@
         </div>
       </div>
     </div>
-
   </div>
 </template>
 
@@ -129,21 +183,38 @@
 import { reactive, ref, computed, watch, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
 import BtnHome from '@/components/BtnHome.vue'
+import { authService } from '@/services/authService'
 
 const router = useRouter()
 
 // ── Frases ──
 const frases = [
-  { titulo: 'Tu primera vez', icono: '🎬', frase: 'Crea tu cuenta y reserva tu primer asiento en segundos. El cine te está esperando.' },
-  { titulo: 'Sin filas', icono: '🎟', frase: 'Olvídate de las colas. Selecciona tu asiento, paga en línea y listo.' },
-  { titulo: 'Cine Vicenta', icono: '🏛', frase: 'La experiencia cinematográfica de Puerto Cortés, ahora en la palma de tu mano.' },
+  {
+    titulo: 'Tu primera vez',
+    icono: '🎬',
+    frase: 'Crea tu cuenta y reserva tu primer asiento en segundos. El cine te está esperando.',
+  },
+  {
+    titulo: 'Sin filas',
+    icono: '🎟',
+    frase: 'Olvídate de las colas. Selecciona tu asiento, paga en línea y listo.',
+  },
+  {
+    titulo: 'Cine Vicenta',
+    icono: '🏛',
+    frase: 'La experiencia cinematográfica de Puerto Cortés, ahora en la palma de tu mano.',
+  },
 ]
 
 const fraseIndex = ref(0)
 const fraseActual = computed(() => frases[fraseIndex.value]!)
 
 let intervalo: ReturnType<typeof setInterval>
-onMounted(() => { intervalo = setInterval(() => { fraseIndex.value = (fraseIndex.value + 1) % frases.length }, 3500) })
+onMounted(() => {
+  intervalo = setInterval(() => {
+    fraseIndex.value = (fraseIndex.value + 1) % frases.length
+  }, 3500)
+})
 onUnmounted(() => clearInterval(intervalo))
 
 // ── Form ──
@@ -152,6 +223,7 @@ const touched = reactive({ nombre: false, email: false, password: false, confirm
 const showPassword = ref(false)
 const submitting = ref(false)
 const registered = ref(false)
+const apiError = ref<string | null>(null)
 
 const errors = computed(() => {
   const e: Record<string, string> = {}
@@ -181,22 +253,70 @@ const strength = computed(() => {
   return s
 })
 const strengthPercent = computed(() => (strength.value / 5) * 100)
-const strengthLabel = computed(() => ['', 'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte'][strength.value])
-const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', 'var(--success)', 'var(--success)'][strength.value])
+const strengthLabel = computed(
+  () => ['', 'Muy débil', 'Débil', 'Regular', 'Fuerte', 'Muy fuerte'][strength.value],
+)
+const strengthColor = computed(
+  () => ['', '#d92200', '#f37100', '#e6a800', 'var(--success)', 'var(--success)'][strength.value],
+)
 
-function touch(field: keyof typeof touched) { touched[field] = true }
-function touchAll() { Object.keys(touched).forEach((k) => (touched[k as keyof typeof touched] = true)) }
+function touch(field: keyof typeof touched) {
+  touched[field] = true
+}
+function touchAll() {
+  Object.keys(touched).forEach((k) => (touched[k as keyof typeof touched] = true))
+}
 
-watch(() => form.password, () => { if (touched.confirm) touched.confirm = true })
+watch(
+  () => form.password,
+  () => {
+    if (touched.confirm) touched.confirm = true
+  },
+)
 
 async function handleSubmit() {
   touchAll()
   if (!isFormValid.value) return
   submitting.value = true
-  await new Promise((r) => setTimeout(r, 900))
-  submitting.value = false
-  registered.value = true
-  setTimeout(() => router.push('/'), 1800)
+  apiError.value = null
+  try {
+    // El backend se encarga de enviar el correo automáticamente
+    await authService.register({
+      nombre: form.nombre,
+      email: form.email,
+      password: form.password,
+    })
+
+    submitting.value = false
+    registered.value = true
+    setTimeout(() => router.push('/activate'), 1800)
+  } catch (err: unknown) {
+    submitting.value = false
+    let msg = 'Ocurrió un error inesperado al registrar el usuario.'
+
+    if (err instanceof Error) {
+      const errorWithData = err as { data?: { message?: string | string[] } }
+      const errData = errorWithData.data
+
+      if (errData?.message) {
+        if (Array.isArray(errData.message)) {
+          msg = errData.message.join(' ')
+        } else {
+          msg = errData.message
+        }
+      } else {
+        msg = err.message
+      }
+    }
+
+    if (msg === 'Email already registered') {
+      msg = 'Este correo electrónico ya está registrado.'
+    } else if (msg === 'Default role not configured') {
+      msg = 'El rol predeterminado de usuario no está configurado en el sistema.'
+    }
+
+    apiError.value = msg
+  }
 }
 </script>
 
@@ -224,7 +344,7 @@ async function handleSubmit() {
   font-family: 'DM Serif Display', serif;
   font-size: 32px;
   color: var(--cream);
-  letter-spacing: .3px;
+  letter-spacing: 0.3px;
   margin-bottom: 4px;
   text-align: center;
 }
@@ -236,7 +356,7 @@ async function handleSubmit() {
 
 .panel-tagline {
   font-size: 10px;
-  color: rgba(250, 240, 236, .35);
+  color: rgba(250, 240, 236, 0.35);
   letter-spacing: 2.5px;
   text-transform: uppercase;
   text-align: center;
@@ -268,12 +388,12 @@ async function handleSubmit() {
   color: var(--cream);
   line-height: 1.55;
   margin: 0 0 14px;
-  opacity: .92;
+  opacity: 0.92;
 }
 
 .frase-rol {
   font-size: 11px;
-  color: rgba(250, 240, 236, .4);
+  color: rgba(250, 240, 236, 0.4);
   text-transform: uppercase;
   letter-spacing: 2px;
 }
@@ -287,9 +407,11 @@ async function handleSubmit() {
   width: 6px;
   height: 6px;
   border-radius: 50%;
-  background: rgba(250, 240, 236, .25);
+  background: rgba(250, 240, 236, 0.25);
   cursor: pointer;
-  transition: background .3s, transform .3s;
+  transition:
+    background 0.3s,
+    transform 0.3s;
 }
 
 .dot.active {
@@ -353,7 +475,7 @@ async function handleSubmit() {
   color: var(--text3);
   border-bottom: 2px solid transparent;
   margin-bottom: -1px;
-  transition: all .2s;
+  transition: all 0.2s;
   text-decoration: none;
   font-family: 'Outfit', sans-serif;
 }
@@ -377,9 +499,15 @@ async function handleSubmit() {
 }
 
 .alert-success {
-  background: rgba(30, 120, 60, .08);
-  border: 1px solid rgba(30, 120, 60, .25);
+  background: rgba(30, 120, 60, 0.08);
+  border: 1px solid rgba(30, 120, 60, 0.25);
   color: var(--success);
+}
+
+.alert-error {
+  background: rgba(217, 34, 0, 0.08);
+  border: 1px solid rgba(217, 34, 0, 0.25);
+  color: var(--sinopia);
 }
 
 /* Fields */
@@ -405,7 +533,7 @@ async function handleSubmit() {
   font-size: 14px;
   font-family: 'Outfit', sans-serif;
   outline: none;
-  transition: border-color .15s;
+  transition: border-color 0.15s;
 }
 
 .field input:focus {
@@ -466,7 +594,9 @@ async function handleSubmit() {
 .pw-strength-bar {
   height: 100%;
   border-radius: 2px;
-  transition: width .3s, background .3s;
+  transition:
+    width 0.3s,
+    background 0.3s;
 }
 
 /* Button */
@@ -476,7 +606,7 @@ async function handleSubmit() {
   font-family: 'Outfit', sans-serif;
   border-radius: var(--radius);
   font-weight: 600;
-  transition: opacity .2s;
+  transition: opacity 0.2s;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -491,11 +621,11 @@ async function handleSubmit() {
 }
 
 .btn-primary:hover:not(:disabled) {
-  opacity: .88;
+  opacity: 0.88;
 }
 
 .btn-primary:disabled {
-  opacity: .5;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -508,9 +638,9 @@ async function handleSubmit() {
   width: 14px;
   height: 14px;
   border-radius: 50%;
-  border: 2px solid rgba(255, 255, 255, .3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
-  animation: girar .6s linear infinite;
+  animation: girar 0.6s linear infinite;
 }
 
 @keyframes girar {
@@ -556,11 +686,15 @@ async function handleSubmit() {
 }
 
 .frase-enter-active {
-  transition: opacity .5s ease, transform .5s cubic-bezier(0.22, 1, 0.36, 1);
+  transition:
+    opacity 0.5s ease,
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .frase-leave-active {
-  transition: opacity .3s ease, transform .3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease;
 }
 
 .frase-enter-from {
@@ -574,11 +708,13 @@ async function handleSubmit() {
 }
 
 .fade-alert-enter-active {
-  transition: opacity .2s ease, transform .2s ease;
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
 }
 
 .fade-alert-leave-active {
-  transition: opacity .15s ease;
+  transition: opacity 0.15s ease;
 }
 
 .fade-alert-enter-from {

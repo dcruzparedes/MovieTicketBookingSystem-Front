@@ -15,6 +15,11 @@ const router = createRouter({
       component: () => import('@/views/auth/RegisterView.vue'),
     },
     {
+      path: '/activate',
+      name: 'activate',
+      component: () => import('@/views/auth/ActivationView.vue'),
+    },
+    {
       path: '/forgot-password',
       name: 'forgot-password',
       component: () => import('@/views/auth/FotgotPasswordView.vue'),

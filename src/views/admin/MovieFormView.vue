@@ -1,16 +1,24 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import PosterUpload from '@/components/PosterUpload.vue'
 import { uploadPoster } from '@/services/storageService'
+import {
+  fetchGeneros,
+  fetchIdiomas,
+  createPelicula,
+  getCurrentUserId,
+  type Genero,
+  type Idioma,
+} from '@/services/movieService'
 
 const router = useRouter()
 
 interface MovieForm {
   title: string
-  genre: string
-  language: string
+  genre: number | ''
+  language: number | ''
   releaseDate: string
   synopsis: string
 }
@@ -42,17 +50,27 @@ const errors = reactive<FormErrors>({
 const posterFile = ref<File | null>(null)
 const isSubmitting = ref(false)
 const submitError = ref('')
+const loadError = ref('')
 
-const genres = ['Acción', 'Animación', 'Drama', 'Sci-Fi', 'Terror']
-const languages = ['Español', 'Subtitulada']
+const genres = ref<Genero[]>([])
+const languages = ref<Idioma[]>([])
+
+onMounted(async () => {
+  try {
+    const [g, l] = await Promise.all([fetchGeneros(), fetchIdiomas()])
+    genres.value = g
+    languages.value = l
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Error al cargar datos'
+  }
+})
 
 function validate(): boolean {
   errors.title = form.title.trim() ? '' : 'El título es requerido'
-  errors.genre = form.genre ? '' : 'Selecciona un género'
-  errors.language = form.language ? '' : 'Selecciona un idioma'
+  errors.genre = form.genre !== '' ? '' : 'Selecciona un género'
+  errors.language = form.language !== '' ? '' : 'Selecciona un idioma'
   errors.releaseDate = form.releaseDate ? '' : 'La fecha de estreno es requerida'
   errors.synopsis = form.synopsis.trim() ? '' : 'La sinopsis es requerida'
-
   return Object.values(errors).every((e) => !e)
 }
 
@@ -63,17 +81,24 @@ async function handleSubmit() {
   submitError.value = ''
 
   try {
-    let posterUrl: string | null = null
+    let posterUrl: string | undefined
     if (posterFile.value) {
       posterUrl = await uploadPoster(posterFile.value)
     }
 
-    // TODO: POST /api/peliculas con { ...form, posterUrl }
-    console.log('Película lista para enviar:', { ...form, posterUrl })
+    await createPelicula({
+      titulo: form.title,
+      sinopsis: form.synopsis || undefined,
+      poster_url: posterUrl,
+      id_genero: form.genre !== '' ? form.genre : undefined,
+      id_idioma: form.language !== '' ? form.language : undefined,
+      fecha_estreno: form.releaseDate || undefined,
+      id_usuario: getCurrentUserId(),
+    })
 
     router.push('/admin/peliculas')
   } catch (err) {
-    submitError.value = err instanceof Error ? err.message : 'Error al subir el póster'
+    submitError.value = err instanceof Error ? err.message : 'Error al guardar la película'
   } finally {
     isSubmitting.value = false
   }
@@ -108,12 +133,14 @@ function goBack() {
             <span v-if="errors.title" class="field-error">{{ errors.title }}</span>
           </div>
 
+          <p v-if="loadError" class="submit-error">{{ loadError }}</p>
+
           <div class="field-row">
             <div class="field">
               <label for="genre">Género</label>
               <select id="genre" v-model="form.genre" :class="{ 'input-error': errors.genre }">
                 <option value="" disabled>Seleccionar…</option>
-                <option v-for="g in genres" :key="g" :value="g">{{ g }}</option>
+                <option v-for="g in genres" :key="g.id" :value="g.id">{{ g.nombre }}</option>
               </select>
               <span v-if="errors.genre" class="field-error">{{ errors.genre }}</span>
             </div>
@@ -126,7 +153,7 @@ function goBack() {
                 :class="{ 'input-error': errors.language }"
               >
                 <option value="" disabled>Seleccionar…</option>
-                <option v-for="l in languages" :key="l" :value="l">{{ l }}</option>
+                <option v-for="l in languages" :key="l.id" :value="l.id">{{ l.nombre }}</option>
               </select>
               <span v-if="errors.language" class="field-error">{{ errors.language }}</span>
             </div>

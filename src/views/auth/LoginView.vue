@@ -107,7 +107,9 @@
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRouter } from 'vue-router'
+import Cookies from 'js-cookie'
 import BtnHome from '@/components/BtnHome.vue'
+import { api } from '@/services/api'
 
 const router = useRouter()
 
@@ -192,15 +194,16 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    await new Promise((r) => setTimeout(r, 900))
-    if (form.email === 'error@test.com') {
-      serverError.value = 'Credenciales incorrectas. Verifica tu correo y contraseña.'
-      return
+    const res = await api.post<{ access_token: string; user: { rol: string } }>('/auth/login', form)
+    Cookies.set('token', res.access_token, { secure: true, sameSite: 'strict' })
+    redirectByRole(res.user.rol)
+  } catch (err: any) {
+    const message = err.message
+    if (message === 'Tu cuenta se encuentra inactiva') {
+      router.push('/activate')
+    } else {
+      serverError.value = message ?? 'Ocurrió un error. Intenta de nuevo.'
     }
-    redirectByRole(selectedRole.value)
-  } catch (err) {
-    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-    serverError.value = message ?? 'Ocurrió un error. Intenta de nuevo.'
   } finally {
     submitting.value = false
   }

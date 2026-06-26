@@ -143,23 +143,34 @@ export const useReservaStore = defineStore('reserva', () => {
     return `${minutos}:${String(segundos).padStart(2, '0')}`
   })
 
-  // ── Conflicto de concurrencia (error 409 del backend) ──
-  const asientosEnConflicto = ref<string[]>([]) // códigos ej. ["B3", "B4"]
+  // ── Conflicto de concurrencia (error 409 del backend al bloquear) ──
+  const asientosEnConflicto = ref<string[]>([]) // códigos ej. ["B-03", "B-04"]
 
-  function aplicarConflicto(codigosTomados: string[]) {
-    asientosEnConflicto.value = codigosTomados
-    codigosTomados.forEach((codigo) => {
-      const asiento = asientos.value.find((a) => a.codigo === codigo)
-      if (asiento) {
-        asiento.estadoReal = 'reservado'
-        asiento.estado = 'ocupado'
-      }
-      const indice = asientosSeleccionados.value.indexOf(codigo)
-      if (indice > -1) {
-        asientosSeleccionados.value.splice(indice, 1)
-        idsSeleccionados.value.splice(indice, 1)
+  // Re-construye el mapa con el estado real más reciente del backend y separa,
+  // de la selección previa, los asientos que alguien más se quedó mientras tanto.
+  function sincronizarTrasConflicto(data: AsientoFuncionBackend[]) {
+    const seleccionPrevia = new Set(asientosSeleccionados.value)
+    construirMapaAsientosDesdeBackend(data)
+
+    const seleccionVigente: string[] = []
+    const idsVigentes: string[] = []
+    const codigosConflicto: string[] = []
+
+    asientos.value.forEach((asiento) => {
+      if (!seleccionPrevia.has(asiento.codigo)) return
+      if (asiento.estado === 'ocupado' || asiento.estado === 'bloqueado') {
+        codigosConflicto.push(asiento.codigo)
+      } else {
+        asiento.estado = 'seleccionado'
+        seleccionVigente.push(asiento.codigo)
+        idsVigentes.push(asiento.id)
       }
     })
+
+    asientosSeleccionados.value = seleccionVigente
+    idsSeleccionados.value = idsVigentes
+    asientosEnConflicto.value = codigosConflicto
+    return codigosConflicto
   }
 
   function limpiarConflicto() {
@@ -215,7 +226,7 @@ export const useReservaStore = defineStore('reserva', () => {
     limpiarTemporizador,
     // Conflictos
     asientosEnConflicto,
-    aplicarConflicto,
+    sincronizarTrasConflicto,
     limpiarConflicto,
     // Pago
     metodoPago,

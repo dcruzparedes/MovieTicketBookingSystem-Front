@@ -85,6 +85,7 @@
         <Button
           label="Continuar al pago"
           :disabled="tienda.asientosSeleccionados.length === 0"
+          :loading="bloqueando"
           fluid
           style="margin-top: 14px"
           @click="irAPago"
@@ -114,6 +115,7 @@
 <script setup lang="ts">
 import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
+import { useToast } from 'primevue/usetoast'
 import Toast from 'primevue/toast'
 import Button from 'primevue/button'
 import Chip from 'primevue/chip'
@@ -123,15 +125,20 @@ import ProgressBar from 'primevue/progressbar'
 import ProgressSpinner from 'primevue/progressspinner'
 import AsientosMap from '@/components/asientos/AsientosMap.vue'
 import { useReservaStore } from '@/stores/reserva'
-import { getAsientosPorFuncion } from '@/services/reservaService'
+import { getAsientosPorFuncion, bloquearAsientos } from '@/services/reservaService'
+import { isApiError } from '@/services/api'
 // NavBar para mostrar el menú de usuario
 import NavBar from '@/components/NavBar.vue'
 
+const MINUTOS_BLOQUEO = 10
+
 const tienda = useReservaStore()
 const enrutador = useRouter()
+const toast = useToast()
 
 const cargando = ref(true)
 const errorCarga = ref<string | null>(null)
+const bloqueando = ref(false)
 
 const progresoTemporizador = computed(() => Math.round((tienda.segundosRestantes / 600) * 100))
 
@@ -146,7 +153,6 @@ async function cargarAsientos() {
   try {
     const data = await getAsientosPorFuncion(tienda.funcionActual.id)
     tienda.construirMapaAsientosDesdeBackend(data)
-    tienda.iniciarTemporizador()
   } catch (error) {
     errorCarga.value =
       error instanceof Error ? error.message : 'No se pudo cargar el mapa de asientos'
@@ -161,9 +167,47 @@ onUnmounted(() => {
   tienda.limpiarTemporizador()
 })
 
-function irAPago() {
-  if (tienda.asientosSeleccionados.length === 0) return
-  enrutador.push('/pago')
+async function manejarConflicto() {
+  if (!tienda.funcionActual) return
+  try {
+    const data = await getAsientosPorFuncion(tienda.funcionActual.id)
+    const codigosConflicto = tienda.sincronizarTrasConflicto(data)
+    toast.add({
+      severity: 'error',
+      summary: 'Asientos no disponibles',
+      detail: codigosConflicto.length
+        ? `Otro usuario tomó ${codigosConflicto.join(', ')} mientras elegías. El mapa fue actualizado.`
+        : 'Alguno de tus asientos ya no está disponible. El mapa fue actualizado.',
+      group: 'conflicto',
+      life: 6000,
+    })
+  } catch {
+    errorCarga.value = 'No se pudo actualizar el mapa de asientos. Intenta de nuevo.'
+  }
+}
+
+async function irAPago() {
+  if (tienda.asientosSeleccionados.length === 0 || bloqueando.value) return
+
+  bloqueando.value = true
+  try {
+    await bloquearAsientos(tienda.funcionActual!.id, tienda.idsSeleccionados, MINUTOS_BLOQUEO)
+    tienda.iniciarTemporizador()
+    enrutador.push('/pago')
+  } catch (error) {
+    if (isApiError(error) && error.status === 409) {
+      await manejarConflicto()
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'No se pudo continuar',
+        detail: isApiError(error) ? error.message : 'Intenta de nuevo.',
+        life: 5000,
+      })
+    }
+  } finally {
+    bloqueando.value = false
+  }
 }
 
 function irAHome() {

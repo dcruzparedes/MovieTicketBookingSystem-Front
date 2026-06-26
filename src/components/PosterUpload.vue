@@ -1,8 +1,9 @@
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
 
 const props = defineProps<{
   modelValue: File | null
+  initialUrl?: string
 }>()
 
 const emit = defineEmits<{
@@ -13,6 +14,7 @@ const preview = ref('')
 const error = ref('')
 const isDragging = ref(false)
 const fileInputRef = ref<HTMLInputElement | null>(null)
+const initialRemoved = ref(false)
 
 // Sync preview when modelValue is cleared externally
 watch(
@@ -24,6 +26,18 @@ watch(
     }
   },
 )
+
+// Reset initialRemoved when a new initialUrl is provided
+watch(
+  () => props.initialUrl,
+  () => { initialRemoved.value = false },
+)
+
+const displayPreview = computed(() => {
+  if (preview.value) return preview.value
+  if (props.initialUrl && !initialRemoved.value) return props.initialUrl
+  return ''
+})
 
 function handleFile(file: File) {
   error.value = ''
@@ -53,6 +67,7 @@ function onDrop(event: DragEvent) {
 function remove() {
   preview.value = ''
   error.value = ''
+  initialRemoved.value = true
   if (fileInputRef.value) fileInputRef.value.value = ''
   emit('update:modelValue', null)
 }
@@ -69,8 +84,8 @@ function remove() {
     />
 
     <!-- Vista previa -->
-    <div v-if="preview" class="preview-wrap">
-      <img :src="preview" alt="Póster" class="poster-img" />
+    <div v-if="displayPreview" class="preview-wrap">
+      <img :src="displayPreview" alt="Póster" class="poster-img" />
       <button type="button" class="remove-btn" @click="remove">Quitar imagen</button>
     </div>
 

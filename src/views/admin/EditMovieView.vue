@@ -1,27 +1,98 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MovieForm from '@/components/admin/MovieForm.vue'
+import { getMovie, updateMovie, getGeneros, getIdiomas } from '@/services/movieService'
+import type { Movie, Genero, Idioma } from '@/services/movieService'
+import { uploadPoster } from '@/services/storageService'
 
 const route = useRoute()
 const router = useRouter()
 
-// Mock hasta conectar con API — mismos datos que MoviesView
-const movies = [
-  { id: 1, title: 'Alien: Romulus', genre: 'Sci-Fi', language: 'Español', releaseDate: '2024-08-16', synopsis: 'Un grupo explora una estación espacial abandonada y se enfrenta a la forma de vida más aterradora del universo.' },
-  { id: 2, title: 'Wild Robot', genre: 'Animación', language: 'Español', releaseDate: '2024-09-27', synopsis: 'Una robot aprende a sobrevivir en la naturaleza y a cuidar de una cría de ganso.' },
-  { id: 3, title: 'Megalopolis', genre: 'Drama', language: 'Subtitulada', releaseDate: '2024-09-27', synopsis: 'Una utopía épica sobre el futuro de la civilización.' },
-  { id: 4, title: 'Venom: El Último Baile', genre: 'Acción', language: 'Español', releaseDate: '2024-10-25', synopsis: 'Eddie Brock emprende un último viaje junto a Venom.' },
-]
-
 const movieId = computed(() => Number(route.params.id))
-const movie = computed(() => movies.find((m) => m.id === movieId.value) ?? null)
 
-function onSaved(data: { title: string; genre: string; language: string; releaseDate: string; synopsis: string; poster: File | null }) {
-  // TODO: PUT /api/peliculas/:id con data
-  console.log('PUT /api/peliculas/' + movieId.value, data)
-  router.push('/admin/peliculas')
+type LoadStatus = 'loading' | 'loaded' | 'not-found' | 'error'
+
+const status = ref<LoadStatus>('loading')
+const loadError = ref('')
+const movie = ref<Movie | null>(null)
+const generos = ref<Genero[]>([])
+const idiomas = ref<Idioma[]>([])
+
+const isSaving = ref(false)
+const saveError = ref('')
+const saved = ref(false)
+
+onMounted(async () => {
+  try {
+    const [m, g, i] = await Promise.all([
+      getMovie(movieId.value),
+      getGeneros(),
+      getIdiomas(),
+    ])
+    if (!m) {
+      status.value = 'not-found'
+      return
+    }
+    movie.value = m
+    generos.value = g
+    idiomas.value = i
+    status.value = 'loaded'
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Error al cargar la película'
+    status.value = 'error'
+  }
+})
+
+const initialData = computed(() => {
+  if (!movie.value) return undefined
+  return {
+    title: movie.value.titulo,
+    genre: movie.value.generos?.nombre ?? '',
+    language: movie.value.idiomas?.nombre ?? '',
+    releaseDate: movie.value.fecha_estreno?.split('T')[0] ?? '',
+    synopsis: movie.value.sinopsis ?? '',
+  }
+})
+
+async function onSaved(data: {
+  title: string
+  genre: string
+  language: string
+  releaseDate: string
+  synopsis: string
+  poster: File | null
+}) {
+  isSaving.value = true
+  saveError.value = ''
+
+  try {
+    let posterUrl = movie.value?.poster_url ?? undefined
+
+    if (data.poster) {
+      posterUrl = await uploadPoster(data.poster)
+    }
+
+    const matchedGenero = generos.value.find((g) => g.nombre === data.genre)
+    const matchedIdioma = idiomas.value.find((i) => i.nombre === data.language)
+
+    await updateMovie(movieId.value, {
+      titulo: data.title,
+      sinopsis: data.synopsis,
+      fecha_estreno: data.releaseDate,
+      ...(matchedGenero && { id_genero: Number(matchedGenero.id) }),
+      ...(matchedIdioma && { id_idioma: Number(matchedIdioma.id) }),
+      ...(posterUrl !== undefined && { poster_url: posterUrl }),
+    })
+
+    saved.value = true
+    setTimeout(() => router.push('/admin/peliculas'), 1500)
+  } catch (err) {
+    saveError.value = err instanceof Error ? err.message : 'Error al guardar la película'
+  } finally {
+    isSaving.value = false
+  }
 }
 
 function goBack() {
@@ -37,26 +108,45 @@ function goBack() {
     </div>
 
     <div class="page-body">
-      <!-- Movie not found -->
-      <div v-if="!movie" class="not-found animado" style="--delay: 80ms">
-        <p class="not-found-text">No se encontró la película con ID {{ movieId }}.</p>
+      <!-- Cargando -->
+      <div v-if="status === 'loading'" class="state-box animado" style="--delay: 80ms">
+        <div class="skeleton-row" />
+        <div class="skeleton-row short" />
+        <div class="skeleton-row" />
+      </div>
+
+      <!-- Error de carga -->
+      <div v-else-if="status === 'error'" class="state-box animado" style="--delay: 80ms">
+        <p class="state-text error-text">{{ loadError }}</p>
         <button class="btn btn-ghost" @click="goBack">Volver a la lista</button>
       </div>
 
-      <!-- Form precargado -->
-      <div v-else class="card animado" style="--delay: 80ms">
-        <MovieForm
-          :initial-data="{
-            title: movie.title,
-            genre: movie.genre,
-            language: movie.language,
-            releaseDate: movie.releaseDate,
-            synopsis: movie.synopsis,
-          }"
-          @saved="onSaved"
-          @cancel="goBack"
-        />
+      <!-- Película no encontrada -->
+      <div v-else-if="status === 'not-found'" class="state-box animado" style="--delay: 80ms">
+        <p class="state-text">No se encontró la película con ID {{ movieId }}.</p>
+        <button class="btn btn-ghost" @click="goBack">Volver a la lista</button>
       </div>
+
+      <!-- Formulario precargado -->
+      <template v-else-if="status === 'loaded'">
+        <Transition name="fade">
+          <div v-if="saved" class="success-banner animado" style="--delay: 0ms">
+            Película actualizada correctamente. Redirigiendo…
+          </div>
+        </Transition>
+
+        <p v-if="saveError" class="save-error">{{ saveError }}</p>
+
+        <div class="card animado" style="--delay: 80ms">
+          <MovieForm
+            :initial-data="initialData"
+            :initial-poster-url="movie?.poster_url ?? undefined"
+            :loading="isSaving"
+            @saved="onSaved"
+            @cancel="goBack"
+          />
+        </div>
+      </template>
     </div>
   </AdminLayout>
 </template>
@@ -108,7 +198,8 @@ function goBack() {
   padding: 24px;
 }
 
-.not-found {
+/* Loading skeleton */
+.state-box {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -116,11 +207,63 @@ function goBack() {
   padding: 40px 0;
 }
 
-.not-found-text {
+.skeleton-row {
+  height: 16px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 6px;
+  background: var(--border2);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-row.short {
+  max-width: 220px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.state-text {
   font-size: 14px;
   color: var(--text2);
 }
 
+.error-text {
+  color: var(--sinopia);
+}
+
+/* Save error */
+.save-error {
+  font-size: 13px;
+  color: var(--sinopia);
+  margin-bottom: 12px;
+}
+
+/* Success banner */
+.success-banner {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Buttons */
 .btn {
   border: none;
   cursor: pointer;

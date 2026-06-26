@@ -21,8 +21,10 @@ interface FormErrors {
 const props = withDefaults(
   defineProps<{
     initialData?: Partial<FormFields>
+    initialPosterUrl?: string
+    loading?: boolean
   }>(),
-  { initialData: undefined },
+  { initialData: undefined, initialPosterUrl: undefined, loading: false },
 )
 
 const emit = defineEmits<{
@@ -134,17 +136,17 @@ function handleSubmit() {
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-          {{ isEditing ? 'Guardar cambios' : 'Guardar película' }}
+        <button type="submit" class="btn btn-primary" :disabled="loading">
+          {{ loading ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Guardar película' }}
         </button>
-        <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancelar</button>
+        <button type="button" class="btn btn-ghost" :disabled="loading" @click="emit('cancel')">Cancelar</button>
       </div>
     </div>
 
     <!-- Columna derecha: póster -->
     <div class="col">
       <p class="section-label">Imagen del póster</p>
-      <PosterUpload v-model="posterFile" />
+      <PosterUpload v-model="posterFile" :initial-url="initialPosterUrl" />
     </div>
   </form>
 </template>
@@ -271,5 +273,10 @@ function handleSubmit() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

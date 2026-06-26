@@ -1,14 +1,45 @@
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import CinemaForm from '@/components/admin/CinemaForm.vue'
+import { createCine } from '@/services/cinemaService'
 
 const router = useRouter()
 
-function handleSaved(data: unknown) {
-  // TODO: POST /api/cines con data
-  console.log('Nuevo cine:', data)
-  router.push('/admin/cines')
+const isSaving = ref(false)
+const saveError = ref('')
+const saved = ref(false)
+
+async function handleSaved(data: {
+  cityId: string
+  name: string
+  address: string
+  phone: string
+  email: string
+}) {
+  isSaving.value = true
+  saveError.value = ''
+
+  try {
+    await createCine({
+      nombre: data.name,
+      id_ciudad: Number(data.cityId),
+      direccion: data.address,
+    })
+
+    saved.value = true
+    setTimeout(() => router.push('/admin/cines'), 1500)
+  } catch (err) {
+    const status = (err as { status?: number }).status
+    if (status === 404) {
+      saveError.value = 'La ciudad seleccionada no existe. Por favor selecciona otra.'
+    } else {
+      saveError.value = err instanceof Error ? err.message : 'Error al crear el cine'
+    }
+  } finally {
+    isSaving.value = false
+  }
 }
 
 function goBack() {
@@ -24,8 +55,16 @@ function goBack() {
     </div>
 
     <div class="page-body">
+      <Transition name="fade">
+        <div v-if="saved" class="success-banner animado" style="--delay: 0ms">
+          Cine creado correctamente. Redirigiendo…
+        </div>
+      </Transition>
+
+      <p v-if="saveError" class="save-error">{{ saveError }}</p>
+
       <div class="card animado" style="--delay: 80ms">
-        <CinemaForm @saved="handleSaved" @cancel="goBack" />
+        <CinemaForm :loading="isSaving" @saved="handleSaved" @cancel="goBack" />
       </div>
     </div>
   </AdminLayout>
@@ -76,6 +115,33 @@ function goBack() {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
+}
+
+.save-error {
+  font-size: 13px;
+  color: var(--sinopia);
+  margin-bottom: 12px;
+}
+
+.success-banner {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
 }
 
 /* ── Animaciones ── */

@@ -8,8 +8,9 @@ interface CiudadFields {
 const props = withDefaults(
   defineProps<{
     initialData?: Partial<CiudadFields>
+    loading?: boolean
   }>(),
-  { initialData: undefined },
+  { initialData: undefined, loading: false },
 )
 
 const emit = defineEmits<{
@@ -52,10 +53,10 @@ function handleSubmit() {
     </div>
 
     <div class="form-actions">
-      <button type="submit" class="btn btn-primary">
-        {{ isEditing ? 'Guardar cambios' : 'Crear ciudad' }}
+      <button type="submit" class="btn btn-primary" :disabled="loading">
+        {{ loading ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear ciudad' }}
       </button>
-      <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancelar</button>
+      <button type="button" class="btn btn-ghost" :disabled="loading" @click="emit('cancel')">Cancelar</button>
     </div>
   </form>
 </template>
@@ -146,5 +147,10 @@ function handleSubmit() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

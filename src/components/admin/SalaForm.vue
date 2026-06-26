@@ -19,8 +19,10 @@ interface SalaErrors {
 const props = withDefaults(
   defineProps<{
     initialData?: Partial<SalaFields>
+    cinemas?: { id: string; nombre: string }[]
+    loading?: boolean
   }>(),
-  { initialData: undefined },
+  { initialData: undefined, cinemas: () => [], loading: false },
 )
 
 const emit = defineEmits<{
@@ -29,13 +31,6 @@ const emit = defineEmits<{
 }>()
 
 const isEditing = computed(() => !!props.initialData)
-
-const cinemas = [
-  { id: '1', name: 'Cine Vicenta Zona 10', city: 'San Pedro Sula' },
-  { id: '2', name: 'Cine Vicenta Miraflores', city: 'Tegucigalpa' },
-  { id: '3', name: 'Cine Vicenta Pradera', city: 'Yuscarán' },
-  { id: '4', name: 'Cine Vicenta Antigua', city: 'Santa Bárbara' },
-]
 
 const form = reactive<SalaFields>({
   cinemaId: props.initialData?.cinemaId ?? '',
@@ -91,7 +86,7 @@ function handleSubmit() {
         <select id="sf-cinema" v-model="form.cinemaId" :class="{ 'input-error': errors.cinemaId }">
           <option value="" disabled>Seleccionar cine…</option>
           <option v-for="cinema in cinemas" :key="cinema.id" :value="cinema.id">
-            {{ cinema.name }} — {{ cinema.city }}
+            {{ cinema.nombre }}
           </option>
         </select>
         <span v-if="errors.cinemaId" class="field-error">{{ errors.cinemaId }}</span>
@@ -146,10 +141,10 @@ function handleSubmit() {
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-          {{ isEditing ? 'Guardar cambios' : 'Guardar sala' }}
+        <button type="submit" class="btn btn-primary" :disabled="loading">
+          {{ loading ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Guardar sala' }}
         </button>
-        <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancelar</button>
+        <button type="button" class="btn btn-ghost" :disabled="loading" @click="emit('cancel')">Cancelar</button>
       </div>
     </div>
 
@@ -332,5 +327,10 @@ function handleSubmit() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>

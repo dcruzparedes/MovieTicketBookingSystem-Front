@@ -45,6 +45,30 @@ export async function createPelicula(payload: CreatePeliculaPayload): Promise<un
   return res.json()
 }
 
+export async function fetchCines(){
+  const res = await fetch(`${API_BASE}/cines`);
+  if(!res.ok){
+    throw new Error(`Cines not found: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function fetchCiudades(){
+  const res = await fetch(`${API_BASE}/ciudades`);
+  if(!res.ok){
+    throw new Error(`Ciudades not found: ${res.status}`);
+  }
+  return res.json();
+}
+
+export async function getPeliculas(){
+  const res = await fetch(`${API_BASE}/peliculas`)
+  if(!res.ok){
+    throw new Error(`Peliculas not found: ${res.status}`)
+  }
+  return res.json();
+}
+
 export function getCurrentUserId(): number {
   try {
     const raw = localStorage.getItem('user')

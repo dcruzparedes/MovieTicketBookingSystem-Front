@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, computed, watch } from 'vue'
+import { onMounted, ref, computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import NavBar from '@/components/NavBar.vue'
 import Skeleton from 'primevue/skeleton'
@@ -9,9 +9,10 @@ import InputIcon from 'primevue/inputicon'
 import Badge from 'primevue/badge'
 import { useReservaStore } from '@/stores/reserva'
 const tienda = useReservaStore()
+import { getPeliculas, fetchCiudades, fetchGeneros, fetchIdiomas, fetchCines } from '@/services/movieService'
 
 interface Pelicula {
-  id: string
+  id: number
   titulo: string
   sinopsis: string | null
   poster_url: string
@@ -19,56 +20,41 @@ interface Pelicula {
   id_genero: string | null
   fecha_estreno: string | null
   activo: boolean
+  dur?: string,
+  year?: number,
   generos?: { nombre: string }
-  idiomas?: { nombre: string[] }
-  ciudades?: { nombre: string[] }
-  metadata: { dur: string; rating: string; year: number; color: string; accent: string }
+  idiomas?: { nombre: string }
+  funciones?: { id: number, fecha_hora: string, estado: string, formato: string, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}[]
 }
-interface Ciudad { id: string; nombre: string }
-interface Cine { id: string; nombre: string; direccion: string | null; id_ciudad: string }
-interface Funcion { id: string; id_pelicula: string; id_sala: string; id_cine: string; fecha_hora: string; estado: string; formato: string; disponibles: number }
-
-const CIUDADES: Ciudad[] = [
-  { id: '1', nombre: 'Puerto Cortés' },
-  { id: '2', nombre: 'San Pedro Sula' },
-  { id: '3', nombre: 'Tegucigalpa' },
-]
-const CINES: Cine[] = [
-  { id: '1', nombre: 'Cine Vicenta',      direccion: 'Barrio El Centro', id_ciudad: '1' },
-  { id: '2', nombre: 'Cinemark City SPS', direccion: 'City Center Mall', id_ciudad: '2' },
-  { id: '3', nombre: 'Metrocinema Tegus', direccion: 'Multiplaza',       id_ciudad: '3' },
-]
-const peliculas = ref<Pelicula[]>([
-  { id: '1', titulo: 'There Will Be Blood',               sinopsis: 'La historia de un buscador de petróleo de Texas y los problemas que enfrenta en el negocio al comienzo del nuevo siglo.', poster_url: 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p171565_p_v8_aa.jpg', id_idioma: '1', id_genero: '1', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Drama' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 38m', rating: '★★★★★', year: 2007, color: '#1A1535', accent: '#7B2FF7' } },
-  { id: '2', titulo: 'Inglourious Basterds',               sinopsis: 'En la Francia ocupada, un oficial aliado y sus soldados judíos planean asesinar a líderes nazis, mientras la dueña de un cine trama su propia venganza.', poster_url: 'https://m.media-amazon.com/images/M/MV5BODZhMWJlNjYtNDExNC00MTIzLTllM2ItOGQ2NGVjNDQ3MzkzXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idioma: '1', id_genero: '2', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','Tegucigalpa'] },                    metadata: { dur: '2h 33m', rating: '★★★★', year: 2009, color: '#2D1A0A', accent: '#D4A017' } },
-  { id: '3', titulo: 'Pulp Fiction',                       sinopsis: 'Las vidas de dos sicarios, un boxeador y una pareja de ladrones se entrelazan en cuatro historias de violencia y redención.', poster_url: 'https://m.media-amazon.com/images/M/MV5BYTViYTE3ZGQtNDBlMC00ZTAyLTkyODMtZGRiZDg0MjA2YThkXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg', id_idioma: '1', id_genero: '2', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Acción' },    idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['San Pedro Sula','Tegucigalpa'] },                   metadata: { dur: '2h 34m', rating: '★★★★★', year: 1994, color: '#1A0D00', accent: '#E8A000' } },
-  { id: '4', titulo: 'Fight Club',                         sinopsis: 'Un empleado insomne y un vendedor de jabón crean un club de lucha clandestino que deriva en algo mucho más peligroso.', poster_url: 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/344/2024/08/21164326/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK-scaled.jpg', id_idioma: '1', id_genero: '3', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Thriller' },   idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 1999, color: '#0A0A0A', accent: '#CC2200' } },
-  { id: '5', titulo: 'Everything Everywhere All At Once',  sinopsis: 'Una heroína inesperada debe usar sus nuevos poderes para luchar contra los peligros del multiverso y salvar su mundo.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/1/1e/Everything_Everywhere_All_at_Once.jpg', id_idioma: '1', id_genero: '4', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Sci-Fi' },     idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Puerto Cortés','San Pedro Sula','Tegucigalpa'] }, metadata: { dur: '2h 19m', rating: '★★★★★', year: 2022, color: '#0A1020', accent: '#4A90D9' } },
-  { id: '6', titulo: 'Chainsaw Man: The Reze Arc',         sinopsis: 'En medio de una guerra entre demonios y cazadores, Denji se enfrenta a su batalla más letal al conocer a la misteriosa Reze.', poster_url: 'https://upload.wikimedia.org/wikipedia/en/9/95/Chainsaw_Man_Reze_Arc_movie_poster.jpg', id_idioma: '1', id_genero: '5', fecha_estreno: '2026-08-16', activo: true, generos: { nombre: 'Animación' }, idiomas: { nombre: ['Español'] }, ciudades: { nombre: ['Tegucigalpa'] },                                        metadata: { dur: '1h 50m', rating: '★★★★', year: 2025, color: '#1A0000', accent: '#CC0000' } },
-])
-
-const FUNCIONES: Funcion[] = [
-  { id: '101', id_pelicula: '1', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-12T14:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 68 },
-  { id: '102', id_pelicula: '1', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-12T19:15:00Z', estado: 'activa', formato: '3D · Español',     disponibles: 91 },
-  { id: '103', id_pelicula: '2', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-13T18:00:00Z', estado: 'activa', formato: '3D · Subtitulada', disponibles: 55 },
-  { id: '104', id_pelicula: '3', id_sala: '4', id_cine: '1', fecha_hora: '2026-06-12T16:30:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 42 },
-  { id: '105', id_pelicula: '4', id_sala: '2', id_cine: '1', fecha_hora: '2026-06-12T21:45:00Z', estado: 'activa', formato: 'IMAX · Español',   disponibles: 12 },
-  { id: '201', id_pelicula: '2', id_sala: '1', id_cine: '2', fecha_hora: '2026-06-12T18:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 45 },
-  { id: '202', id_pelicula: '4', id_sala: '1', id_cine: '2', fecha_hora: '2026-06-12T15:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 30 },
-  { id: '301', id_pelicula: '3', id_sala: '1', id_cine: '3', fecha_hora: '2026-06-12T20:00:00Z', estado: 'activa', formato: '2D · Español',     disponibles: 20 },
-  { id: '302', id_pelicula: '5', id_sala: '1', id_cine: '3', fecha_hora: '2026-06-12T17:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 15 },
-  { id: '303', id_pelicula: '6', id_sala: '1', id_cine: '3', fecha_hora: '2026-06-12T21:00:00Z', estado: 'activa', formato: '2D · Subtitulada', disponibles: 8  },
-]
+interface Idioma {
+  id: number,
+  nombre: string
+}
+interface Genero {
+  id: number,
+  nombre: string
+}
+interface Ciudad {
+  id: number,
+  nombre: string
+}
+interface Cine { id: number; nombre: string; direccion: string | null; id_ciudad: number }
+interface Funcion { id: number, fecha_hora: string, estado: string, formato: string, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}
 
 // ── Estado ──
-const router           = useRouter()
-const selectedCityId   = ref<string>('1')
+const router = useRouter()
+const selectedCityId = ref<string>('1')
 const selectedCinemaId = ref<string | null>(null)
-const selectedMovie    = ref<Pelicula | null>(null)
+const selectedMovie = ref<Pelicula | null>(null)
 const cargandoPeliculas = ref(true)
+const peliculas = ref<Pelicula[]>([])
+const idiomas = ref<Idioma[]>([])
+const generos = ref<Genero[]>([])
+const ciudades = ref<Ciudad[]>([])
+const cines = ref<Cine[]>([])
 
 // Filtros
-const searchTitle    = ref('')
+const searchTitle = ref('')
 const selectedGenero = ref('Todos los géneros')
 const selectedIdioma = ref('Todos los idiomas')
 const selectedCiudad = ref('Todas las ciudades')
@@ -77,15 +63,37 @@ setTimeout(() => { cargandoPeliculas.value = false }, 800)
 
 watch(selectedCityId, () => { selectedCinemaId.value = null })
 
+onMounted(async () => {
+  try{
+    const [response] = await Promise.all([getPeliculas()]);
+    const [filtersResponse1] = await Promise.all([fetchCiudades()]);
+    const [filtersResponse2] = await Promise.all([fetchIdiomas()]);
+    const [filtersResponse3] = await Promise.all([fetchGeneros()]);
+    const [cinesRes] = await Promise.all([fetchCines()]);
+    peliculas.value = response;
+    ciudades.value = filtersResponse1;
+    idiomas.value = filtersResponse2;
+    generos.value = filtersResponse3;
+    cines.value = cinesRes;
+  }catch(error){
+    throw new Error('Ocurrio un error.')
+  }
+})
+
 // ── Computed ──
-const filteredCinemas = computed(() => CINES.filter((c) => c.id_ciudad === selectedCityId.value))
+
+const filteredCinemas = computed(() => {  
+    const nombres = new Set(selectedMovie.value?.funciones?.map(f => f.salas.cines.nombre))
+    return cines.value.filter(c => nombres.has(c.nombre))
+})
+const cineActual = computed(() => cines.value.find((c) => String(c.id) === selectedCinemaId.value))
 
 const peliculasFiltradas = computed(() =>
-  peliculas.value.filter((m) => {
-    const matchTitulo  = searchTitle.value === '' || m.titulo.toLowerCase().includes(searchTitle.value.toLowerCase())
-    const matchGenero  = selectedGenero.value === 'Todos los géneros' || m.generos?.nombre.toLowerCase() === selectedGenero.value.toLowerCase()
-    const matchIdioma  = selectedIdioma.value === 'Todos los idiomas' || m.idiomas?.nombre.some(i => i.toLowerCase().includes(selectedIdioma.value.toLowerCase()))
-    const matchCiudad  = selectedCiudad.value === 'Todas las ciudades' || m.ciudades?.nombre.some(c => c.toLowerCase().includes(selectedCiudad.value.toLowerCase()))
+  peliculas.value.filter((p) => {
+    const matchTitulo  = searchTitle.value === '' || p.titulo.toLowerCase().includes(searchTitle.value.toLowerCase())
+    const matchGenero  = selectedGenero.value === 'Todos los géneros' || p.generos?.nombre.toLowerCase() === selectedGenero.value.toLowerCase()
+    const matchIdioma  = selectedIdioma.value === 'Todos los idiomas' || p.idiomas?.nombre.toLowerCase() === selectedIdioma.value.toLowerCase()
+    const matchCiudad  = selectedCiudad.value === 'Todas las ciudades' || p.funciones?.some(f => f.salas.cines.ciudades.nombre.toLowerCase().includes(selectedCiudad.value.toLowerCase()))
     return matchTitulo && matchGenero && matchIdioma && matchCiudad
   })
 )
@@ -94,22 +102,23 @@ const filteredFunctions = computed(() => {
   if (!selectedMovie.value) return []
   const cinemasInCity   = filteredCinemas.value.map((c) => c.id)
   const targetCinemaIds = selectedCinemaId.value ? [selectedCinemaId.value] : cinemasInCity
-  return FUNCIONES.filter((f) => f.id_pelicula === selectedMovie.value!.id && targetCinemaIds.includes(f.id_cine))
+  return selectedMovie.value.funciones;
 })
 
 const funcionesPorFecha = computed(() => {
   const grupos: Record<string, Funcion[]> = {}
-  filteredFunctions.value.forEach((f) => {
-    const fecha    = new Date(f.fecha_hora)
+  if(!selectedMovie.value?.funciones || !cineActual.value) return;
+  selectedMovie.value.funciones
+  .filter((f) => f.salas.cines.nombre === cineActual.value!.nombre)
+  .forEach((f) => {
+    const fecha = new Date(f.fecha_hora)
     const fechaStr = fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })
-    const cap      = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)
+    const cap = fechaStr.charAt(0).toUpperCase() + fechaStr.slice(1)
     if (!grupos[cap]) grupos[cap] = []
     grupos[cap].push(f)
   })
   return grupos
 })
-
-const cineActual = computed(() => CINES.find((c) => c.id === selectedCinemaId.value))
 
 // ── Funciones ──
 function formatearHora(dateStr: string) {
@@ -120,26 +129,33 @@ function seleccionarPelicula(movie: Pelicula) {
   selectedCinemaId.value = null
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
-function seleccionarCine(cinemaId: string) { selectedCinemaId.value = cinemaId }
 function limpiarSeleccion() { selectedMovie.value = null; selectedCinemaId.value = null }
-function irAAsientos(funcionId: string) {
-  const funcion = FUNCIONES.find(f => f.id === funcionId)
-  if (!funcion) return
+function irAAsientos(funcionId: number) {
+  let pelicula: Pelicula | undefined;
+  let funcion: Funcion | undefined;
 
-  const pelicula = peliculas.value.find(p => p.id === funcion.id_pelicula)
-  const cine = CINES.find(c => c.id === funcion.id_cine)
+  for(const p of peliculas.value){
+    funcion = p.funciones?.find(f => f.id === funcionId);
+    if(funcion){
+      pelicula = p;
+      break;
+    }
+  }
+  if(!funcion || !pelicula) return;
 
   tienda.seleccionarFuncion({
     id: String(funcion.id),
-    tituloPelicula: pelicula?.titulo ?? '',
-    cine: cine?.nombre ?? '',
-    sala: `Sala ${funcion.id_sala}`,
+    tituloPelicula: pelicula.titulo ?? '',
+    cine: funcion.salas.cines.nombre ?? '',
+    sala: funcion.salas.nombre ? `Sala ${funcion.salas.id}` : '',
     fecha: new Date(funcion.fecha_hora).toLocaleDateString('es-ES', {
-      weekday: 'long', day: 'numeric', month: 'short'
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short'
     }),
     hora: formatearHora(funcion.fecha_hora),
     formato: funcion.formato,
-  })
+  });
 
   router.push('/asientos')
 }
@@ -164,23 +180,15 @@ function irAAsientos(funcionId: string) {
               </IconField>
               <select v-model="selectedCiudad" class="select-native">
                 <option>Todas las ciudades</option>
-                <option>Puerto Cortés</option>
-                <option>San Pedro Sula</option>
-                <option>Tegucigalpa</option>
+                <option v-for="c in ciudades">{{ c.nombre }}</option>
               </select>
               <select v-model="selectedIdioma" class="select-native">
                 <option>Todos los idiomas</option>
-                <option>Inglés</option>
-                <option>Español</option>
+                <option v-for="i in idiomas">{{ i.nombre }}</option>
               </select>
               <select v-model="selectedGenero" class="select-native">
                 <option>Todos los géneros</option>
-                <option>Acción</option>
-                <option>Drama</option>
-                <option>Terror</option>
-                <option>Thriller</option>
-                <option>Animación</option>
-                <option>Sci-Fi</option>
+                <option v-for="g in generos">{{ g.nombre }}</option>
               </select>
             </div>
           </div>
@@ -201,15 +209,14 @@ function irAAsientos(funcionId: string) {
             <div class="detail-info">
               <div class="detail-chips animado" style="--delay: 80ms">
                 <span class="badge badge-orange">{{ selectedMovie.generos?.nombre }}</span>
-                <span class="badge badge-gray">PG-13</span>
               </div>
               <h1 class="detail-title animado" style="--delay: 130ms">{{ selectedMovie.titulo }}</h1>
-              <p class="detail-tagline animado" style="--delay: 170ms">En cartelera · {{ cineActual?.nombre || 'Varios cines' }}</p>
+              <p class="detail-tagline animado" style="--delay: 170ms">En cartelera {{ cineActual?.nombre }}</p>
               <p class="detail-desc animado" style="--delay: 200ms">{{ selectedMovie.sinopsis }}</p>
               <div class="detail-stats animado" style="--delay: 240ms">
-                <div class="dstat"><div class="dstat-val">{{ selectedMovie.metadata.dur }}</div><div class="dstat-lbl">Duración</div></div>
-                <div class="dstat"><div class="dstat-val">{{ selectedMovie.metadata.rating }}</div><div class="dstat-lbl">Rating</div></div>
-                <div class="dstat"><div class="dstat-val">{{ selectedMovie.metadata.year }}</div><div class="dstat-lbl">Año</div></div>
+                <div class="dstat"><div class="dstat-val">{{ selectedMovie.dur }}</div><div class="dstat-lbl">Duración</div></div>
+                <div class="dstat"><div class="dstat-val">{{ selectedMovie.year }}</div><div class="dstat-lbl">Año</div></div>
+                <div class="dstat"><div v-for="idioma in selectedMovie.idiomas" class="dstat-val">{{ idioma }}</div><div class="dstat-lbl">Año</div></div>
               </div>
             </div>
           </div>
@@ -253,7 +260,7 @@ function irAAsientos(funcionId: string) {
                 </div>
                 <div class="movie-info">
                   <div class="movie-title">{{ movie.titulo }}</div>
-                  <div class="movie-meta">{{ movie.metadata.year }} · {{ movie.metadata.dur }}</div>
+                  <div class="movie-meta">{{ movie.year }} · {{ movie.dur }}</div>
                 </div>
               </div>
               <div v-if="peliculasFiltradas.length === 0" key="empty" class="empty-state">
@@ -270,12 +277,12 @@ function irAAsientos(funcionId: string) {
               :key="cine.id"
               class="cine-item animado"
               :style="{ '--delay': `${60 + index * 70}ms` }"
-              @click="seleccionarCine(cine.id)"
+              @click="selectedCinemaId = String(cine.id)"
             >
               <div>
                 <div class="cine-item-name">{{ cine.nombre }}</div>
                 <div class="cine-item-meta">
-                  {{ CIUDADES.find((c) => c.id === cine.id_ciudad)?.nombre }} · {{ cine.direccion }}
+                  {{ cine.direccion }}
                 </div>
               </div>
               <span class="cine-item-arrow">›</span>
@@ -287,7 +294,7 @@ function irAAsientos(funcionId: string) {
             <button class="back-btn animado" style="--delay: 0ms" @click="selectedCinemaId = null">Cambiar cine</button>
             <div class="eyebrow animado" style="--delay: 50ms">Funciones en {{ cineActual?.nombre }}</div>
 
-            <div v-if="Object.keys(funcionesPorFecha).length === 0" class="empty-showtimes animado" style="--delay: 80ms">
+            <div v-if="Object.keys(funcionesPorFecha || '').length === 0" class="empty-showtimes animado" style="--delay: 80ms">
               No hay funciones programadas para esta película en el cine seleccionado.
             </div>
 
@@ -308,14 +315,6 @@ function irAAsientos(funcionId: string) {
                 >
                   <div class="funcion-time">{{ formatearHora(s.fecha_hora) }}</div>
                   <div class="funcion-format">{{ s.formato }}</div>
-                  <div class="funcion-avail" :class="{ low: s.disponibles < 20 }">
-                    <Badge
-                      :value="String(s.disponibles)"
-                      :severity="s.disponibles < 20 ? 'warn' : 'success'"
-                      style="font-size: 10px; min-width: 0; height: auto; padding: 1px 5px"
-                    />
-                    disponibles
-                  </div>
                 </button>
               </div>
             </div>
@@ -366,7 +365,7 @@ function irAAsientos(funcionId: string) {
 .hero-eyebrow::after { content: ''; flex: 1; height: .5px; background: rgba(250,240,236,.15); max-width: 60px; }
 .hero h1 {
   font-family: 'DM Serif Display', serif; font-size: 38px;
-  color: var(--cream); line-height: 1.05; margin-bottom: 16px;
+  color: #faf0ec; line-height: 1.05; margin-bottom: 16px;
 }
 .hero h1 em { font-style: italic; color: var(--tangelo); }
 
@@ -461,7 +460,7 @@ function irAAsientos(funcionId: string) {
 .funcion-btn:hover { border-color: var(--tangelo); background: rgba(243,80,10,.04); }
 .funcion-time { font-size: 16px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; }
 .funcion-format { font-size: 11px; color: var(--text3); margin-top: 2px; }
-.funcion-avail { font-size: 11px; color: var(--success); margin-top: 6px; display: flex; align-items: center; gap: 5px; }
+.funcion-avail { font-size: 11px; color: #1e783c; margin-top: 6px; display: flex; align-items: center; gap: 5px; }
 .funcion-avail.low { color: var(--orange); }
 .empty-showtimes { padding: 40px 0; color: var(--text3); font-size: 14px; }
 

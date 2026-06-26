@@ -1,90 +1,125 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import CiudadForm from '@/components/admin/CiudadForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
+import { getCiudades, createCiudad, updateCiudad, deleteCiudad } from '@/services/ciudadService'
 
-interface Ciudad {
-  id: number
-  name: string
+interface CiudadRow {
+  id: string
+  nombre: string
   active: boolean
 }
 
-const ciudades = ref<Ciudad[]>([
-  { id: 1, name: 'San Pedro Sula', active: true },
-  { id: 2, name: 'Francisco Morazán', active: true },
-  { id: 3, name: 'Siguatepeque', active: true },
-  { id: 4, name: 'Tegucigalpa', active: false },
-  { id: 5, name: 'Copán', active: true },
-  { id: 6, name: 'Olancho', active: true },
-  { id: 7, name: 'Gracias a Dios', active: false },
-  { id: 8, name: 'La Paz', active: true },
-  { id: 9, name: 'Lempira', active: true },
-])
+const ciudades = ref<CiudadRow[]>([])
+const isLoading = ref(true)
+const loadError = ref('')
 
-const loadingIds = ref(new Set<number>())
+const loadingIds = ref(new Set<string>())
 
-// ── Modal create/edit ──
+// ── Carga inicial ──
+onMounted(async () => {
+  try {
+    const data = await getCiudades()
+    ciudades.value = data.map((c) => ({ id: c.id, nombre: c.nombre, active: true }))
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Error al cargar las ciudades'
+  } finally {
+    isLoading.value = false
+  }
+})
+
+// ── Modal crear / editar ──
 const showModal = ref(false)
-const editingCity = ref<Ciudad | null>(null)
+const editingCity = ref<CiudadRow | null>(null)
+const isSaving = ref(false)
+const saveError = ref('')
 
 function openCreateModal() {
   editingCity.value = null
+  saveError.value = ''
   showModal.value = true
 }
 
-function openEditModal(city: Ciudad) {
+function openEditModal(city: CiudadRow) {
   editingCity.value = city
+  saveError.value = ''
   showModal.value = true
 }
 
 function closeModal() {
+  if (isSaving.value) return
   showModal.value = false
   editingCity.value = null
+  saveError.value = ''
 }
 
-function onSaved(data: { name: string }) {
-  if (editingCity.value) {
-    editingCity.value.name = data.name
-  } else {
-    ciudades.value.push({ id: Date.now(), name: data.name, active: true })
+async function onSaved(data: { name: string }) {
+  isSaving.value = true
+  saveError.value = ''
+  try {
+    if (editingCity.value) {
+      await updateCiudad(editingCity.value.id, data.name)
+      editingCity.value.nombre = data.name
+    } else {
+      const created = await createCiudad(data.name)
+      ciudades.value.push({ id: created.id, nombre: created.nombre, active: true })
+    }
+    closeModal()
+  } catch (err) {
+    const status = (err as { status?: number }).status
+    if (status === 500) {
+      saveError.value = 'Ya existe una ciudad con ese nombre.'
+    } else {
+      saveError.value = err instanceof Error ? err.message : 'Error al guardar la ciudad'
+    }
+  } finally {
+    isSaving.value = false
   }
-  closeModal()
 }
 
-// ── Delete confirmation ──
+// ── Confirmación de eliminación ──
 const showDeleteConfirm = ref(false)
-const deletingCity = ref<Ciudad | null>(null)
+const deletingCity = ref<CiudadRow | null>(null)
+const isDeleting = ref(false)
+const deleteError = ref('')
 
-function openDeleteConfirm(city: Ciudad) {
+function openDeleteConfirm(city: CiudadRow) {
   deletingCity.value = city
+  deleteError.value = ''
   showDeleteConfirm.value = true
 }
 
 function closeDeleteConfirm() {
+  if (isDeleting.value) return
   showDeleteConfirm.value = false
   deletingCity.value = null
+  deleteError.value = ''
 }
 
-function confirmDelete() {
+async function confirmDelete() {
   if (!deletingCity.value) return
-  ciudades.value = ciudades.value.filter((c) => c.id !== deletingCity.value!.id)
-  closeDeleteConfirm()
+  isDeleting.value = true
+  deleteError.value = ''
+  try {
+    await deleteCiudad(deletingCity.value.id)
+    ciudades.value = ciudades.value.filter((c) => c.id !== deletingCity.value!.id)
+    closeDeleteConfirm()
+  } catch (err) {
+    const status = (err as { status?: number }).status
+    if (status === 500 || status === 409) {
+      deleteError.value = 'No se puede eliminar esta ciudad porque tiene cines asociados.'
+    } else {
+      deleteError.value = err instanceof Error ? err.message : 'Error al eliminar la ciudad'
+    }
+  } finally {
+    isDeleting.value = false
+  }
 }
 
-// ── Toggle active ──
-async function toggleActive(city: Ciudad) {
-  loadingIds.value.add(city.id)
-  const previous = city.active
+// ── Toggle activo (estado local, sin persistencia en backend) ──
+function toggleActive(city: CiudadRow) {
   city.active = !city.active
-  try {
-    // TODO: PATCH /api/ciudades/:id { active: city.active }
-    await new Promise((r) => setTimeout(r, 600))
-  } catch {
-    city.active = previous
-  } finally {
-    loadingIds.value.delete(city.id)
-  }
 }
 </script>
 
@@ -96,7 +131,20 @@ async function toggleActive(city: Ciudad) {
     </div>
 
     <div class="page-body">
-      <div class="card animado" style="--delay: 80ms">
+      <!-- Cargando -->
+      <div v-if="isLoading" class="state-box animado" style="--delay: 80ms">
+        <div class="skeleton-row" />
+        <div class="skeleton-row short" />
+        <div class="skeleton-row" />
+      </div>
+
+      <!-- Error de carga -->
+      <div v-else-if="loadError" class="state-box animado" style="--delay: 80ms">
+        <p class="state-text error-text">{{ loadError }}</p>
+      </div>
+
+      <!-- Tabla -->
+      <div v-else class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -110,7 +158,7 @@ async function toggleActive(city: Ciudad) {
             <tr v-for="(ciudad, index) in ciudades" :key="ciudad.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td class="id-cell">{{ ciudad.id }}</td>
               <td>
-                <strong>{{ ciudad.name }}</strong>
+                <strong>{{ ciudad.nombre }}</strong>
               </td>
               <td>
                 <div class="status-cell">
@@ -152,9 +200,11 @@ async function toggleActive(city: Ciudad) {
             <button class="close-btn" @click="closeModal">✕</button>
           </div>
           <div class="modal-body">
+            <p v-if="saveError" class="modal-error">{{ saveError }}</p>
             <CiudadForm
               :key="editingCity?.id ?? 'new'"
-              :initial-data="editingCity ? { name: editingCity.name } : undefined"
+              :initial-data="editingCity ? { name: editingCity.nombre } : undefined"
+              :loading="isSaving"
               @saved="onSaved"
               @cancel="closeModal"
             />
@@ -174,12 +224,15 @@ async function toggleActive(city: Ciudad) {
           <div class="modal-body">
             <p class="confirm-text">
               ¿Estás seguro de que deseas eliminar
-              <strong>{{ deletingCity?.name }}</strong
+              <strong>{{ deletingCity?.nombre }}</strong
               >? Esta acción no se puede deshacer.
             </p>
+            <p v-if="deleteError" class="modal-error">{{ deleteError }}</p>
             <div class="confirm-actions">
-              <button class="btn btn-danger" @click="confirmDelete">Sí, eliminar</button>
-              <button class="btn btn-ghost" @click="closeDeleteConfirm">Cancelar</button>
+              <button class="btn btn-danger" :disabled="isDeleting" @click="confirmDelete">
+                {{ isDeleting ? 'Eliminando…' : 'Sí, eliminar' }}
+              </button>
+              <button class="btn btn-ghost" :disabled="isDeleting" @click="closeDeleteConfirm">Cancelar</button>
             </div>
           </div>
         </div>
@@ -213,6 +266,49 @@ async function toggleActive(city: Ciudad) {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+/* Loading skeleton */
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 40px 0;
+}
+
+.skeleton-row {
+  height: 16px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 6px;
+  background: var(--border2);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-row.short {
+  max-width: 220px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.state-text {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.error-text {
+  color: var(--sinopia);
+}
+
+/* Modal error */
+.modal-error {
+  font-size: 13px;
+  color: var(--sinopia);
+  margin-bottom: 12px;
 }
 
 /* Table */

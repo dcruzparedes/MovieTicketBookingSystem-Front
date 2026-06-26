@@ -1,9 +1,9 @@
 import { api } from './api'
 
 export interface Cine {
-  id: number
+  id: string
   nombre: string
-  id_ciudad: number
+  id_ciudad: string
   direccion: string | null
   created_at: string
 }

@@ -1,55 +1,89 @@
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import CinemaForm from '@/components/admin/CinemaForm.vue'
+import { getCines, updateCine, getCineFunciones } from '@/services/cinemaService'
+import type { Cine } from '@/services/cinemaService'
 
 const route = useRoute()
 const router = useRouter()
 
-// Mock hasta conectar con API
-const cinemas = [
-  {
-    id: 1,
-    cityId: '1',
-    name: 'Cine Vicenta Zona 10',
-    address: '5a Av. 12-34, Zona 10',
-    phone: '2222-3333',
-    email: 'zona10@cinevicenta.com',
-  },
-  {
-    id: 2,
-    cityId: '1',
-    name: 'Cine Vicenta Miraflores',
-    address: 'Blvd. Miraflores 4-12, Zona 11',
-    phone: '2333-4444',
-    email: 'miraflores@cinevicenta.com',
-  },
-  {
-    id: 3,
-    cityId: '2',
-    name: 'Cine Vicenta Pradera',
-    address: '1a Calle 15-05, Zona 3',
-    phone: '7777-8888',
-    email: 'pradera@cinevicenta.com',
-  },
-  {
-    id: 4,
-    cityId: '3',
-    name: 'Cine Vicenta Antigua',
-    address: '4a Calle Oriente 2',
-    phone: '7832-1234',
-    email: 'antigua@cinevicenta.com',
-  },
-]
-
 const cinemaId = computed(() => Number(route.params.id))
-const cinema = computed(() => cinemas.find((c) => c.id === cinemaId.value) ?? null)
 
-function onSaved(data: unknown) {
-  // TODO: PUT /api/cines/:id con data
-  console.log('PUT /api/cines/' + cinemaId.value, data)
-  router.push('/admin/cines')
+type LoadStatus = 'loading' | 'loaded' | 'not-found' | 'error'
+
+const status = ref<LoadStatus>('loading')
+const loadError = ref('')
+const cinema = ref<Cine | null>(null)
+const hasActiveFunciones = ref(false)
+
+const isSaving = ref(false)
+const saveError = ref('')
+const saved = ref(false)
+
+onMounted(async () => {
+  try {
+    const [cines, funciones] = await Promise.all([
+      getCines(),
+      getCineFunciones(cinemaId.value).catch(() => []),
+    ])
+
+    const found = cines.find((c) => Number(c.id) === cinemaId.value) ?? null
+    if (!found) {
+      status.value = 'not-found'
+      return
+    }
+
+    cinema.value = found
+    hasActiveFunciones.value = funciones.length > 0
+    status.value = 'loaded'
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Error al cargar el cine'
+    status.value = 'error'
+  }
+})
+
+const initialData = computed(() => {
+  if (!cinema.value) return undefined
+  return {
+    cityId: String(cinema.value.id_ciudad),
+    name: cinema.value.nombre,
+    address: cinema.value.direccion ?? '',
+    phone: '',
+    email: '',
+  }
+})
+
+async function onSaved(data: {
+  cityId: string
+  name: string
+  address: string
+  phone: string
+  email: string
+}) {
+  isSaving.value = true
+  saveError.value = ''
+
+  try {
+    await updateCine(cinemaId.value, {
+      nombre: data.name,
+      id_ciudad: Number(data.cityId),
+      direccion: data.address,
+    })
+
+    saved.value = true
+    setTimeout(() => router.push('/admin/cines'), 1500)
+  } catch (err) {
+    const status = (err as { status?: number }).status
+    if (status === 404) {
+      saveError.value = 'El cine ya no existe. Por favor vuelve a la lista.'
+    } else {
+      saveError.value = err instanceof Error ? err.message : 'Error al guardar el cine'
+    }
+  } finally {
+    isSaving.value = false
+  }
 }
 
 function goBack() {
@@ -65,26 +99,51 @@ function goBack() {
     </div>
 
     <div class="page-body">
+      <!-- Cargando -->
+      <div v-if="status === 'loading'" class="state-box animado" style="--delay: 80ms">
+        <div class="skeleton-row" />
+        <div class="skeleton-row short" />
+        <div class="skeleton-row" />
+      </div>
+
+      <!-- Error de carga -->
+      <div v-else-if="status === 'error'" class="state-box animado" style="--delay: 80ms">
+        <p class="state-text error-text">{{ loadError }}</p>
+        <button class="btn btn-ghost" @click="goBack">Volver a la lista</button>
+      </div>
+
       <!-- Cine no encontrado -->
-      <div v-if="!cinema" class="not-found animado" style="--delay: 80ms">
-        <p class="not-found-text">No se encontró el cine con ID {{ cinemaId }}.</p>
+      <div v-else-if="status === 'not-found'" class="state-box animado" style="--delay: 80ms">
+        <p class="state-text">No se encontró el cine con ID {{ cinemaId }}.</p>
         <button class="btn btn-ghost" @click="goBack">Volver a la lista</button>
       </div>
 
       <!-- Formulario precargado -->
-      <div v-else class="card animado" style="--delay: 80ms">
-        <CinemaForm
-          :initial-data="{
-            cityId: cinema.cityId,
-            name: cinema.name,
-            address: cinema.address,
-            phone: cinema.phone,
-            email: cinema.email,
-          }"
-          @saved="onSaved"
-          @cancel="goBack"
-        />
-      </div>
+      <template v-else-if="status === 'loaded'">
+        <!-- Advertencia funciones activas -->
+        <div v-if="hasActiveFunciones" class="warning-banner animado" style="--delay: 40ms">
+          <span class="warning-icon">⚠</span>
+          <span>Este cine tiene <strong>funciones activas</strong>. Modificar sus datos podría
+            afectar las reservas existentes.</span>
+        </div>
+
+        <Transition name="fade">
+          <div v-if="saved" class="success-banner animado" style="--delay: 0ms">
+            Cine actualizado correctamente. Redirigiendo…
+          </div>
+        </Transition>
+
+        <p v-if="saveError" class="save-error">{{ saveError }}</p>
+
+        <div class="card animado" style="--delay: 80ms">
+          <CinemaForm
+            :initial-data="initialData"
+            :loading="isSaving"
+            @saved="onSaved"
+            @cancel="goBack"
+          />
+        </div>
+      </template>
     </div>
   </AdminLayout>
 </template>
@@ -136,7 +195,8 @@ function goBack() {
   padding: 24px;
 }
 
-.not-found {
+/* Loading skeleton */
+.state-box {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -144,11 +204,84 @@ function goBack() {
   padding: 40px 0;
 }
 
-.not-found-text {
+.skeleton-row {
+  height: 16px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 6px;
+  background: var(--border2);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-row.short {
+  max-width: 220px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.state-text {
   font-size: 14px;
   color: var(--text2);
 }
 
+.error-text {
+  color: var(--sinopia);
+}
+
+/* Warning banner */
+.warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: #fffbeb;
+  color: #92400e;
+  border: 1px solid #fcd34d;
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-size: 13px;
+  margin-bottom: 14px;
+  line-height: 1.5;
+}
+
+.warning-icon {
+  flex-shrink: 0;
+  font-size: 15px;
+  margin-top: 1px;
+}
+
+/* Success banner */
+.success-banner {
+  background: #d1fae5;
+  color: #065f46;
+  border: 1px solid #6ee7b7;
+  border-radius: var(--radius);
+  padding: 12px 18px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 14px;
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+/* Save error */
+.save-error {
+  font-size: 13px;
+  color: var(--sinopia);
+  margin-bottom: 12px;
+}
+
+/* Buttons */
 .btn {
   border: none;
   cursor: pointer;

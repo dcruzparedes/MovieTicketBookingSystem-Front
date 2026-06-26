@@ -36,6 +36,10 @@
         <span>Ocupado</span>
       </div>
       <div class="item-leyenda">
+        <div class="punto-leyenda bloqueado"></div>
+        <span>Bloqueado temporalmente</span>
+      </div>
+      <div class="item-leyenda">
         <div class="punto-leyenda vip"></div>
         <span>VIP</span>
       </div>
@@ -73,7 +77,7 @@ const asientosPreview = computed<Asiento[]>(() => {
         codigo: `${fila}${c}`,
         fila,
         columna: c,
-        tipo: 'regular',
+        tipo: 'ESTANDAR',
         estado: 'disponible',
         estadoReal: 'disponible',
       })
@@ -99,7 +103,7 @@ function claseAsiento(asiento: Asiento) {
 
 function manejarClick(asiento: Asiento) {
   if (props.preview) return
-  if (asiento.estado === 'ocupado') return
+  if (asiento.estado === 'ocupado' || asiento.estado === 'bloqueado') return
   tienda.alternarAsiento(asiento.codigo)
 }
 </script>
@@ -192,6 +196,12 @@ function manejarClick(asiento: Asiento) {
   color: rgba(42, 10, 6, 0.25);
   cursor: not-allowed;
 }
+.asiento.bloqueado {
+  background: rgba(217, 164, 6, 0.12);
+  border-color: rgba(217, 164, 6, 0.35);
+  color: rgba(140, 105, 0, 0.6);
+  cursor: not-allowed;
+}
 .asiento.vip {
   background: rgba(243, 113, 0, 0.08);
   border-color: rgba(243, 113, 0, 0.3);
@@ -232,5 +242,6 @@ function manejarClick(asiento: Asiento) {
 .punto-leyenda.disponible  { background: var(--bg); border-color: var(--border2); }
 .punto-leyenda.seleccionado { background: var(--tangelo); border-color: var(--tangelo); }
 .punto-leyenda.ocupado     { background: rgba(42,10,6,.07); border-color: rgba(42,10,6,.15); }
+.punto-leyenda.bloqueado   { background: rgba(217,164,6,.12); border-color: rgba(217,164,6,.35); }
 .punto-leyenda.vip         { background: rgba(243,113,0,.08); border-color: rgba(243,113,0,.3); }
 </style>

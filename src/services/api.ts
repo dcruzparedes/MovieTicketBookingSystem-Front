@@ -1,5 +1,14 @@
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
 
+export interface ApiError extends Error {
+  status?: number
+  data?: Record<string, unknown>
+}
+
+export function isApiError(error: unknown): error is ApiError {
+  return error instanceof Error
+}
+
 export async function request<T>(endpoint: string, options: RequestInit = {}): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     ...options,
@@ -13,12 +22,7 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
     const errorData = (await response.json().catch(() => ({}))) as Record<string, unknown>
     const errorMessage =
       typeof errorData.message === 'string' ? errorData.message : 'An unexpected error occurred'
-    
-    interface ApiError extends Error {
-      status?: number;
-      data?: Record<string, unknown>;
-    }
-    
+
     const error: ApiError = new Error(errorMessage)
     error.status = response.status
     error.data = errorData

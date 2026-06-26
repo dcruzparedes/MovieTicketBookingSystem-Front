@@ -14,14 +14,15 @@
         {{ tienda.funcionActual?.formato }} ·
         {{ tienda.funcionActual?.sala }}
       </div>
-      <AsientosMap />
-      <Button
-        label="Simular conflicto"
-        severity="secondary"
-        size="small"
-        style="margin-top: 12px"
-        @click="simularConflicto"
-      />
+      <div v-if="cargando" class="estado-carga">
+        <ProgressSpinner style="width: 40px; height: 40px" stroke-width="4" />
+      </div>
+      <div v-else-if="errorCarga" class="estado-error">
+        <i class="pi pi-exclamation-triangle" />
+        <span>{{ errorCarga }}</span>
+        <Button label="Reintentar" size="small" @click="cargarAsientos" />
+      </div>
+      <AsientosMap v-else />
     </div>
 
     <!-- Panel lateral -->
@@ -32,13 +33,15 @@
         </template>
 
         <div class="titulo-pelicula">
-          {{ tienda.funcionActual?.tituloPelicula ?? 'Alien: Romulus' }}
+          {{ tienda.funcionActual?.tituloPelicula }}
         </div>
         <div class="meta-pedido">
-          <i class="pi pi-calendar" style="font-size: 11px" /> Vie 12 Jun · 19:15 · 3D
+          <i class="pi pi-calendar" style="font-size: 11px" /> {{ tienda.funcionActual?.fecha }} ·
+          {{ tienda.funcionActual?.hora }} · {{ tienda.funcionActual?.formato }}
         </div>
         <div class="meta-pedido">
-          <i class="pi pi-map-marker" style="font-size: 11px" /> Sala 4 — Cine Vicenta
+          <i class="pi pi-map-marker" style="font-size: 11px" /> {{ tienda.funcionActual?.sala }} —
+          {{ tienda.funcionActual?.cine }}
         </div>
 
         <Divider />
@@ -82,6 +85,7 @@
         <Button
           label="Continuar al pago"
           :disabled="tienda.asientosSeleccionados.length === 0"
+          :loading="bloqueando"
           fluid
           style="margin-top: 14px"
           @click="irAPago"
@@ -109,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted } from 'vue'
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Toast from 'primevue/toast'
@@ -118,45 +122,97 @@ import Chip from 'primevue/chip'
 import Divider from 'primevue/divider'
 import Panel from 'primevue/panel'
 import ProgressBar from 'primevue/progressbar'
+import ProgressSpinner from 'primevue/progressspinner'
 import AsientosMap from '@/components/asientos/AsientosMap.vue'
 import { useReservaStore } from '@/stores/reserva'
+import { getAsientosPorFuncion, bloquearAsientos } from '@/services/reservaService'
+import { isApiError } from '@/services/api'
 // NavBar para mostrar el menú de usuario
 import NavBar from '@/components/NavBar.vue'
+
+const MINUTOS_BLOQUEO = 10
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
 const toast = useToast()
 
+const cargando = ref(true)
+const errorCarga = ref<string | null>(null)
+const bloqueando = ref(false)
+
 const progresoTemporizador = computed(() => Math.round((tienda.segundosRestantes / 600) * 100))
 
-onMounted(() => {
-  tienda.construirMapaAsientos(8, 10)
-  tienda.iniciarTemporizador()
-})
+async function cargarAsientos() {
+  if (!tienda.funcionActual) {
+    enrutador.push('/')
+    return
+  }
+
+  cargando.value = true
+  errorCarga.value = null
+  try {
+    const data = await getAsientosPorFuncion(tienda.funcionActual.id)
+    tienda.construirMapaAsientosDesdeBackend(data)
+  } catch (error) {
+    errorCarga.value =
+      error instanceof Error ? error.message : 'No se pudo cargar el mapa de asientos'
+  } finally {
+    cargando.value = false
+  }
+}
+
+onMounted(cargarAsientos)
 
 onUnmounted(() => {
   tienda.limpiarTemporizador()
 })
 
-function irAPago() {
-  if (tienda.asientosSeleccionados.length === 0) return
-  enrutador.push('/pago')
+async function manejarConflicto() {
+  if (!tienda.funcionActual) return
+  try {
+    const data = await getAsientosPorFuncion(tienda.funcionActual.id)
+    const codigosConflicto = tienda.sincronizarTrasConflicto(data)
+    toast.add({
+      severity: 'error',
+      summary: 'Asientos no disponibles',
+      detail: codigosConflicto.length
+        ? `Otro usuario tomó ${codigosConflicto.join(', ')} mientras elegías. El mapa fue actualizado.`
+        : 'Alguno de tus asientos ya no está disponible. El mapa fue actualizado.',
+      group: 'conflicto',
+      life: 6000,
+    })
+  } catch {
+    errorCarga.value = 'No se pudo actualizar el mapa de asientos. Intenta de nuevo.'
+  }
+}
+
+async function irAPago() {
+  if (tienda.asientosSeleccionados.length === 0 || bloqueando.value) return
+
+  bloqueando.value = true
+  try {
+    await bloquearAsientos(tienda.funcionActual!.id, tienda.idsSeleccionados, MINUTOS_BLOQUEO)
+    tienda.iniciarTemporizador()
+    enrutador.push('/pago')
+  } catch (error) {
+    if (isApiError(error) && error.status === 409) {
+      await manejarConflicto()
+    } else {
+      toast.add({
+        severity: 'error',
+        summary: 'No se pudo continuar',
+        detail: isApiError(error) ? error.message : 'Intenta de nuevo.',
+        life: 5000,
+      })
+    }
+  } finally {
+    bloqueando.value = false
+  }
 }
 
 function irAHome() {
   tienda.limpiarSeleccion()
   enrutador.push('/')
-}
-
-function simularConflicto() {
-  tienda.aplicarConflicto(['B3', 'B4'])
-  toast.add({
-    severity: 'error',
-    summary: 'Asientos no disponibles',
-    detail: 'Otro usuario tomó los asientos B3 y B4 mientras elegías. El mapa fue actualizado.',
-    group: 'conflicto',
-    life: 6000,
-  })
 }
 </script>
 
@@ -172,6 +228,28 @@ function simularConflicto() {
 .principal-asientos {
   flex: 1;
   min-width: 0;
+}
+
+.estado-carga {
+  display: flex;
+  justify-content: center;
+  padding: 60px 0;
+}
+
+.estado-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 60px 0;
+  color: var(--text3);
+  font-size: 13px;
+  text-align: center;
+}
+
+.estado-error .pi {
+  font-size: 22px;
+  color: var(--sinopia);
 }
 
 .meta-funcion {

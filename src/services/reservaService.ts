@@ -22,6 +22,7 @@ export interface Reserva {
   created_at: string;
   updated_at: string | null;
 
+  usuarios?: { nombre: string; email: string },
   funciones: Funcion,
   reservaAsientos: ReservaAsiento[],
   pagos: Pago[],
@@ -29,6 +30,7 @@ export interface Reserva {
 
 export interface Funcion {
   fecha_hora: string,
+  formato?: string | null,
   peliculas: Pelicula,
   salas: Sala,
 }
@@ -88,6 +90,7 @@ export interface ReservasFilter {
   fecha_inicio?: string,
   fecha_final?: string,
   estado?: string,
+  numero_reserva?: string,
   page?: number,
   limit?: number,
 }

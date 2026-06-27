@@ -175,9 +175,7 @@ function handleSubmit() {
           min="0"
           step="0.50"
           placeholder="ej. 45.00"
-          :class="{ 'input-error': errors.precio }"
         />
-        <span v-if="errors.precio" class="field-error">{{ errors.precio }}</span>
       </div>
 
       <div class="form-actions">

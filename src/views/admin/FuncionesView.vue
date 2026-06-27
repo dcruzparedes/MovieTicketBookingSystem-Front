@@ -1,102 +1,85 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-
-interface Funcion {
-  id: number
-  peliculaTitulo: string
-  cinemaNombre: string
-  salaNombre: string
-  fecha: string
-  hora: string
-  precio: string
-  cancelada: boolean
-  reservasActivas: number
-}
+import {
+  getFunciones,
+  cancelarFuncion,
+  getReservasActivasCount,
+  type FuncionRow,
+} from '@/services/funcionService'
 
 const router = useRouter()
 
-const funciones = ref<Funcion[]>([
-  {
-    id: 1,
-    peliculaTitulo: 'Alien: Romulus',
-    cinemaNombre: 'Cine Vicenta Zona 10',
-    salaNombre: 'Sala VIP',
-    fecha: '2024-11-15',
-    hora: '19:30',
-    precio: '65.00',
-    cancelada: false,
-    reservasActivas: 14,
-  },
-  {
-    id: 2,
-    peliculaTitulo: 'Wild Robot',
-    cinemaNombre: 'Cine Vicenta Zona 10',
-    salaNombre: 'Sala 1',
-    fecha: '2024-11-15',
-    hora: '17:00',
-    precio: '45.00',
-    cancelada: false,
-    reservasActivas: 7,
-  },
-  {
-    id: 3,
-    peliculaTitulo: 'Megalopolis',
-    cinemaNombre: 'Cine Vicenta Miraflores',
-    salaNombre: 'Sala IMAX',
-    fecha: '2024-11-16',
-    hora: '20:00',
-    precio: '75.00',
-    cancelada: false,
-    reservasActivas: 0,
-  },
-  {
-    id: 4,
-    peliculaTitulo: 'Venom: El Último Baile',
-    cinemaNombre: 'Cine Vicenta Pradera',
-    salaNombre: 'Sala 2',
-    fecha: '2024-11-14',
-    hora: '18:30',
-    precio: '45.00',
-    cancelada: true,
-    reservasActivas: 0,
-  },
-  {
-    id: 5,
-    peliculaTitulo: 'Wild Robot',
-    cinemaNombre: 'Cine Vicenta Antigua',
-    salaNombre: 'Sala 1',
-    fecha: '2024-11-17',
-    hora: '16:00',
-    precio: '40.00',
-    cancelada: false,
-    reservasActivas: 3,
-  },
-])
+const funciones = ref<FuncionRow[]>([])
+const isLoading = ref(true)
+const loadError = ref('')
+
+onMounted(async () => {
+  try {
+    funciones.value = await getFunciones()
+  } catch (err) {
+    loadError.value = err instanceof Error ? err.message : 'Error al cargar las funciones'
+  } finally {
+    isLoading.value = false
+  }
+})
 
 // ── Cancel confirmation ──
 const showCancelConfirm = ref(false)
-const cancelingFuncion = ref<Funcion | null>(null)
+const cancelingFuncion = ref<FuncionRow | null>(null)
 const confirmChecked = ref(false)
+const reservasCount = ref<number | null>(null)
+const reservasLoadError = ref(false)
+const isCanceling = ref(false)
+const cancelError = ref('')
 
-function openCancelConfirm(funcion: Funcion) {
+async function openCancelConfirm(funcion: FuncionRow) {
   cancelingFuncion.value = funcion
   confirmChecked.value = false
+  reservasCount.value = null
+  reservasLoadError.value = false
+  cancelError.value = ''
   showCancelConfirm.value = true
+
+  try {
+    reservasCount.value = await getReservasActivasCount(funcion.id)
+  } catch {
+    reservasLoadError.value = true
+    reservasCount.value = 0
+  }
 }
 
 function closeCancelConfirm() {
+  if (isCanceling.value) return
   showCancelConfirm.value = false
   cancelingFuncion.value = null
   confirmChecked.value = false
+  cancelError.value = ''
 }
 
-function confirmCancel() {
+async function confirmCancel() {
   if (!cancelingFuncion.value || !confirmChecked.value) return
-  // TODO: PATCH /api/funciones/:id { cancelada: true }
-  cancelingFuncion.value.cancelada = true
-  closeCancelConfirm()
+  isCanceling.value = true
+  cancelError.value = ''
+  try {
+    await cancelarFuncion(cancelingFuncion.value.id)
+    const row = funciones.value.find((f) => f.id === cancelingFuncion.value!.id)
+    if (row) row.estado = 'cancelada'
+    closeCancelConfirm()
+  } catch (err) {
+    cancelError.value = err instanceof Error ? err.message : 'Error al cancelar la función'
+  } finally {
+    isCanceling.value = false
+  }
+}
+
+function goToEdit(funcion: FuncionRow) {
+  router.push(`/admin/funciones/${funcion.id}/editar`)
+}
+
+function estadoLabel(estado: string) {
+  return estado === 'cancelada' ? 'Cancelada' : 'Programada'
 }
 </script>
 
@@ -110,7 +93,20 @@ function confirmCancel() {
     </div>
 
     <div class="page-body">
-      <div class="card animado" style="--delay: 80ms">
+      <!-- Cargando -->
+      <div v-if="isLoading" class="state-box animado" style="--delay: 80ms">
+        <div class="skeleton-row" />
+        <div class="skeleton-row short" />
+        <div class="skeleton-row" />
+      </div>
+
+      <!-- Error de carga -->
+      <div v-else-if="loadError" class="state-box animado" style="--delay: 80ms">
+        <p class="state-text error-text">{{ loadError }}</p>
+      </div>
+
+      <!-- Tabla -->
+      <div v-else class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -119,7 +115,6 @@ function confirmCancel() {
               <th>Sala</th>
               <th>Fecha</th>
               <th>Hora</th>
-              <th>Precio</th>
               <th>Estado</th>
               <th>Acciones</th>
             </tr>
@@ -128,32 +123,34 @@ function confirmCancel() {
             <tr
               v-for="(funcion, index) in funciones"
               :key="funcion.id"
-              :class="{ 'row-cancelled': funcion.cancelada }"
+              :class="{ 'row-cancelled': funcion.estado === 'cancelada' }"
               :style="{ '--row-delay': `${index * 40}ms` }"
             >
               <td><strong>{{ funcion.peliculaTitulo }}</strong></td>
               <td>{{ funcion.cinemaNombre }}</td>
               <td>{{ funcion.salaNombre }}</td>
               <td>{{ funcion.fecha }}</td>
-              <td>{{ funcion.hora }}</td>
-              <td style="font-family: 'DM Mono', monospace">L. {{ funcion.precio }}</td>
+              <td style="font-family: 'DM Mono', monospace">{{ funcion.hora }}</td>
               <td>
-                <span class="badge" :class="funcion.cancelada ? 'badge-cancelada' : 'badge-programada'">
-                  {{ funcion.cancelada ? 'Cancelada' : 'Programada' }}
+                <span
+                  class="badge"
+                  :class="funcion.estado === 'cancelada' ? 'badge-cancelada' : 'badge-programada'"
+                >
+                  {{ estadoLabel(funcion.estado) }}
                 </span>
               </td>
               <td>
                 <div class="action-group">
                   <button
                     class="btn btn-ghost btn-sm"
-                    :disabled="funcion.cancelada"
-                    @click="router.push('/admin/funciones/' + funcion.id + '/editar')"
+                    :disabled="funcion.estado === 'cancelada'"
+                    @click="goToEdit(funcion)"
                   >
                     Editar
                   </button>
                   <button
                     class="btn btn-cancel btn-sm"
-                    :disabled="funcion.cancelada"
+                    :disabled="funcion.estado === 'cancelada'"
                     @click="openCancelConfirm(funcion)"
                   >
                     Cancelar
@@ -162,7 +159,7 @@ function confirmCancel() {
               </td>
             </tr>
             <tr v-if="funciones.length === 0" key="empty">
-              <td colspan="8" class="empty-state">No hay funciones registradas.</td>
+              <td colspan="7" class="empty-state">No hay funciones registradas.</td>
             </tr>
           </TransitionGroup>
         </table>
@@ -189,16 +186,18 @@ function confirmCancel() {
               </span>
             </div>
 
+            <!-- Cargando reservas -->
+            <div v-if="reservasCount === null && !reservasLoadError" class="reservas-loading">
+              <div class="skeleton-row short" />
+            </div>
+
             <!-- Advertencia de reservas afectadas -->
-            <div
-              v-if="cancelingFuncion && cancelingFuncion.reservasActivas > 0"
-              class="warning-box"
-            >
+            <div v-else-if="(reservasCount ?? 0) > 0" class="warning-box">
               <span class="warning-icon">⚠</span>
               <div class="warning-content">
                 <p class="warning-title">
-                  {{ cancelingFuncion.reservasActivas }}
-                  {{ cancelingFuncion.reservasActivas === 1 ? 'cliente tiene' : 'clientes tienen' }}
+                  {{ reservasCount }}
+                  {{ reservasCount === 1 ? 'cliente tiene' : 'clientes tienen' }}
                   reservas activas
                 </p>
                 <ul class="warning-list">
@@ -209,7 +208,7 @@ function confirmCancel() {
               </div>
             </div>
 
-            <!-- Sin reservas: mensaje leve -->
+            <!-- Sin reservas -->
             <p v-else class="no-reservas-note">
               Esta función no tiene reservas activas.
             </p>
@@ -219,21 +218,25 @@ function confirmCancel() {
               <input v-model="confirmChecked" type="checkbox" />
               <span>
                 Entiendo que esta acción es irreversible y que
-                {{ cancelingFuncion && cancelingFuncion.reservasActivas > 0
-                  ? 'los ' + cancelingFuncion.reservasActivas + ' clientes afectados serán notificados.'
+                {{ (reservasCount ?? 0) > 0
+                  ? `los ${reservasCount} clientes afectados serán notificados.`
                   : 'la función quedará cancelada.' }}
               </span>
             </label>
 
+            <p v-if="cancelError" class="cancel-error">{{ cancelError }}</p>
+
             <div class="confirm-actions">
               <button
                 class="btn btn-danger"
-                :disabled="!confirmChecked"
+                :disabled="!confirmChecked || isCanceling"
                 @click="confirmCancel"
               >
-                Cancelar función
+                {{ isCanceling ? 'Cancelando…' : 'Cancelar función' }}
               </button>
-              <button class="btn btn-ghost" @click="closeCancelConfirm">Volver</button>
+              <button class="btn btn-ghost" :disabled="isCanceling" @click="closeCancelConfirm">
+                Volver
+              </button>
             </div>
           </div>
         </div>
@@ -267,6 +270,42 @@ function confirmCancel() {
   border: 1px solid var(--border);
   border-radius: var(--radius);
   overflow: hidden;
+}
+
+/* Loading skeleton */
+.state-box {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  padding: 40px 0;
+}
+
+.skeleton-row {
+  height: 16px;
+  width: 100%;
+  max-width: 400px;
+  border-radius: 6px;
+  background: var(--border2);
+  animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-row.short {
+  max-width: 220px;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.state-text {
+  font-size: 14px;
+  color: var(--text2);
+}
+
+.error-text {
+  color: var(--sinopia);
 }
 
 /* Table */
@@ -396,7 +435,7 @@ function confirmCancel() {
   padding: 10px 20px;
 }
 
-.btn-danger:hover {
+.btn-danger:hover:not(:disabled) {
   opacity: 0.88;
 }
 
@@ -484,6 +523,10 @@ function confirmCancel() {
   color: var(--text3);
 }
 
+.reservas-loading {
+  padding: 4px 0;
+}
+
 /* Warning box */
 .warning-box {
   background: var(--orange-bg);
@@ -563,6 +606,11 @@ function confirmCancel() {
   font-size: 13px;
   color: var(--text2);
   line-height: 1.5;
+}
+
+.cancel-error {
+  font-size: 13px;
+  color: var(--sinopia);
 }
 
 .confirm-actions {

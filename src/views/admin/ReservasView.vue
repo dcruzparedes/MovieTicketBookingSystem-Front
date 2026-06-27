@@ -21,7 +21,8 @@ interface Reserva {
   id: number;
   id_usuario: number;
   id_funcion: number;
-  estado: string;
+  estado: 'Confirmada' | 'Completada' | 'Cancelada'
+  formato: string,
   created_at: string;
   numero_reserva: string;
   updated_at: string | null;
@@ -73,14 +74,13 @@ export interface AsientoFuncion {
 
 export interface Asiento {
   id: number,
-  fila: string,
-  numero: number,
+  codigo: string
 }
 
 export interface Pago {
   id: number,
   metodo: string,
-  monto: number,
+  monto_final: number,
   estado: string,
   referencia: string,
   created_at: string,

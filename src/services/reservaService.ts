@@ -16,7 +16,8 @@ export interface Reserva {
   id: number,
   id_usuario: number,
   id_funcion: number,
-  estado: string;
+  estado: 'Confirmada' | 'Completada' | 'Cancelada'
+  formato: string
   numero_reserva: string,
   created_at: string;
   updated_at: string | null;
@@ -68,14 +69,13 @@ export interface AsientoFuncion {
 
 export interface Asiento {
   id: number,
-  fila: string,
-  numero: number,
+  codigo: string,
 }
 
 export interface Pago {
   id: number,
   metodo: string,
-  monto: number,
+  monto_final: number,
   estado: string,
   referencia: string,
   created_at: string,
@@ -105,6 +105,13 @@ export interface Export {
   filePath: string
 }
 
+export interface CalcResr {
+  reserva: string,
+  monto_total: number,
+  porcentaje_de_reembolso: number,
+  monto_de_reembolso: number,
+}
+
 export async function getReservas(filters: ReservasFilter = {}): Promise<ReservasRes> {
   const params = new URLSearchParams();
 
@@ -129,8 +136,24 @@ export async function exportReservas(){
   return res;
 }
 
+export async function cancelReserva(id: number){
+  const res = await api.patch(`/reservas/${id}/cancelar`);
+  if(!res){
+    throw new Error(`No se pudo cacnelar la reserva.`)
+  }
+  return res;
+}
+
 export async function getPeliculas(){
   const res = await api.get<Pelicula[]>(`/peliculas`);
+  if(!res){
+    throw new Error(`Peliculas no encontradas.`)
+  }
+  return res;
+}
+
+export async function calcularReembolso(id: number){
+  const res = await api.get<CalcResr>(`/reembolso/${id}/calculo`);
   if(!res){
     throw new Error(`Peliculas no encontradas.`)
   }

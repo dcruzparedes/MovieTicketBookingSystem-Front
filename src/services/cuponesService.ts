@@ -25,7 +25,7 @@ interface CuponParaAgregra {
 export async function getCupones(): Promise<Cupon[]> {
     const res = await fetch(`${API_BASE}/cupones`);
     if(!res.ok){
-        throw new Error('Cupones not found.');
+        throw new Error('Cupones no existen.');
     }
     return res.json();
 }

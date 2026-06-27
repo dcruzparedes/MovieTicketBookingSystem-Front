@@ -1,89 +1,157 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { watch, ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { getReservas, getPeliculas, exportReservas } from '@/services/reservaService'
+import { fetchCines, fetchUsuarios } from '@/services/movieService'
 
-
-interface Reserva{
-    id: number
-    numero_reserva: string
-    id_usuario: number
-    id_funcion: number
-    estado: string
+interface Export {
+  message: string,
+  filePath: string
 }
 
-interface Funcion { 
-  id: number 
-  fecha_hora: string 
-  cine: string
-  pelicula: string
+interface ReservasRes {
+  data: Reserva[],
+  meta: {
+    page: number,
+    limit: number
+  }
 }
 
-interface Usuario { 
-  id: number 
-  email: string 
+interface Reserva {
+  id: number;
+  id_usuario: number;
+  id_funcion: number;
+  estado: string;
+  created_at: string;
+  numero_reserva: string;
+  updated_at: string | null;
+
+  funciones: Funcion;
+  reservaAsientos: ReservaAsiento[];
+  pagos: Pago[];
 }
 
-const Reservs: Reserva[]=[
-    {
-        id: 1,
-        numero_reserva: "RS-1",
-        id_usuario: 1,
-        id_funcion: 1,
-        estado: "Activa"
-    },
-    {
-        id: 2,
-        numero_reserva: "RS-2",
-        id_usuario: 1,
-        id_funcion: 1,
-        estado: "Activa"
-    },
-    {
-        id: 3,
-        numero_reserva: "RS-3",
-        id_usuario: 1,
-        id_funcion: 2,
-        estado: "Cancelada"
-    },
-]
+export interface Funcion {
+  fecha_hora: string,
+  peliculas: Pelicula,
+  salas: Sala,
+}
 
-const Funciones: Funcion[]=[
-  {
-    id: 1,
-    fecha_hora: "6/15/2026",
-    cine: "Cine Vicenta",
-    pelicula: "There Will Be Blood",
-  },
-  {
-    id: 2,
-    fecha_hora: "6/17/2026",
-    cine: "Cinepolis",
-    pelicula: "There Will Be Blood",
-  },
-]
+export interface Pelicula {
+  id: number,
+  titulo: string,
+  sinopsis: string,
+  duracion: number,
+  clasificacion: string,
+  poster_url: string,
+  idioma: string,
+  subtitulada: boolean,
+}
 
-const Usuarios: Usuario[]=[
-  {
-    id: 1,
-    email: "example.com",
-  },
-  {
-    id: 2,
-    email: "example123@unitec.edu",
-  },
-  {
-    id: 3,
-    email: "example@gmail.com",
-  },
-]
+export interface Sala {
+  id: number,
+  nombre: string,
+  cines: Cine,
+}
 
-const reservas = ref<Reserva[]>(Reservs)
+export interface Cine {
+  id: number,
+  nombre: string,
+  ciudad: string,
+  direccion: string,
+}
 
-const selectedCine = ref('Todos los cines')
-const selectedPelicula = ref('Todas las películas')
-const selectedEstado = ref('Ambos')
-const fechaDesde = ref('')
-const fechaHasta = ref('')
+export interface ReservaAsiento {
+  id: number,
+  asientosfuncion: AsientoFuncion,
+}
+
+export interface AsientoFuncion {
+  id: number,
+  asientos: Asiento,
+}
+
+export interface Asiento {
+  id: number,
+  fila: string,
+  numero: number,
+}
+
+export interface Pago {
+  id: number,
+  metodo: string,
+  monto: number,
+  estado: string,
+  referencia: string,
+  created_at: string,
+}
+
+export interface ReservasFilter {
+  id_usuario?: number,
+  id_pelicula?: number,
+  id_cine?: number,
+  fecha_inicio?: string,
+  fecha_final?: string,
+  estado?: string,
+}
+
+interface Usuario {
+  id: number,
+  nombre: string,
+  email: string,
+  password_hash: string,
+  telefono: string,
+  id_rol: number,
+  notificaciones_activas: boolean,
+  created_at: string,
+  updated_at: string
+}
+
+const reservas = ref<ReservasRes>()
+const peliculas = ref<Pelicula[]>([])
+const usuarios = ref<Usuario[]>([])
+const cines = ref<Cine[]>([])
+const respuesta = ref<Export>()
+const filters = ref<ReservasFilter>({})
+
+async function getAllReservas() {
+  try{
+    reservas.value = await getReservas({...filters.value, page: currentPage.value, limit: itemsPerPage});
+  }catch(error){
+    throw new Error(`Error: ${error}`);
+  }
+}
+
+async function exportar() {
+  try{
+    respuesta.value = await exportReservas();
+    alert(`${respuesta.value.message}`)
+  }catch(error){
+    throw new Error(`Error: ${error}`);
+    alert('Reservas no se pudieron exportar')
+  }
+}
+
+onMounted(async() => {
+  try{
+    usuarios.value = await fetchUsuarios();
+    cines.value = await fetchCines();
+    peliculas.value = await getPeliculas();
+  }catch(error){
+    throw new Error(`Error: ${error}`);
+  }
+})
+
+onMounted(getAllReservas);
+
+watch(
+  filters,
+  () => {
+    getAllReservas();
+  },
+  {deep: true}
+)
+
 
 function parseFecha(fecha: string): Date {
     const [mes, dia, anio] = fecha.split('/').map(Number)
@@ -97,30 +165,8 @@ function fechaISO(fecha: Date) {
     return fecha.toISOString().split('T')[0]
 }
 
-const reservasFiltradas = computed(() =>
-  reservas.value.filter((r) => {
-    const matchCine  = selectedCine.value === 'Todos los cines' || getFuncion(r.id_funcion, 'cine').toLowerCase().includes(selectedCine.value.toLowerCase())
-    const matchPelicula  = selectedPelicula.value === 'Todas las películas' || getFuncion(r.id_funcion, 'pelicula').toLowerCase().includes(selectedPelicula.value.toLowerCase())
-    const matchEstado  = selectedEstado.value === 'Ambos' || r.estado.toLowerCase().includes(selectedEstado.value.toLowerCase())
-    
-    const fechaFuncion = parseFecha(getFuncion(r.id_funcion, 'fecha'))
-    const fechaFuncionStr = fechaISO(fechaFuncion)
-
-    let matchFecha = true
-
-    if (fechaDesde.value && fechaFuncionStr) {
-        matchFecha = matchFecha && fechaFuncionStr >= fechaDesde.value
-    }
-
-    if (fechaHasta.value && fechaFuncionStr) {
-        matchFecha = matchFecha && fechaFuncionStr <= fechaHasta.value
-    }
-    return matchCine && matchPelicula && matchEstado && matchFecha
-  })
-)
-
 function getUsuario(id: number){
-    const user = Usuarios.find(u => u.id === id)
+    const user = usuarios.value.find(u => u.id === id)
     if(user){
         return user.email;
     }else{
@@ -128,34 +174,15 @@ function getUsuario(id: number){
     }
 }
 
-function getFuncion(id: number, type: string){
-    const fun = Funciones.find(f => f.id === id)
-    if(fun){
-        switch(type){
-            case 'cine':
-                return fun.cine;
-                break;
-             case 'pelicula':
-                return fun.pelicula;
-                break;
-            default:
-                return fun.fecha_hora
-                break;
-        }
-    }else{
-        return 'Funcion no existe'
-    }
-}
-
 const currentPage = ref(1)
 const itemsPerPage = 10
 
-const totalPages = computed(() => Math.ceil(reservasFiltradas.value.length / itemsPerPage))
+const totalPages = computed(() => Math.ceil(reservas.value?.data.length ?? 0 / itemsPerPage))
 
 const reservasPaginadas = computed(() => {
   const start = (currentPage.value - 1) * itemsPerPage
   const end = start + itemsPerPage
-  return reservasFiltradas.value.slice(start, end)
+  return reservas.value?.data.slice(start, end)
 })
 
 function setPage(page: number) {
@@ -169,16 +196,17 @@ function setPage(page: number) {
     <div id="admin-cacnelacion">
     <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Reportes de Reservas</div>
-    <button class="btn btn-primary btn-sm">+ Exportar a CSV</button>
+    <button class="btn btn-primary btn-sm" @click="exportar">+ Exportar a CSV</button>
     </div>
     <div class="card animado" style="--delay: 60ms; margin-bottom:14px; margin-right: 28px; margin-left: 28px;">
         <div class="card-body">
             <div style="display:flex;gap:10px;flex-wrap:wrap">
-                <input v-model="fechaDesde" type="date" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none" />
-                <input v-model="fechaHasta" type="date" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none" />
-                <select v-model="selectedCine" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option>Todos los cines</option><option>Cine Vicenta</option><option>Cinepolis</option></select>
-                <select v-model="selectedPelicula" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option>Todas las películas</option><option>Alien: Romulus</option><option>There Will Be Blood</option></select>
-                <select v-model="selectedEstado" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option>Ambos</option><option>Activa</option><option>Cancelada</option></select>
+                <input v-model="filters.fecha_inicio" type="date" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none" />
+                <input v-model="filters.fecha_final" type="date" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none" />
+                <select v-model="filters.id_cine" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option :value="undefined">Todos los cines</option><option v-for="cin in cines" :key="cin.id" :value="cin.id">{{ cin.nombre }}</option></select>
+                <select v-model="filters.id_pelicula" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option :value="undefined">Todas las películas</option><option v-for="peli in peliculas" :key="peli.id" :value="peli.id">{{ peli.titulo }}</option></select>
+                <select v-model="filters.id_usuario" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option :value="undefined">Todos</option><option v-for="user in usuarios" :key="user.id" :value="user.id">{{ user.email }}</option></select>
+                <select v-model="filters.estado" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option :value="undefined">Ambos</option><option>Pendiente</option><option>Cancelada</option></select>
             </div>
         </div>
     </div>
@@ -192,9 +220,9 @@ function setPage(page: number) {
                     <td><strong style="font-family:'DM Mono',monospace">{{reserva.id}}</strong></td>
                     <td style="font-family:'DM Mono',monospace">{{reserva.numero_reserva}}</td>
                     <td>{{getUsuario(reserva.id_usuario)}}</td>
-                    <td>{{getFuncion(reserva.id_funcion, 'fecha')}}</td>
-                    <td>{{getFuncion(reserva.id_funcion, 'cine')}}</td>
-                    <td>{{getFuncion(reserva.id_funcion, 'pelicula')}}</td>
+                    <td>{{reserva.funciones.fecha_hora}}</td>
+                    <td>{{reserva.funciones.salas.cines.nombre}}</td>
+                    <td>{{reserva.funciones.peliculas.titulo}}</td>
                     <td>{{reserva.estado}}</td>
                 </tr>
             </TransitionGroup>

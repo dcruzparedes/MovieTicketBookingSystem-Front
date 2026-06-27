@@ -77,37 +77,37 @@
                 <div class="section-title">Mis reservas</div>
                 <p class="section-desc">Consulta el historial y el estado de tus reservas de funciones.</p>
 
-                <div v-if="reservas.length === 0" class="empty-reservas">
+                <div v-if="reservas?.data.length === 0" class="empty-reservas">
                   Todavía no tienes reservas. ¡Explora la cartelera y reserva tu próxima función!
                 </div>
 
                 <div v-else class="reservas-list">
-                  <div v-for="reserva in reservas" :key="reserva.id" class="reserva-card">
-                    <img class="reserva-poster" :src="reserva.posterUrl" :alt="reserva.pelicula" />
+                  <div v-for="reserva in reservas?.data" :key="reserva.id" class="reserva-card">
+                    <img class="reserva-poster" :src="reserva.funciones.peliculas.poster_url" :alt="reserva.funciones.peliculas.titulo" />
 
                     <div class="reserva-info">
                       <div class="reserva-header">
-                        <div class="reserva-titulo">{{ reserva.pelicula }}</div>
+                        <div class="reserva-titulo">{{ reserva.funciones.peliculas.titulo }}</div>
                         <div>
                         <Tag :value="reserva.estado" :severity="estadoSeverity(reserva.estado)" />
-                        <button v-if="reserva.estado === 'Confirmada'" class="btn-danger" style="margin-left: 8px;" @click="reservaSeleccionada=reserva; cancelarReserva=true">Cancelar</button>
+                        <button v-if="reserva.estado === 'Confirmada'" class="btn-danger" style="margin-left: 8px;" @click="getCalc(reserva.id); reservaSeleccionada=reserva; cancelarReserva=true">Cancelar</button>
                         <Tag v-if="reserva.estado === 'Cancelada'" style="margin-left: 8px;" :severity="estadoSeverity(reserva.estado)">Pendiente</Tag>
                         </div>
                       </div>
-                      <div class="reserva-codigo">{{ reserva.numero }}</div>
+                      <div class="reserva-codigo">{{ reserva.numero_reserva }}</div>
                       <div class="reserva-detalles">
-                        <div class="reserva-dato"><i class="pi pi-building" /> {{ reserva.cine }}</div>
-                        <div class="reserva-dato"><i class="pi pi-objects-column" /> {{ reserva.sala }}</div>
-                        <div class="reserva-dato"><i class="pi pi-calendar" /> {{ reserva.fecha }}</div>
-                        <div class="reserva-dato"><i class="pi pi-clock" /> {{ reserva.hora }} · {{ reserva.formato }}</div>
+                        <div class="reserva-dato"><i class="pi pi-building" /> {{ reserva.funciones.salas.cines.nombre }}</div>
+                        <div class="reserva-dato"><i class="pi pi-objects-column" /> {{ reserva.funciones.salas.nombre }}</div>
+                        <div class="reserva-dato"><i class="pi pi-calendar" /> {{ formatSoloFecha(reserva.funciones.fecha_hora) }}</div>
+                        <div class="reserva-dato"><i class="pi pi-clock" /> {{ reserva.formato }}</div>
                       </div>
 
                       <div class="reserva-footer">
                         <div class="reserva-asientos">
-                          <Tag v-for="codigo in reserva.asientos" :key="codigo" :value="codigo" severity="warn"
+                          <Tag v-for="asiento in reserva.reservaAsientos" :key="asiento.id" :value="asiento.asientosfuncion.asientos.codigo" severity="warn"
                             style="font-family: 'DM Mono', monospace; font-size: 11px" />
                         </div>
-                        <div class="reserva-total">L. {{ reserva.total.toFixed(2) }}</div>
+                        <div class="reserva-total">L. {{ getTotal(reserva.pagos).toFixed(2) }}</div>
                       </div>
                     </div>
                   </div>
@@ -220,35 +220,52 @@
   </div>
   <div v-if="cancelarReserva" class="modal-container">
   <div class="modal-overlay" id="modal-cancel">
-  <div class="modal-box" style="padding: 20px;">
-    <div class="modal-title" style="margin-bottom: 10px; font-weight: 600;">¿Cancelar esta reserva?</div>
-    <div class="alert-warn" style="padding: 15px;">Política vigente: más de 48h → 100% de reembolso · 24–48h → 50% · menos de 24h → sin reembolso.</div>
-    <div class="modal-body" v-if="reservaSeleccionada">
-  <strong style="font-weight: 600;">
-    {{ reservaSeleccionada.numero }} — {{ reservaSeleccionada.pelicula }}
-  </strong>
+    <div class="modal-box" style="padding: 20px;">
+      <div class="modal-title" style="margin-bottom: 10px; font-weight: 600;">¿Cancelar esta reserva?</div>
 
-  <div style="color: var(--rosewood);">
-    {{ reservaSeleccionada.fecha }} · {{ reservaSeleccionada.hora }} · Asientos {{ reservaSeleccionada.asientos.join(', ') }}
-  </div>
+      <div v-if="calculoLoading" class="alert-warn" style="padding: 15px;">
+        Calculando el monto de reembolso...
+      </div>
 
-  <br />
+      <div v-else-if="calculoError" class="alert-warn" style="padding: 15px;">
+        {{ calculoError }}
+      </div>
 
-  <div style="color: var(--rosewood);">
-    Esta acción no se puede deshacer. El reembolso se procesará en 3–5 días hábiles.
-  </div>
-</div>
-    <div class="modal-actions">
-      <button class="btn-ghost" @click="cerrarModal()">Volver</button>
-      <button class="btn-danger" @click="updateReserva()">Confirmar cancelación</button>
+      <div v-else-if="calculo" class="alert-warn" style="padding: 15px;">
+        Reembolso aplicable: <strong>{{ calculo.porcentaje_de_reembolso }}%</strong>
+        — recibirás <strong>L. {{ Number(calculo.monto_de_reembolso).toFixed(2) }}</strong>
+        de un total de L. {{ Number(calculo.monto_total).toFixed(2) }}.
+      </div>
+
+      <div class="modal-body" v-if="reservaSeleccionada">
+        <strong style="font-weight: 600;">
+          {{ reservaSeleccionada.numero_reserva }} — {{ reservaSeleccionada.funciones.peliculas.titulo }}
+        </strong>
+
+        <div style="color: var(--rosewood);">
+          {{ formatSoloFecha(reservaSeleccionada.funciones.fecha_hora) }}
+        </div>
+
+        <br />
+
+        <div style="color: var(--rosewood);">
+          Esta acción no se puede deshacer. El reembolso se procesará en 3–5 días hábiles.
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn-ghost" @click="cerrarModal()">Volver</button>
+        <button class="btn-danger" :disabled="calculoLoading" @click="updateReserva()">
+          Confirmar cancelación
+        </button>
+      </div>
     </div>
-  </div>
   </div>
 </div>
 </template>
 
 <script setup lang="ts">
-import { reactive, ref, computed, watch } from 'vue'
+import { reactive, ref, computed, watch, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
@@ -258,7 +275,7 @@ import Divider from 'primevue/divider'
 import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import NavBar from '@/components/NavBar.vue'
-
+import { getReservas, cancelReserva, calcularReembolso } from '@/services/reservaService'
 const route = useRoute()
 const cancelarReserva = ref(false)
 const menuItems = [
@@ -275,65 +292,125 @@ const tabInicial = typeof route.query.tab === 'string' && tabsValidos.includes(r
 const activeTab = ref(tabInicial)
 
 // ── Reservas ──
-interface Reserva {
-  id: number
-  numero: string
-  pelicula: string
-  posterUrl: string
-  cine: string
-  sala: string
-  fecha: string
-  hora: string
-  formato: string
-  asientos: string[]
-  total: number
-  estado: 'Confirmada' | 'Completada' | 'Cancelada'
+interface ReservasRes {
+  data: Reserva[],
+  meta: {
+    page: number,
+    limit: number
+  }
 }
 
-const reservas = ref<Reserva[]>([
-  {
-    id: 1,
-    numero: 'RES-2026-0421',
-    pelicula: 'There Will Be Blood',
-    posterUrl: 'https://resizing.flixster.com/-XZAfHZM39UwaGJIFWKAE8fS0ak=/v3/t/assets/p171565_p_v8_aa.jpg',
-    cine: 'Cine Vicenta',
-    sala: 'Sala 4',
-    fecha: 'Viernes 12 jun, 2026',
-    hora: '19:15',
-    formato: '3D · Español',
-    asientos: ['B5', 'B6'],
-    total: 360,
-    estado: 'Confirmada',
-  },
-  {
-    id: 2,
-    numero: 'RES-2026-0388',
-    pelicula: 'Pulp Fiction',
-    posterUrl: 'https://m.media-amazon.com/images/M/MV5BYTViYTE3ZGQtNDBlMC00ZTAyLTkyODMtZGRiZDg0MjA2YThkXkEyXkFqcGc@._V1_FMjpg_UX1000_.jpg',
-    cine: 'Metrocinema Tegus',
-    sala: 'Sala 1',
-    fecha: 'Lunes 8 jun, 2026',
-    hora: '20:00',
-    formato: '2D · Español',
-    asientos: ['D3'],
-    total: 120,
-    estado: 'Completada',
-  },
-  {
-    id: 3,
-    numero: 'RES-2026-0356',
-    pelicula: 'Fight Club',
-    posterUrl: 'https://s3.amazonaws.com/nightjarprod/content/uploads/sites/344/2024/08/21164326/pB8BM7pdSp6B6Ih7QZ4DrQ3PmJK-scaled.jpg',
-    cine: 'Cine Vicenta',
-    sala: 'Sala 2',
-    fecha: 'Martes 2 jun, 2026',
-    hora: '21:45',
-    formato: 'IMAX · Español',
-    asientos: ['G7', 'G8'],
-    total: 360,
-    estado: 'Cancelada',
-  },
-])
+interface Reserva {
+  id: number;
+  id_usuario: number;
+  id_funcion: number;
+  estado: 'Confirmada' | 'Completada' | 'Cancelada'
+  formato: string,  
+  created_at: string;
+  numero_reserva: string;
+  updated_at: string | null;
+
+  funciones: Funcion;
+  reservaAsientos: ReservaAsiento[];
+  pagos: Pago[];
+}
+
+export interface Funcion {
+  fecha_hora: string,
+  peliculas: Pelicula,
+  salas: Sala,
+}
+
+export interface Pelicula {
+  id: number,
+  titulo: string,
+  sinopsis: string,
+  duracion: number,
+  clasificacion: string,
+  poster_url: string,
+  idioma: string,
+  subtitulada: boolean,
+}
+
+export interface Sala {
+  id: number,
+  nombre: string,
+  cines: Cine,
+}
+
+export interface Cine {
+  id: number,
+  nombre: string,
+  ciudad: string,
+  direccion: string,
+}
+
+export interface ReservaAsiento {
+  id: number,
+  asientosfuncion: AsientoFuncion,
+}
+
+export interface AsientoFuncion {
+  id: number,
+  asientos: Asiento,
+}
+
+export interface Asiento {
+  id: number,
+  codigo: string
+}
+
+export interface Pago {
+  id: number,
+  metodo: string,
+  monto_final: number,
+  estado: string,
+  referencia: string,
+  created_at: string,
+}
+interface ReservasFilter {
+  id_usuario?: number,
+  id_pelicula?: number,
+  id_cine?: number,
+  fecha_inicio?: string,
+  fecha_final?: string,
+  estado?: string,
+}
+
+export interface CalcResr {
+  reserva: string,
+  monto_total: number,
+  porcentaje_de_reembolso: number,
+  monto_de_reembolso: number,
+}
+
+const filters = ref<ReservasFilter>({id_usuario: 4})
+const reservas = ref<ReservasRes>()
+const calculo = ref<CalcResr>()
+const calculoLoading = ref(false)
+const calculoError = ref('')
+
+async function getUserReservas() {
+  try{
+    reservas.value = await getReservas({...filters.value });
+  }catch(error){
+    throw new Error(`Error: ${error}`)
+  }
+}
+
+onMounted(getUserReservas)
+
+function getTotal(pagos: Pago[]){
+  let pagoTotal = 0;
+  pagos.forEach(p => pagoTotal=pagoTotal + Number(p.monto_final));
+  return pagoTotal;
+}
+
+function formatSoloFecha(fechaISO: string): string {
+  return new Date(fechaISO).toLocaleDateString('es-HN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  })
+}
 
 function estadoSeverity(estado: Reserva['estado']) {
   return { Confirmada: 'success', Completada: 'info', Cancelada: 'danger' }[estado] as 'success' | 'info' | 'danger'
@@ -458,14 +535,35 @@ async function savePassword() {
 function cerrarModal(){
   cancelarReserva.value = false
   reservaSeleccionada.value = null
+  calculo.value = undefined,
+  calculoError.value = ''
 }
 
-function updateReserva(){
-  const res = reservas.value.find(r => r?.id === reservaSeleccionada.value?.id);
-  if(res){
+async function updateReserva(){
+  const res = reservas.value?.data.find(r => r?.id === reservaSeleccionada.value?.id);
+  if(!res) return;
+  try{
+    await cancelReserva(res?.id);
     res.estado = 'Cancelada'
+    await getUserReservas();
+  }catch(error){
+    throw new Error(`Error: ${error}`)
   }
   cancelarReserva.value = false
+}
+
+async function getCalc(id: number){
+  calculoLoading.value = true
+  calculoError.value = ''
+  calculo.value = undefined
+  try{
+    calculo.value = await calcularReembolso(id);
+  }catch(error){
+    calculoError.value = 'No se encontraron políticas de cancelación para el reembolso.'
+    throw new Error(`Error: ${error}`)
+  }finally{
+    calculoLoading.value = false
+  }
 }
 
 // ── Fortaleza ──
@@ -618,11 +716,6 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', 'var(
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 24px;
-}
-
-/* Modal */
-.modal-container {
-  
 }
 
 .modal-overlay {

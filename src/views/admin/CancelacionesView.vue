@@ -1,6 +1,7 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { getPoliticas, crearPolitica, editPolitica } from '@/services/cancelacionesService'
 
 
 interface Politica{
@@ -10,28 +11,17 @@ interface Politica{
     porcentaje_reembolso: number
 }
 
-const Polis: Politica[]=[
-    {
-        id: 1,
-        horas_antes_maximo: 3,
-        horas_antes_minimo: 4,
-        porcentaje_reembolso: 50
-    },
-    {
-        id: 2,
-        horas_antes_maximo: 3,
-        horas_antes_minimo: 4,
-        porcentaje_reembolso: 50
-    },
-    {
-        id: 3,
-        horas_antes_maximo: 3,
-        horas_antes_minimo: 4,
-        porcentaje_reembolso: 50
-    },
-]
+const politicas = ref<Politica[]>([])
 
-const politicas = ref<Politica[]>(Polis)
+async function getPoliticasCancelaciones() {
+  try{
+    politicas.value = await getPoliticas();
+  }catch(error){
+    throw new Error(`Error: ${error}`);
+  }
+}
+
+onMounted(getPoliticasCancelaciones);
 
 const showModal = ref(false)
 const editModal = ref(false)
@@ -43,31 +33,41 @@ const nuevoForm = ref({
     porcentaje_reembolso: null as number | null,
 })
 
-function agregarPolitica() {
+async function agregarPolitica() {
   if (!nuevoForm.value.horas_antes_maximo || !nuevoForm.value.horas_antes_minimo || !nuevoForm.value.porcentaje_reembolso) return
 
-  politicas.value.push({
-    id: Date.now(),
-    horas_antes_maximo: nuevoForm.value.horas_antes_maximo,
-    horas_antes_minimo: nuevoForm.value.horas_antes_minimo,
-    porcentaje_reembolso: nuevoForm.value.porcentaje_reembolso,
-  })
+  try{
+    await crearPolitica({
+      horas_antes_maximo: nuevoForm.value.horas_antes_maximo,
+      horas_antes_minimo: nuevoForm.value.horas_antes_minimo,
+      porcentaje_reembolso: nuevoForm.value.porcentaje_reembolso,
+    });
+  }catch(error){
+    throw new Error(`Error: ${error}`);
+  }
+  await getPoliticasCancelaciones();
 
   nuevoForm.value = { id: null, horas_antes_maximo: null, horas_antes_minimo: null, porcentaje_reembolso: null }
   showModal.value = false
 }
 
-function editarPolitica() {
+async function editarPolitica() {
     if (!nuevoForm.value.id || !nuevoForm.value.horas_antes_maximo || !nuevoForm.value.horas_antes_minimo || !nuevoForm.value.porcentaje_reembolso) return
 
     const pol = politicas.value.find(pol => pol.id === nuevoForm.value.id)
 
     if(pol){
-        pol.horas_antes_maximo=nuevoForm.value.horas_antes_maximo
-        pol.horas_antes_minimo=nuevoForm.value.horas_antes_minimo
-        pol.porcentaje_reembolso=nuevoForm.value.porcentaje_reembolso
+      try{
+        await editPolitica(pol.id, {
+          horas_antes_maximo: nuevoForm.value.horas_antes_maximo,
+          horas_antes_minimo: nuevoForm.value.horas_antes_minimo,
+          porcentaje_reembolso: nuevoForm.value.porcentaje_reembolso,
+        });
+      }catch(error){
+        throw new Error(`Error: ${error}`);
+      }
+      await getPoliticasCancelaciones();
     }
-
     nuevoForm.value = { id: null, horas_antes_maximo: null, horas_antes_minimo: null, porcentaje_reembolso: null }
     editModal.value = false
 }
@@ -92,7 +92,10 @@ function editarPolitica() {
                     <td>{{politica.porcentaje_reembolso}}%</td>
                     <td><button
                     class="btn btn-ghost btn-sm"
-                    @click="editModal=true; nuevoForm.id=politica.id;"
+                    @click="editModal=true; nuevoForm.id=politica.id; 
+                    nuevoForm.horas_antes_maximo=politica.horas_antes_maximo;
+                    nuevoForm.horas_antes_minimo=politica.horas_antes_minimo;
+                    nuevoForm.porcentaje_reembolso=politica.porcentaje_reembolso;"
                     >Editar</button>
                     </td>
                 </tr>
@@ -147,7 +150,7 @@ function editarPolitica() {
         <div class="field-row">
             <div class="field">
                 <label>Horas Antes Maximo</label>
-                <input v-model.number="nuevoForm.horas_antes_maximo" type="number" min="1" placeholder="10" />
+                <input v-model.number="nuevoForm.horas_antes_maximo" value="" type="number" min="1" placeholder="10" />
             </div>
             <div class="field">
                 <label>Horas Antes Minimo</label>

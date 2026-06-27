@@ -1,61 +1,36 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { getPagos } from '@/services/pagosService'
 
 
 interface Pago{
-    id: number
-    cliente: string
-    metodo: string
-    fecha: string
-    monto_final: number
-    estado: string
+  id: number,
+  metodo: string,
+  monto_final: number,
+  estado: string,
+  referencia_externa: string,
+  created_at: string,
+  reservas: reservas
 }
 
-const Pagos: Pago[]=[
-    {
-        id: 1,
-        cliente: "example.com",
-        metodo: 'Tarjeta',
-        fecha: '6/15/2026',
-        monto_final: 230,
-        estado: "Activo"
-    },
-    {
-        id: 2,
-        cliente: "example123@gmail.com",
-        metodo: 'Tarjeta',
-        fecha: '6/15/2026',
-        monto_final: 230,
-        estado: "Activo"
-    },
-    {
-        id: 3,
-        cliente: "example@gmail.com",
-        metodo: 'Transferencia',
-        fecha: '6/15/2026',
-        monto_final: 230,
-        estado: "Reembolsado"
-    },
-    {
-        id: 4,
-        cliente: "example@gmail.com",
-        metodo: 'Tarjeta',
-        fecha: '6/15/2026',
-        monto_final: 230,
-        estado: "Activo"
-    },
-    {
-        id: 5,
-        cliente: "example@gmail.com",
-        metodo: 'Transferencia',
-        fecha: '6/15/2026',
-        monto_final: 230,
-        estado: "Reembolsado"
-    },
-]
+interface reservas {
+    usuarios: usuarios
+}
 
-const pagos = ref<Pago[]>(Pagos)
+interface usuarios {
+    email: string
+}
+
+const pagos = ref<Pago[]>([])
+
+onMounted(async() => {
+  try{
+    pagos.value = await getPagos();
+  }catch(error){
+    throw new Error(`Error: ${error}`);
+  }
+})
 
 const pagosP = computed(() =>
   pagos.value
@@ -102,9 +77,9 @@ function setPage(page: number) {
             <TransitionGroup tag="tbody" name="rows" appear>
                 <tr v-for="(pago, index) in pagosPaginados" :key="pago.id" :style="{ '--row-delay': `${index * 40}ms` }">
                     <td><strong style="font-family:'DM Mono',monospace">{{pago.id}}</strong></td>
-                    <td>{{pago.cliente}}</td>
+                    <td>{{pago.reservas.usuarios.email}}</td>
                     <td>{{pago.metodo}}</td>
-                    <td>{{pago.fecha}}</td>
+                    <td>{{pago.created_at}}</td>
                     <td>{{pago.monto_final}}</td>
                     <td>{{pago.estado}}</td>
                 </tr>

@@ -20,9 +20,27 @@ export interface CreatePeliculaPayload {
   id_usuario: number
 }
 
+interface Usuario {
+  id: number,
+  nombre: string,
+  email: string,
+  password_hash: string,
+  telefono: string,
+  id_rol: number,
+  notificaciones_activas: boolean,
+  created_at: string,
+  updated_at: string
+}
+
 export async function fetchGeneros(): Promise<Genero[]> {
   const res = await fetch(`${API_BASE}/generos`)
   if (!res.ok) throw new Error(`Error al cargar géneros (${res.status})`)
+  return res.json()
+}
+
+export async function fetchUsuarios(): Promise<Usuario[]> {
+  const res = await fetch(`${API_BASE}/usuarios`)
+  if (!res.ok) throw new Error(`Error al cargar usuarios (${res.status})`)
   return res.json()
 }
 
@@ -64,7 +82,7 @@ export async function fetchCiudades(){
 export async function getPeliculas(){
   const res = await fetch(`${API_BASE}/peliculas`)
   if(!res.ok){
-    throw new Error(`Peliculas not found: ${res.status}`)
+    throw new Error(`Peliculas no encontradas: ${res.status}`)
   }
   return res.json();
 }

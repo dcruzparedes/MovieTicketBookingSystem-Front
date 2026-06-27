@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { onMounted, ref, computed } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
+import { getCupones, nuevoCupon, cambiarEstadoCupon } from '@/services/cuponesService'
 
 
 interface Cupon{
@@ -15,45 +16,27 @@ interface Cupon{
     activo: boolean
 }
 
-const Cups: Cupon[]=[
-    {
-        id: 1,
-        codigo: "CP-1",
-        tipo: "Monto fijo",
-        valor: 34,
-        fecha_expiracion: "5/23/2026",
-        usos_maximos: 4,
-        usos_actuales: 0,
-        activo: true
-    },
-    {
-        id: 2,
-        codigo: "CP-2",
-        tipo: "Monto fijo",
-        valor: 34,
-        fecha_expiracion: "5/23/2026",
-        usos_maximos: 6,
-        usos_actuales: 0,
-        activo: true
-    },
-    {
-        id: 3,
-        codigo: "CP-3",
-        tipo: "Monto fijo",
-        valor: 34,
-        fecha_expiracion: "5/23/2026",
-        usos_maximos: 2,
-        usos_actuales: 0,
-        activo: true
-    }
-]
+const cupones = ref<Cupon[]>([])
 
-const cupones = ref<Cupon[]>(Cups)
+async function getAllCupones(){
+  try{
+    cupones.value = await getCupones();
+  }catch(error){
+    throw new Error(`Error: ${error}`)
+  }
+}
+
+onMounted(getAllCupones);
 
 const showModal = ref(false)
 
-function toggleActive(cupon: Cupon, valor: boolean){
-    cupon.activo=valor
+async function toggleActive(cupon: Cupon, valor: boolean){
+  try{
+    await cambiarEstadoCupon(cupon.id, valor);
+    cupon.activo = valor;
+  }catch(error){
+    throw new Error(`Error: ${error}`)   
+  }
 }
 
 const nuevoForm = ref({
@@ -64,22 +47,25 @@ const nuevoForm = ref({
   usos_maximos: null as number | null,
 })
 
-function agregarCupon() {
-  if (!nuevoForm.value.codigo || !nuevoForm.value.valor || !nuevoForm.value.fecha_expiracion || !nuevoForm.value.usos_maximos) return
-
-  cupones.value.push({
-    id: Date.now(),
-    codigo: nuevoForm.value.codigo,
-    tipo: nuevoForm.value.tipo,
-    valor: nuevoForm.value.valor,
-    fecha_expiracion: nuevoForm.value.fecha_expiracion,
-    usos_maximos: nuevoForm.value.usos_maximos,
-    usos_actuales: 0,
-    activo: true,
-  })
+async function agregarCupon() {
+  if (!nuevoForm.value.codigo || !nuevoForm.value.valor || !nuevoForm.value.fecha_expiracion || !nuevoForm.value.usos_maximos) return;
+  try{
+      await nuevoCupon({
+        codigo: nuevoForm.value.codigo,
+        tipo: nuevoForm.value.tipo,
+        valor: nuevoForm.value.valor,
+        fecha_expiracion: nuevoForm.value.fecha_expiracion,
+        usos_maximos: nuevoForm.value.usos_maximos,
+        activo: true
+      });
+  }catch(error){
+    throw new Error(`Error: ${error}`)
+  }
 
   nuevoForm.value = { codigo: '', tipo: 'Porcentaje', valor: null, fecha_expiracion: '', usos_maximos: null }
-  showModal.value = false
+  showModal.value = false;
+
+  await getAllCupones();
 }
 
 const currentPage = ref(1)

@@ -19,6 +19,12 @@ export const authService = {
   async register(userData: { nombre: string; email: string; password: string; telefono?: string }) {
     return api.post<RegisterResponse>('/auth/register', userData);
   },
+  async forgotPassword(email: string) {
+    return api.post<{ message: string }>('/auth/forgot-password', { email });
+  },
+  async resetPassword(token: string, newPassword: string) {
+    return api.post<{ message: string }>('/auth/reset-password', { token, newPassword });
+  },
 };
 
 // ── Sesión (lectura del token/usuario guardados por LoginView) ──

@@ -1,10 +1,24 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { getUsuarioActual, cerrarSesion, rutaPorRol } from '@/services/authService'
 
-withDefaults(defineProps<{ subtitle?: string }>(), { subtitle: 'Administrador' })
+const props = withDefaults(defineProps<{ subtitle?: string }>(), { subtitle: 'Administrador' })
 
 const route = useRoute()
 const router = useRouter()
+
+const usuario = computed(() => getUsuarioActual())
+const rutaInicio = computed(() => (usuario.value ? rutaPorRol(usuario.value.rol) : '/'))
+
+const etiquetasRol: Record<string, string> = {
+  admin: 'Administrador',
+  recepcionista: 'Recepcionista',
+  cliente: 'Cliente',
+}
+const rolEtiqueta = computed(() =>
+  usuario.value ? etiquetasRol[usuario.value.rol] ?? usuario.value.rol : props.subtitle,
+)
 
 const navGroups = [
   {
@@ -48,17 +62,23 @@ function isActive(to: string) {
 }
 
 function logout() {
-  router.push('/')
+  cerrarSesion()
+  router.push('/login')
 }
 </script>
 
 <template>
   <div class="admin-wrap">
     <aside class="sidebar">
-      <RouterLink to="/admin" class="sidebar-logo">
+      <RouterLink :to="rutaInicio" class="sidebar-logo">
         Cine <em>Vicenta</em>
-        <span>{{ subtitle }}</span>
+        <span>{{ rolEtiqueta }}</span>
       </RouterLink>
+
+      <div v-if="usuario" class="sidebar-usuario">
+        <i class="pi pi-user-circle" />
+        <span class="sidebar-usuario-nombre">{{ usuario.nombre }}</span>
+      </div>
 
       <nav class="sidebar-nav">
         <slot name="nav">
@@ -131,6 +151,27 @@ function logout() {
   letter-spacing: 1.5px;
   text-transform: uppercase;
   margin-top: 2px;
+}
+
+.sidebar-usuario {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0 8px 14px;
+  margin-bottom: 4px;
+  font-size: 12px;
+  color: rgba(250, 240, 236, 0.55);
+}
+
+.sidebar-usuario .pi {
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.sidebar-usuario-nombre {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .sidebar-nav {

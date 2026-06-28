@@ -38,15 +38,6 @@
               <RouterLink to="/register" class="auth-tab">Crear cuenta</RouterLink>
             </div>
 
-            <!-- Role selector -->
-            <div class="role-selector animado" style="--delay: 120ms">
-              <div v-for="role in roles" :key="role.value" class="role-opt"
-                :class="{ active: selectedRole === role.value }" @click="selectedRole = role.value">
-                <span class="role-icon">{{ role.icon }}</span>
-                {{ role.label }}
-              </div>
-            </div>
-
             <!-- Error del backend -->
             <Transition name="fade-alert">
               <div v-if="serverError" class="alert alert-error animado" style="--delay: 0ms">
@@ -106,12 +97,14 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed, onMounted, onUnmounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRouter, useRoute } from 'vue-router'
 import Cookies from 'js-cookie'
 import BtnHome from '@/components/BtnHome.vue'
 import { api } from '@/services/api'
+import { rutaPorRol } from '@/services/authService'
 
 const router = useRouter()
+const route = useRoute()
 
 // ── Frases del carrusel ──
 const frases = [
@@ -143,14 +136,6 @@ onMounted(() => {
 })
 onUnmounted(() => clearInterval(intervalo))
 
-// ── Roles ──
-const roles = [
-  { value: 'cliente', icon: '🎟', label: 'Cliente' },
-  { value: 'recepcionista', icon: '🏷', label: 'Recepcionista' },
-  { value: 'admin', icon: '⚙️', label: 'Admin' },
-]
-const selectedRole = ref('cliente')
-
 // ── Formulario ──
 const form = reactive({ email: '', password: '' })
 const touched = reactive({ email: false, password: false })
@@ -179,12 +164,12 @@ function touch(field: keyof typeof touched) { touched[field] = true }
 function touchAll() { Object.keys(touched).forEach((k) => (touched[k as keyof typeof touched] = true)) }
 
 function redirectByRole(role: string) {
-  const routes: Record<string, string> = {
-    admin: '/admin',
-    recepcionista: '/recepcionista',
-    cliente: '/',
+  const redirect = route.query.redirect
+  if (typeof redirect === 'string' && redirect.startsWith('/')) {
+    router.push(redirect)
+    return
   }
-  router.push(routes[role] ?? '/')
+  router.push(rutaPorRol(role))
 }
 
 async function handleSubmit() {
@@ -382,42 +367,6 @@ async function handleSubmit() {
 
 .auth-tab:not(.active):hover {
   color: var(--text2);
-}
-
-/* Role selector */
-.role-selector {
-  display: flex;
-  gap: 8px;
-  margin-bottom: 18px;
-}
-
-.role-opt {
-  flex: 1;
-  padding: 10px 6px;
-  border: 1px solid var(--border2);
-  border-radius: var(--radius);
-  text-align: center;
-  cursor: pointer;
-  font-size: 12px;
-  color: var(--text2);
-  transition: all .2s;
-  user-select: none;
-}
-
-.role-opt.active {
-  border-color: var(--sinopia);
-  color: var(--sinopia);
-  background: rgba(217, 34, 0, .06);
-}
-
-.role-opt:not(.active):hover {
-  background: rgba(92, 0, 6, .03);
-}
-
-.role-icon {
-  font-size: 18px;
-  display: block;
-  margin-bottom: 4px;
 }
 
 /* Alert */

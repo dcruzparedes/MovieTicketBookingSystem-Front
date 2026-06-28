@@ -127,6 +127,7 @@ import AsientosMap from '@/components/asientos/AsientosMap.vue'
 import { useReservaStore } from '@/stores/reserva'
 import { getAsientosPorFuncion, bloquearAsientos } from '@/services/reservaService'
 import { isApiError } from '@/services/api'
+import { getCurrentUserId } from '@/services/movieService'
 // NavBar para mostrar el menú de usuario
 import NavBar from '@/components/NavBar.vue'
 
@@ -191,7 +192,12 @@ async function irAPago() {
 
   bloqueando.value = true
   try {
-    await bloquearAsientos(tienda.funcionActual!.id, tienda.idsSeleccionados, MINUTOS_BLOQUEO)
+    await bloquearAsientos(
+      tienda.funcionActual!.id,
+      tienda.idsSeleccionados,
+      MINUTOS_BLOQUEO,
+      getCurrentUserId(),
+    )
     tienda.iniciarTemporizador()
     enrutador.push('/pago')
   } catch (error) {

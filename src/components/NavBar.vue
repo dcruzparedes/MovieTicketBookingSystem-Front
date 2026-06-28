@@ -88,6 +88,7 @@ const menuItems = [
 
 function logout() {
   localStorage.removeItem('token')
+  localStorage.removeItem('user')
   sessionStorage.removeItem('token')
   estaAutenticado.value = false
   router.push('/login')

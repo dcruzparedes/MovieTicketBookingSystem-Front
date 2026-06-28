@@ -194,8 +194,12 @@ async function handleSubmit() {
 
   submitting.value = true
   try {
-    const res = await api.post<{ access_token: string; user: { rol: string } }>('/auth/login', form)
+    const res = await api.post<{
+      access_token: string
+      user: { id: string; nombre: string; email: string; telefono: string | null; rol: string }
+    }>('/auth/login', form)
     Cookies.set('token', res.access_token, { secure: true, sameSite: 'strict' })
+    localStorage.setItem('user', JSON.stringify(res.user))
     redirectByRole(res.user.rol)
   } catch (err: any) {
     const message = err.message

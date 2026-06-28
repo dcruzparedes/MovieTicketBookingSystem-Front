@@ -3,7 +3,7 @@ import { onMounted, reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import PosterUpload from '@/components/PosterUpload.vue'
-import { uploadPoster } from '@/services/storageService'
+import { uploadPosterPelicula } from '@/services/storageService'
 import {
   fetchGeneros,
   fetchIdiomas,
@@ -51,6 +51,7 @@ const posterFile = ref<File | null>(null)
 const isSubmitting = ref(false)
 const submitError = ref('')
 const loadError = ref('')
+const createdMovieId = ref<number | null>(null)
 
 const genres = ref<Genero[]>([])
 const languages = ref<Idioma[]>([])
@@ -75,30 +76,51 @@ function validate(): boolean {
 }
 
 async function handleSubmit() {
+  // La película ya fue creada (la subida del póster falló); solo reintentar la subida.
+  if (createdMovieId.value !== null) {
+    await trySubirPoster(createdMovieId.value)
+    return
+  }
+
   if (!validate()) return
 
   isSubmitting.value = true
   submitError.value = ''
 
   try {
-    let posterUrl: string | undefined
-    if (posterFile.value) {
-      posterUrl = await uploadPoster(posterFile.value)
-    }
-
-    await createPelicula({
+    const pelicula = (await createPelicula({
       titulo: form.title,
       sinopsis: form.synopsis || undefined,
-      poster_url: posterUrl,
-      id_genero: form.genre !== '' ? form.genre : undefined,
-      id_idioma: form.language !== '' ? form.language : undefined,
-      fecha_estreno: form.releaseDate || undefined,
+      id_genero: form.genre !== '' ? Number(form.genre) : undefined,
+      id_idioma: form.language !== '' ? Number(form.language) : undefined,
+      fecha_estreno: form.releaseDate ? new Date(form.releaseDate).toISOString() : undefined,
       id_usuario: getCurrentUserId(),
-    })
+    })) as { id: string }
 
-    router.push('/admin/peliculas')
+    createdMovieId.value = Number(pelicula.id)
+    await trySubirPoster(createdMovieId.value)
   } catch (err) {
     submitError.value = err instanceof Error ? err.message : 'Error al guardar la película'
+  } finally {
+    isSubmitting.value = false
+  }
+}
+
+async function trySubirPoster(id: number) {
+  if (!posterFile.value) {
+    router.push('/admin/peliculas')
+    return
+  }
+
+  isSubmitting.value = true
+  submitError.value = ''
+  try {
+    await uploadPosterPelicula(id, posterFile.value)
+    router.push('/admin/peliculas')
+  } catch (err) {
+    submitError.value = err instanceof Error
+      ? `La película se guardó, pero no se pudo subir el póster: ${err.message}. Puedes intentar subirlo de nuevo.`
+      : 'La película se guardó, pero no se pudo subir el póster.'
   } finally {
     isSubmitting.value = false
   }
@@ -129,6 +151,7 @@ function goBack() {
               type="text"
               placeholder="ej. Alien: Romulus"
               :class="{ 'input-error': errors.title }"
+              :disabled="createdMovieId !== null"
             />
             <span v-if="errors.title" class="field-error">{{ errors.title }}</span>
           </div>
@@ -138,7 +161,7 @@ function goBack() {
           <div class="field-row">
             <div class="field">
               <label for="genre">Género</label>
-              <select id="genre" v-model="form.genre" :class="{ 'input-error': errors.genre }">
+              <select id="genre" v-model="form.genre" :class="{ 'input-error': errors.genre }" :disabled="createdMovieId !== null">
                 <option value="" disabled>Seleccionar…</option>
                 <option v-for="g in genres" :key="g.id" :value="g.id">{{ g.nombre }}</option>
               </select>
@@ -151,6 +174,7 @@ function goBack() {
                 id="language"
                 v-model="form.language"
                 :class="{ 'input-error': errors.language }"
+                :disabled="createdMovieId !== null"
               >
                 <option value="" disabled>Seleccionar…</option>
                 <option v-for="l in languages" :key="l.id" :value="l.id">{{ l.nombre }}</option>
@@ -166,6 +190,7 @@ function goBack() {
               v-model="form.releaseDate"
               type="date"
               :class="{ 'input-error': errors.releaseDate }"
+              :disabled="createdMovieId !== null"
             />
             <span v-if="errors.releaseDate" class="field-error">{{ errors.releaseDate }}</span>
           </div>
@@ -178,6 +203,7 @@ function goBack() {
               placeholder="Descripción de la película…"
               rows="4"
               :class="{ 'input-error': errors.synopsis }"
+              :disabled="createdMovieId !== null"
             ></textarea>
             <span v-if="errors.synopsis" class="field-error">{{ errors.synopsis }}</span>
           </div>
@@ -185,7 +211,7 @@ function goBack() {
           <p v-if="submitError" class="submit-error">{{ submitError }}</p>
           <div class="form-actions">
             <button type="submit" class="btn btn-primary" :disabled="isSubmitting">
-              {{ isSubmitting ? 'Guardando…' : 'Guardar película' }}
+              {{ isSubmitting ? 'Guardando…' : createdMovieId !== null ? 'Reintentar subir póster' : 'Guardar película' }}
             </button>
             <button type="button" class="btn btn-ghost" :disabled="isSubmitting" @click="goBack">
               Cancelar
@@ -193,23 +219,11 @@ function goBack() {
           </div>
         </div>
 
-        <!-- Columna derecha: póster + S3 -->
+        <!-- Columna derecha: póster -->
         <div class="right-col">
           <div class="card animado" style="--delay: 120ms">
             <p class="section-label">Imagen del póster</p>
             <PosterUpload v-model="posterFile" />
-          </div>
-
-          <div class="card animado" style="--delay: 160ms; margin-top: 14px">
-            <p class="section-label">Almacenamiento S3</p>
-            <div class="field">
-              <label for="s3-bucket">Bucket</label>
-              <input id="s3-bucket" type="text" value="cine-vicenta-media" readonly />
-            </div>
-            <div class="field" style="margin-bottom: 0">
-              <label for="s3-prefix">Prefijo</label>
-              <input id="s3-prefix" type="text" value="posters/" readonly />
-            </div>
           </div>
         </div>
       </form>

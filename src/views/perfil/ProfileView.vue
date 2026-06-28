@@ -132,7 +132,7 @@
                       <p class="setting-label">Recordatorios de función</p>
                       <p class="setting-desc">Te avisaremos 1 hora antes de que inicie tu función</p>
                     </div>
-                    <ToggleSwitch v-model="notifReminders" @update:model-value="updateNotifications" />
+                    <ToggleSwitch v-model="notifReminders" />
                   </div>
                 </div>
 
@@ -276,6 +276,10 @@ import Tag from 'primevue/tag'
 import ToggleSwitch from 'primevue/toggleswitch'
 import NavBar from '@/components/NavBar.vue'
 import { getReservas, cancelReserva, calcularReembolso } from '@/services/reservaService'
+import { obtenerUsuario, actualizarPassword, alternarNotificaciones, actualizarPerfil, type ActualizarPerfilPayload } from '@/services/usuarioService'
+import { getCurrentUserId } from '@/services/movieService'
+import { getUsuarioActual, notificarCambioSesion } from '@/services/authService'
+import { isApiError } from '@/services/api'
 const route = useRoute()
 const cancelarReserva = ref(false)
 const menuItems = [
@@ -417,16 +421,33 @@ function estadoSeverity(estado: Reserva['estado']) {
 }
 
 // ── Perfil ──
-const INITIAL_PROFILE = {
-  nombre: 'Juan Pérez',
-  email: 'juan@correo.com',
-  telefono: '+504 9999 9999',
+const INITIAL_PROFILE = reactive({
+  nombre: '',
+  email: '',
+  telefono: '',
   notificaciones_activas: true,
-}
+})
 
 const profile = reactive({ ...INITIAL_PROFILE })
 const notifReminders = ref(false)
 const notifSaved = ref(false)
+
+async function cargarPerfil() {
+  try {
+    const usuario = await obtenerUsuario(getCurrentUserId())
+    Object.assign(INITIAL_PROFILE, {
+      nombre: usuario.nombre,
+      email: usuario.email,
+      telefono: usuario.telefono ?? '',
+      notificaciones_activas: usuario.notificaciones_activas,
+    })
+    Object.assign(profile, INITIAL_PROFILE)
+  } catch (err) {
+    console.error('No se pudo cargar el perfil:', err)
+  }
+}
+
+onMounted(cargarPerfil)
 const pTouched = reactive({ nombre: false, email: false, telefono: false })
 const profileSubmitting = ref(false)
 const profileSaved = ref(false)
@@ -460,12 +481,37 @@ async function saveProfile() {
   if (Object.keys(pErrors.value).length) return
   profileSubmitting.value = true
   try {
-    await new Promise((r) => setTimeout(r, 800))
+    const payload: ActualizarPerfilPayload = {
+      nombre: profile.nombre.trim(),
+      email: profile.email.trim(),
+    }
+    if (profile.telefono.trim()) payload.telefono = profile.telefono.trim()
+
+    const actualizado = await actualizarPerfil(getCurrentUserId(), payload)
+
+    Object.assign(INITIAL_PROFILE, {
+      nombre: actualizado.nombre,
+      email: actualizado.email,
+      telefono: actualizado.telefono ?? '',
+      notificaciones_activas: actualizado.notificaciones_activas,
+    })
+    Object.assign(profile, INITIAL_PROFILE)
+
+    const sesion = getUsuarioActual()
+    if (sesion) {
+      localStorage.setItem('user', JSON.stringify({
+        ...sesion,
+        nombre: actualizado.nombre,
+        email: actualizado.email,
+        telefono: actualizado.telefono,
+      }))
+      notificarCambioSesion()
+    }
+
     profileSaved.value = true
     setTimeout(() => (profileSaved.value = false), 4000)
   } catch (err) {
-    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-    profileError.value = message ?? 'No se pudieron guardar los cambios.'
+    profileError.value = isApiError(err) ? err.message : 'No se pudieron guardar los cambios.'
   } finally {
     profileSubmitting.value = false
   }
@@ -474,10 +520,11 @@ async function saveProfile() {
 // ── Notificaciones ──
 async function updateNotifications() {
   try {
-    await new Promise((r) => setTimeout(r, 600))
+    await alternarNotificaciones(getCurrentUserId())
     notifSaved.value = true
     setTimeout(() => (notifSaved.value = false), 3000)
   } catch (err) {
+    profile.notificaciones_activas = !profile.notificaciones_activas
     console.error('Error actualizando notificaciones:', err)
   }
 }
@@ -519,14 +566,12 @@ async function savePassword() {
   if (!isPwValid.value) return
   pwSubmitting.value = true
   try {
-    await new Promise((r) => setTimeout(r, 900))
-    if (pw.current === 'incorrecta') { pwError.value = 'La contraseña actual es incorrecta.'; return }
-    pwSaved.value = true
+    await actualizarPassword(getCurrentUserId(), pw.current, pw.newPw)
     resetPwForm()
+    pwSaved.value = true
     setTimeout(() => (pwSaved.value = false), 4000)
   } catch (err) {
-    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-    pwError.value = message ?? 'No se pudo actualizar la contraseña.'
+    pwError.value = isApiError(err) ? err.message : 'No se pudo actualizar la contraseña.'
   } finally {
     pwSubmitting.value = false
   }

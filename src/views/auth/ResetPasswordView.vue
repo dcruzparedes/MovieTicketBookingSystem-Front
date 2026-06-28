@@ -46,6 +46,16 @@
           </div>
         </div>
 
+        <!-- Estado: sin token en la URL -->
+        <div v-else-if="tokenFaltante" class="card animado" style="--delay: 0ms">
+          <div class="card-body" style="text-align: center">
+            <Message severity="error" :closable="false" style="margin-bottom: 16px; text-align: left">
+              Este enlace no es válido. Solicita uno nuevo para restablecer tu contraseña.
+            </Message>
+            <Button label="Solicitar enlace" icon="pi pi-send" fluid @click="enrutador.push('/forgot-password')" />
+          </div>
+        </div>
+
         <!-- Estado: formulario -->
         <div v-else class="card animado" style="--delay: 0ms">
           <div class="card-body">
@@ -113,11 +123,14 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Avatar from 'primevue/avatar'
 import BtnHome from '@/components/BtnHome.vue'
+import { authService } from '@/services/authService'
+import { isApiError } from '@/services/api'
 
 const route = useRoute()
 const enrutador = useRouter()
 
-const resetToken = computed(() => route.query.token ?? '')
+const resetToken = computed(() => String(route.query.token ?? ''))
+const tokenFaltante = computed(() => !resetToken.value)
 
 // ── Frases ──
 const frases = [
@@ -173,13 +186,12 @@ async function handleSubmit() {
   if (!isValid.value) return
   submitting.value = true
   try {
-    // TODO: PUT /auth/reset-password { token, password }
-    console.log('PUT /auth/reset-password', { token: resetToken.value, password: form.password })
-    await new Promise((r) => setTimeout(r, 900))
+    await authService.resetPassword(resetToken.value, form.password)
     saved.value = true
   } catch (err) {
-    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-    serverError.value = message ?? 'El enlace expiró o es inválido. Solicita uno nuevo.'
+    serverError.value = isApiError(err)
+      ? err.message
+      : 'El enlace expiró o es inválido. Solicita uno nuevo.'
   } finally {
     submitting.value = false
   }

@@ -106,6 +106,8 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import Avatar from 'primevue/avatar'
 import BtnHome from '@/components/BtnHome.vue'
+import { authService } from '@/services/authService'
+import { isApiError } from '@/services/api'
 
 const email = ref('')
 const touched = ref(false)
@@ -127,12 +129,11 @@ async function handleSubmit() {
   if (error.value) return
   submitting.value = true
   try {
-    await new Promise((r) => setTimeout(r, 900))
+    await authService.forgotPassword(email.value.trim())
     sent.value = true
     startCooldown()
   } catch (err) {
-    const message = (err as { response?: { data?: { message?: string } } })?.response?.data?.message
-    serverError.value = message ?? 'Ocurrió un error. Intenta de nuevo.'
+    serverError.value = isApiError(err) ? err.message : 'Ocurrió un error. Intenta de nuevo.'
   } finally {
     submitting.value = false
   }
@@ -141,7 +142,7 @@ async function handleSubmit() {
 async function resend() {
   if (cooldown.value > 0) return
   try {
-    await new Promise((r) => setTimeout(r, 600))
+    await authService.forgotPassword(email.value.trim())
     startCooldown()
   } catch { /* silently ignore */ }
 }

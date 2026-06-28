@@ -1,3 +1,4 @@
+import { ref } from 'vue';
 import { api } from './api';
 import Cookies from 'js-cookie';
 
@@ -19,6 +20,12 @@ export const authService = {
   async register(userData: { nombre: string; email: string; password: string; telefono?: string }) {
     return api.post<RegisterResponse>('/auth/register', userData);
   },
+  async forgotPassword(email: string) {
+    return api.post<{ message: string }>('/auth/forgot-password', { email });
+  },
+  async resetPassword(token: string, newPassword: string) {
+    return api.post<{ message: string }>('/auth/reset-password', { token, newPassword });
+  },
 };
 
 // ── Sesión (lectura del token/usuario guardados por LoginView) ──
@@ -29,6 +36,12 @@ export interface UsuarioSesion {
   email: string;
   telefono: string | null;
   rol: string;
+}
+
+export const sesionVersion = ref(0);
+
+export function notificarCambioSesion(): void {
+  sesionVersion.value++;
 }
 
 export function getUsuarioActual(): UsuarioSesion | null {
@@ -54,8 +67,10 @@ export function tieneRol(...roles: string[]): boolean {
 }
 
 export function cerrarSesion(): void {
+  api.post('/auth/logout', {}).catch(() => {});
   Cookies.remove('token');
   localStorage.removeItem('user');
+  notificarCambioSesion();
 }
 
 export function rutaPorRol(rol: string): string {

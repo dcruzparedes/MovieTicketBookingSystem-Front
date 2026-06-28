@@ -40,8 +40,13 @@
 
         <!-- Acciones -->
         <div class="pago-acciones">
-          <Button label="Confirmar y pagar" fluid size="large" @click="confirmarPago" />
-          <Button label="Simular error de pago" severity="danger" outlined size="small" @click="simularError" />
+          <Button
+            label="Confirmar y pagar"
+            fluid
+            size="large"
+            :loading="procesando"
+            @click="confirmarPago"
+          />
         </div>
 
         <div class="pago-seguro">
@@ -57,7 +62,9 @@
           <div class="sidebar-pelicula">
             {{ tienda.funcionActual?.tituloPelicula ?? 'Alien: Romulus' }}
           </div>
-          <div class="sidebar-meta">19:15 · Vie 12 Jun</div>
+          <div class="sidebar-meta">
+            {{ tienda.funcionActual ? `${tienda.funcionActual.hora} · ${tienda.funcionActual.fecha}` : '' }}
+          </div>
 
           <div class="sidebar-asientos">
             <Tag v-for="codigo in tienda.asientosSeleccionados" :key="codigo" :value="codigo" severity="warn"
@@ -78,6 +85,7 @@
 </template>
 
 <script setup lang="ts">
+import { ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
@@ -87,16 +95,55 @@ import MetodoPago from '@/components/pago/MetodoPago.vue'
 import CuponDescuento from '@/components/pago/CuponDescuento.vue'
 import ResumenReserva from '@/components/pago/ResumenReserva.vue'
 import { useReservaStore } from '@/stores/reserva'
+import { crearReserva } from '@/services/reservaService'
+import { crearPago, crearPagoEfectivo } from '@/services/pagoService'
+import { isApiError } from '@/services/api'
+import { getCurrentUserId } from '@/services/movieService'
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
+const procesando = ref(false)
 
-function confirmarPago() {
-  enrutador.push('/confirmacion')
-}
+async function confirmarPago() {
+  if (!tienda.funcionActual || procesando.value) return
 
-function simularError() {
-  enrutador.push('/error-pago')
+  procesando.value = true
+  try {
+    const reserva = await crearReserva({
+      id_usuario: getCurrentUserId(),
+      id_funcion: Number(tienda.funcionActual.id),
+      id_asientos: tienda.idsSeleccionados.map(Number),
+    })
+
+    const montoOriginal = tienda.subtotal.toFixed(2)
+    const montoDescuento = tienda.descuento.toFixed(2)
+    const montoFinal = tienda.totalFinal.toFixed(2)
+
+    if (tienda.metodoPago === 'efectivo') {
+      await crearPagoEfectivo({
+        id_reserva: Number(reserva.id),
+        monto_original: montoOriginal,
+        monto_descuento: montoDescuento,
+        monto_final: montoFinal,
+      })
+    } else {
+      await crearPago({
+        id_reserva: Number(reserva.id),
+        monto_original: montoOriginal,
+        monto_descuento: montoDescuento,
+        monto_final: montoFinal,
+        metodo: 'tarjeta',
+      })
+    }
+
+    tienda.limpiarTemporizador()
+    enrutador.push({ path: '/confirmacion', query: { numero: reserva.numero_reserva } })
+  } catch (error) {
+    const motivo = isApiError(error) ? error.message : 'No se pudo procesar el pago. Intenta de nuevo.'
+    enrutador.push({ path: '/error-pago', query: { motivo } })
+  } finally {
+    procesando.value = false
+  }
 }
 
 function irAHome() {

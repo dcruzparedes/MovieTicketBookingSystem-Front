@@ -22,6 +22,11 @@
           Te enviamos los detalles a tu correo electrónico
         </div>
 
+        <Message v-if="tienda.metodoPago === 'efectivo'" severity="warn" :closable="false"
+          class="instrucciones-taquilla animado" style="--delay: 200ms">
+          Presenta el código <strong>{{ numeroReserva }}</strong> en taquilla para recoger tus boletos.
+        </Message>
+
         <!-- Ticket -->
         <div class="ticket-card animado" style="--delay: 220ms">
           <div class="ticket-codigo">{{ numeroReserva }}</div>
@@ -32,15 +37,15 @@
           </div>
           <div class="ticket-fila">
             <span><i class="pi pi-calendar" /> Fecha</span>
-            <span>Viernes 12 Jun, 2026</span>
+            <span>{{ tienda.funcionActual?.fecha ?? '—' }}</span>
           </div>
           <div class="ticket-fila">
             <span><i class="pi pi-clock" /> Hora</span>
-            <span>19:15 · 3D</span>
+            <span>{{ tienda.funcionActual?.hora ?? '—' }} · {{ tienda.funcionActual?.formato ?? '' }}</span>
           </div>
           <div class="ticket-fila">
             <span><i class="pi pi-map-marker" /> Sala</span>
-            <span>Sala 4 — Cine Vicenta</span>
+            <span>{{ tienda.funcionActual?.sala ?? '—' }} — {{ tienda.funcionActual?.cine ?? '—' }}</span>
           </div>
           <div class="ticket-fila">
             <span><i class="pi pi-objects-column" /> Asientos</span>
@@ -72,26 +77,30 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed, onUnmounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Tag from 'primevue/tag'
 import Divider from 'primevue/divider'
 import Avatar from 'primevue/avatar'
+import Message from 'primevue/message'
 import NavBar from '@/components/NavBar.vue'
 import { useReservaStore } from '@/stores/reserva'
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
+const ruta = useRoute()
 
-const numeroReserva = computed(() => {
-  const num = Math.floor(Math.random() * 9000 + 1000)
-  return `RES-2026-0${num}`
-})
+const numeroReserva = computed(() => String(ruta.query.numero ?? ''))
 
 function imprimir() {
   window.print()
 }
+
+onUnmounted(() => {
+  tienda.limpiarSeleccion()
+  tienda.limpiarCupon()
+})
 </script>
 
 <style scoped>
@@ -130,6 +139,12 @@ function imprimir() {
   font-size: 28px;
   color: var(--text);
   margin-bottom: 6px;
+}
+
+.instrucciones-taquilla {
+  margin-bottom: 20px;
+  text-align: left;
+  font-size: 13px;
 }
 
 .confirmacion-sub {

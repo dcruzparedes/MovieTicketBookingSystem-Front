@@ -36,18 +36,19 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Menu from 'primevue/menu'
+import { getUsuarioActual, cerrarSesion } from '@/services/authService'
 
 const router = useRouter()
 const emit = defineEmits(['logo-click', 'home-click'])
 
-// ── Mock de auth — reemplazar con store de Daniel ──
-const estaAutenticado = ref(true)
-const nombreUsuario = ref('Juan Pérez')
+const usuarioActual = computed(() => getUsuarioActual())
+const estaAutenticado = computed(() => usuarioActual.value !== null)
+const nombreUsuario = computed(() => usuarioActual.value?.nombre ?? '')
 
 const inicialUsuario = computed(() =>
   nombreUsuario.value?.charAt(0).toUpperCase() ?? 'U'
@@ -62,7 +63,7 @@ function toggleMenu(event: MouseEvent) {
   menuVisible.value = !menuVisible.value
 }
 
-const menuItems = [
+const menuItems = computed(() => [
   {
     label: nombreUsuario.value,
     items: [
@@ -84,12 +85,10 @@ const menuItems = [
       },
     ],
   },
-]
+])
 
 function logout() {
-  localStorage.removeItem('token')
-  sessionStorage.removeItem('token')
-  estaAutenticado.value = false
+  cerrarSesion()
   router.push('/login')
 }
 

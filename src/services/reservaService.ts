@@ -176,9 +176,31 @@ export function bloquearAsientos(
   idFuncion: string | number,
   idsAsientosFuncion: string[],
   minutos: number,
+  idUsuario: number,
 ) {
   return api.post<BloqueoAsientosResponse>(`/funciones/${idFuncion}/asientos/bloquear`, {
     ids_asientos_funcion: idsAsientosFuncion.map(Number),
     minutos,
+    id_usuario: idUsuario,
   })
+}
+
+export interface CrearReservaPayload {
+  id_usuario: number
+  id_funcion: number
+  id_asientos: number[]
+}
+
+export interface ReservaCreada {
+  id: string
+  numero_reserva: string
+  id_usuario: string
+  id_funcion: string
+  estado: string
+  created_at: string
+  updated_at: string | null
+}
+
+export function crearReserva(payload: CrearReservaPayload) {
+  return api.post<ReservaCreada>('/reservas', payload)
 }

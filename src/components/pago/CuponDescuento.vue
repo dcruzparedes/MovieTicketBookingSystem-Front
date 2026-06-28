@@ -47,6 +47,8 @@ import { ref, computed } from 'vue'
 import InputText from 'primevue/inputtext'
 import Button from 'primevue/button'
 import { useReservaStore } from '@/stores/reserva'
+import { validarCupon } from '@/services/cuponService'
+import { isApiError } from '@/services/api'
 
 const tienda = useReservaStore()
 
@@ -56,31 +58,27 @@ const error = ref('')
 
 const cuponAplicado = computed(() => tienda.codigoCupon !== '')
 
-// Mock de cupones válidos — luego se reemplaza con POST /cupones/validar
-const CUPONES_MOCK: Record<string, { tipo: 'porcentaje' | 'fijo'; valor: number; id: string }> = {
-  'PROMO2026': { tipo: 'porcentaje', valor: 20, id: '1' },
-  'VERANO50':  { tipo: 'fijo',       valor: 50, id: '2' },
-}
-
 async function aplicar() {
   if (!codigoIngresado.value.trim()) return
   error.value = ''
   cargando.value = true
 
-  // Simula latencia del backend
-  await new Promise(r => setTimeout(r, 600))
+  try {
+    const codigo = codigoIngresado.value.toUpperCase().trim()
+    const res = await validarCupon(codigo)
 
-  const codigo = codigoIngresado.value.toUpperCase().trim()
-  const cupon = CUPONES_MOCK[codigo]
+    if (!res.valido || !res.cupon) {
+      error.value = res.mensaje
+      return
+    }
 
-  if (cupon) {
-    tienda.aplicarCupon(codigo, cupon.tipo, cupon.valor, cupon.id)
+    tienda.aplicarCupon(res.cupon.codigo, res.cupon.tipo, Number(res.cupon.valor), res.cupon.codigo)
     codigoIngresado.value = ''
-  } else {
-    error.value = 'Código inválido o expirado.'
+  } catch (err) {
+    error.value = isApiError(err) ? err.message : 'No se pudo validar el cupón.'
+  } finally {
+    cargando.value = false
   }
-
-  cargando.value = false
 }
 
 function quitar() {

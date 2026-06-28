@@ -41,12 +41,12 @@ import { useRouter } from 'vue-router'
 import Button from 'primevue/button'
 import Avatar from 'primevue/avatar'
 import Menu from 'primevue/menu'
-import { getUsuarioActual, cerrarSesion } from '@/services/authService'
+import { getUsuarioActual, cerrarSesion, sesionVersion } from '@/services/authService'
 
 const router = useRouter()
 const emit = defineEmits(['logo-click', 'home-click'])
 
-const usuarioActual = computed(() => getUsuarioActual())
+const usuarioActual = computed(() => { sesionVersion.value; return getUsuarioActual() })
 const estaAutenticado = computed(() => usuarioActual.value !== null)
 const nombreUsuario = computed(() => usuarioActual.value?.nombre ?? '')
 

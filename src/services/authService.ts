@@ -1,3 +1,4 @@
+import { ref } from 'vue';
 import { api } from './api';
 import Cookies from 'js-cookie';
 
@@ -37,6 +38,12 @@ export interface UsuarioSesion {
   rol: string;
 }
 
+export const sesionVersion = ref(0);
+
+export function notificarCambioSesion(): void {
+  sesionVersion.value++;
+}
+
 export function getUsuarioActual(): UsuarioSesion | null {
   const token = Cookies.get('token');
   if (!token) return null;
@@ -60,8 +67,10 @@ export function tieneRol(...roles: string[]): boolean {
 }
 
 export function cerrarSesion(): void {
+  api.post('/auth/logout', {}).catch(() => {});
   Cookies.remove('token');
   localStorage.removeItem('user');
+  notificarCambioSesion();
 }
 
 export function rutaPorRol(rol: string): string {

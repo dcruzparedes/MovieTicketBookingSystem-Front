@@ -90,7 +90,6 @@ async function toggleActive(customer: Customer) {
   <AdminLayout>
     <div class="page-header animado" style="--delay: 0ms">
       <h1 class="page-title">Clientes</h1>
-      <button class="btn btn-primary" @click="openModal">+ Nuevo usuario</button>
     </div>
 
     <div class="page-body">
@@ -137,7 +136,6 @@ async function toggleActive(customer: Customer) {
                     @update:model-value="toggleActive(customer)"
                   />
                   <span class="status-label" :class="customer.estado === 'activo' ? 'active' : 'inactive'">
-                    {{ customer.estado === 'activo' ? 'Activo' : 'Inactivo' }}
                   </span>
                 </div>
               </td>

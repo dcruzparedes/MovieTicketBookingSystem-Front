@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { reactive } from 'vue'
+import { reactive, computed } from 'vue'
 
 export interface UserFields {
   nombre: string
@@ -49,6 +49,23 @@ function validate(): boolean {
   return Object.values(errors).every((e) => !e)
 }
 
+const telefono = computed({
+  get: () => form.telefono,
+  set: (value: string) => {
+    form.telefono = value.replace(/\D/g, '').slice(0, 8)
+  }
+})
+
+// Bloquea cualquier tecla que no sea un dígito antes de que se escriba
+const ALLOWED_KEYS = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End']
+
+function onlyDigitsKeydown(e: KeyboardEvent) {
+  if (ALLOWED_KEYS.includes(e.key)) return
+  if (!/^\d$/.test(e.key)) {
+    e.preventDefault()
+  }
+}
+
 function handleSubmit() {
   if (!validate()) return
   emit('saved', { ...form })
@@ -85,10 +102,14 @@ function handleSubmit() {
       <label for="user-telefono">Teléfono</label>
       <input
         id="user-telefono"
-        v-model="form.telefono"
+        v-model="telefono"
         type="tel"
-        placeholder="ej. +504 9999 9999"
+        placeholder="ej. 9999 9999"
         :class="{ 'input-error': errors.telefono }"
+        inputmode="numeric"
+        maxlength="8"
+        fluid 
+        @keydown="onlyDigitsKeydown"
       />
       <span v-if="errors.telefono" class="field-error">{{ errors.telefono }}</span>
     </div>

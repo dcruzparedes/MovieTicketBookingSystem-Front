@@ -24,7 +24,7 @@ interface Pelicula {
   year?: number,
   generos?: { nombre: string }
   idiomas?: { nombre: string }
-  funciones?: { id: number, fecha_hora: string, estado: string, formato: string, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}[]
+  funciones?: { id: number, fecha_hora: string, estado: string, formato: string, asientosFuncions: { id: number}[], salas: {id: number, nombre: string, cines: { id: number, nombre: string, ciudades: {nombre: string}}}}[]
 }
 interface Idioma {
   id: number,
@@ -39,7 +39,7 @@ interface Ciudad {
   nombre: string
 }
 interface Cine { id: number; nombre: string; direccion: string | null; id_ciudad: number }
-interface Funcion { id: number, fecha_hora: string, estado: string, formato: string, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}
+interface Funcion { id: number, fecha_hora: string, estado: string, formato: string, asientosFuncions: { id: number}[], salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}
 
 // ── Estado ──
 const router = useRouter()
@@ -98,18 +98,11 @@ const peliculasFiltradas = computed(() =>
   })
 )
 
-const filteredFunctions = computed(() => {
-  if (!selectedMovie.value) return []
-  const cinemasInCity   = filteredCinemas.value.map((c) => c.id)
-  const targetCinemaIds = selectedCinemaId.value ? [selectedCinemaId.value] : cinemasInCity
-  return selectedMovie.value.funciones;
-})
-
-const funcionesPorFecha = computed(() => {
+const funcionesDisponibles = computed(() => {
   const grupos: Record<string, Funcion[]> = {}
   if(!selectedMovie.value?.funciones || !cineActual.value) return;
   selectedMovie.value.funciones
-  .filter((f) => f.salas.cines.nombre === cineActual.value!.nombre)
+  .filter((f) => f.salas.cines.id === cineActual.value!.id)
   .forEach((f) => {
     const fecha = new Date(f.fecha_hora)
     const fechaStr = fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })
@@ -302,12 +295,12 @@ function irAAsientos(funcionId: number) {
             <button class="back-btn animado" style="--delay: 0ms" @click="selectedCinemaId = null">Cambiar cine</button>
             <div class="eyebrow animado" style="--delay: 50ms">Funciones en {{ cineActual?.nombre }}</div>
 
-            <div v-if="Object.keys(funcionesPorFecha || '').length === 0" class="empty-showtimes animado" style="--delay: 80ms">
+            <div v-if="Object.keys(funcionesDisponibles || '').length === 0" class="empty-showtimes animado" style="--delay: 80ms">
               No hay funciones programadas para esta película en el cine seleccionado.
             </div>
 
             <div
-              v-for="(times, date, gi) in funcionesPorFecha"
+              v-for="(times, date, gi) in funcionesDisponibles"
               :key="date"
               class="date-group animado"
               :style="{ '--delay': `${80 + (gi as number) * 80}ms` }"
@@ -323,6 +316,8 @@ function irAAsientos(funcionId: number) {
                 >
                   <div class="funcion-time">{{ formatearHora(s.fecha_hora) }}</div>
                   <div class="funcion-format">{{ s.formato }}</div>
+                  <div v-if="s.asientosFuncions.length === 0" class="funcion-avail low">{{ s.asientosFuncions.length }} Disponibles</div>
+                  <div v-else class="funcion-avail">{{ s.asientosFuncions.length }} Disponibles</div>
                 </button>
               </div>
             </div>

@@ -39,7 +39,7 @@ export async function fetchGeneros(): Promise<Genero[]> {
 }
 
 export async function fetchUsuarios(): Promise<Usuario[]> {
-  const res = await fetch(`${API_BASE}/usuarios`)
+  const res = await fetch(`${API_BASE}/usuarios/todos/simple`)
   if (!res.ok) throw new Error(`Error al cargar usuarios (${res.status})`)
   return res.json()
 }

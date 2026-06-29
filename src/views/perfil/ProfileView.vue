@@ -62,7 +62,7 @@
                       v-model="telefono" 
                       inputmode="numeric"
                       maxlength="8"
-                      placeholder="+504 9999 9999"
+                      placeholder="99999999"
                       :invalid="pTouched.telefono && !!pErrors.telefono" 
                       fluid 
                       @keydown="onlyDigitsKeydown"

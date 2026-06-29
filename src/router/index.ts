@@ -96,12 +96,6 @@ const router = createRouter({
 
     // ── Admin ──
     {
-      path: '/admin',
-      name: 'admin-dashboard',
-      component: () => import('@/views/admin/AdminDashboard.vue'),
-      meta: { roles: ['admin'] },
-    },
-    {
       path: '/admin/peliculas',
       name: 'admin-peliculas',
       component: () => import('@/views/admin/MoviesView.vue'),

@@ -9,6 +9,7 @@ interface ReservasRes {
   meta: {
     page: number,
     limit: number
+    total: number
   }
 }
 
@@ -113,6 +114,7 @@ const exportError = ref('')
 async function getAllReservas() {
   try{
     reservas.value = await getReservas({...filters.value, page: currentPage.value, limit: itemsPerPage});
+    console.log('meta recibido:', reservas.value.meta)
   }catch(error){
     throw new Error(`Error: ${error}`);
   }
@@ -151,13 +153,10 @@ watch(
 )
 
 
-function parseFecha(fecha: string): Date {
-    const [mes, dia, anio] = fecha.split('/').map(Number)
-    if(mes && dia && anio){
-        return new Date(anio, mes - 1, dia)
-    }else{
-        return new Date(NaN)
-    }
+function formatFecha(fechaISO: string): string {
+  return new Date(fechaISO).toLocaleDateString('es-HN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  })
 }
 function fechaISO(fecha: Date) {
     return fecha.toISOString().split('T')[0]
@@ -175,17 +174,15 @@ function getUsuario(id: number){
 const currentPage = ref(1)
 const itemsPerPage = 10
 
-const totalPages = computed(() => Math.ceil(reservas.value?.data.length ?? 0 / itemsPerPage))
+const totalPages = computed(() => Math.ceil((reservas.value?.meta.total ?? 0) / itemsPerPage))
 
-const reservasPaginadas = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return reservas.value?.data.slice(start, end)
-})
+// ya no hace falta slice, usa los datos tal cual vienen
+const reservasPaginadas = computed(() => reservas.value?.data ?? [])
 
-function setPage(page: number) {
+async function setPage(page: number) {
   if (page < 1 || page > totalPages.value) return
   currentPage.value = page
+  await getAllReservas()
 }
 </script>
 
@@ -221,7 +218,7 @@ function setPage(page: number) {
                     <td><strong style="font-family:'DM Mono',monospace">{{reserva.id}}</strong></td>
                     <td style="font-family:'DM Mono',monospace">{{reserva.numero_reserva}}</td>
                     <td>{{getUsuario(reserva.id_usuario)}}</td>
-                    <td>{{reserva.funciones.fecha_hora}}</td>
+                    <td>{{formatFecha(reserva.funciones.fecha_hora)}}</td>
                     <td>{{reserva.funciones.salas.cines.nombre}}</td>
                     <td>{{reserva.funciones.peliculas.titulo}}</td>
                     <td>{{reserva.estado}}</td>

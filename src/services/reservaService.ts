@@ -100,6 +100,7 @@ export interface ReservasRes {
   meta: {
     page: number,
     limit: number
+    total: number
   }
 }
 
@@ -145,7 +146,7 @@ export async function exportReservas(): Promise<void> {
 }
 
 export async function cancelReserva(id: number){
-  const res = await api.patch(`/reservas/${id}/cancelar`);
+  const res = await api.patch(`/reservas/${id}/cancelar`, {});
   if(!res){
     throw new Error(`No se pudo cacnelar la reserva.`)
   }

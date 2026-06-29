@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { computed, ref, reactive, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import {
   listarTodosUsuarios,
@@ -169,6 +169,23 @@ function estadoClass(estado: string) {
     'badge--bloqueado': estado === 'bloqueado',
   }
 }
+
+const telefono = computed({
+  get: () => createForm.telefono,
+  set: (value: string) => {
+    createForm.telefono = value.replace(/\D/g, '').slice(0, 8)
+  }
+})
+
+// Bloquea cualquier tecla que no sea un dígito antes de que se escriba
+const ALLOWED_KEYS = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End']
+
+function onlyDigitsKeydown(e: KeyboardEvent) {
+  if (ALLOWED_KEYS.includes(e.key)) return
+  if (!/^\d$/.test(e.key)) {
+    e.preventDefault()
+  }
+}
 </script>
 
 <template>
@@ -265,7 +282,11 @@ function estadoClass(estado: string) {
               </div>
               <div class="field">
                 <label>Teléfono <span class="optional">(opcional)</span></label>
-                <input v-model="createForm.telefono" type="text" placeholder="+50499998888" />
+                <input v-model="telefono"  placeholder="99998888" 
+                      inputmode="numeric"
+                      maxlength="8"
+                      fluid 
+                      @keydown="onlyDigitsKeydown"/>
               </div>
               <div class="field">
                 <label>Rol</label>

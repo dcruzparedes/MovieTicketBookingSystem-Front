@@ -75,7 +75,7 @@ export function cerrarSesion(): void {
 
 export function rutaPorRol(rol: string): string {
   const rutas: Record<string, string> = {
-    admin: '/admin',
+    admin: '/admin/peliculas',
     recepcionista: '/recepcionista',
     cliente: '/',
   };

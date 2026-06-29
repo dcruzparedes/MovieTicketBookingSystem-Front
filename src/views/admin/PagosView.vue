@@ -76,13 +76,13 @@ function formatFecha(fechaISO: string): string {
 const pagosP = computed(() =>
   pagos.value
     .filter(p => p.estado === 'Completado')
-    .reduce((acc, p) => acc + p.monto_final, 0)
+    .reduce((acc, p) => acc + Number(p.monto_final), 0)
 )
 
 const pagosR = computed(() =>
   pagos.value
     .filter(p => p.estado === 'Reembolsado')
-    .reduce((acc, p) => acc + p.monto_final, 0)
+    .reduce((acc, p) => acc + Number(p.monto_final), 0)
 )
 
 const pagosN = computed(() => pagosP.value - pagosR.value)

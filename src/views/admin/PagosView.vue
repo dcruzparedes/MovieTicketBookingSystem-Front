@@ -1,17 +1,31 @@
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
+import { watch, ref, computed, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import { getPagos } from '@/services/pagosService'
+import { getPaymentHistory } from '@/services/pagosService'
 
+
+interface PaymentHistoy {
+    pagos: Pago[],
+    reembolsos: Reembolso[]
+}
 
 interface Pago{
   id: number,
   metodo: string,
   monto_final: number,
-  estado: string,
+  estado: 'Completado' | 'Reembolsado',
   referencia_externa: string,
   created_at: string,
   reservas: reservas
+}
+
+interface Reembolso {
+    id: number,
+    id_pago: number         
+    monto: number,
+    estado: 'Pendiente' | 'Aprobado' | 'Rechazado',
+    fecha_procesado: string,
+    created_at: string
 }
 
 interface reservas {
@@ -22,19 +36,46 @@ interface usuarios {
     email: string
 }
 
+interface PaymentHistoryFiltersFilter {
+    estado_pagos?: string,
+    estado_reembolsos?: string,
+    fecha_limite_pagos?: Date,
+    fecha_limite_reembolsos?: Date
+}
+
+const paymenHistory = ref<PaymentHistoy>()
 const pagos = ref<Pago[]>([])
 
-onMounted(async() => {
+async function getPagos() {
   try{
-    pagos.value = await getPagos();
+    paymenHistory.value = await getPaymentHistory({...filters.value});
+    pagos.value = paymenHistory.value.pagos
   }catch(error){
     throw new Error(`Error: ${error}`);
   }
-})
+}
+
+onMounted(getPagos)
+
+const filters = ref<PaymentHistoryFiltersFilter>({})
+
+watch(
+  filters,
+  () => {
+    getPagos();    
+  },
+  {deep: true}
+)
+
+function formatFecha(fechaISO: string): string {
+  return new Date(fechaISO).toLocaleDateString('es-HN', {
+    day: '2-digit', month: 'short', year: 'numeric',
+  })
+}
 
 const pagosP = computed(() =>
   pagos.value
-    .filter(p => p.estado === 'Activo')
+    .filter(p => p.estado === 'Completado')
     .reduce((acc, p) => acc + p.monto_final, 0)
 )
 
@@ -69,6 +110,14 @@ function setPage(page: number) {
     <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Reportes de Pagos</div>
     </div>
+    <div class="card animado" style="--delay: 60ms; margin-bottom:14px; margin-right: 28px; margin-left: 28px;">
+        <div class="card-body">
+            <div style="display:flex;gap:10px;flex-wrap:wrap">
+                <input v-model="filters.fecha_limite_pagos" type="date" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none" />
+                <select v-model="filters.estado_pagos" style="background:var(--bg);border:1px solid var(--border2);color:var(--text2);padding:8px 12px;border-radius:var(--radius);font-size:12px;font-family:'Outfit',sans-serif;outline:none"><option :value="undefined">Ambos</option><option>Completado</option><option>Reembolsado</option></select>
+            </div>
+        </div>
+    </div>
     <div class="admin-body">
         <div class="card animado" style="--delay: 80ms">
         <div class="card-body" style="padding:0">
@@ -79,7 +128,7 @@ function setPage(page: number) {
                     <td><strong style="font-family:'DM Mono',monospace">{{pago.id}}</strong></td>
                     <td>{{pago.reservas.usuarios.email}}</td>
                     <td>{{pago.metodo}}</td>
-                    <td>{{pago.created_at}}</td>
+                    <td>{{formatFecha(pago.created_at)}}</td>
                     <td>{{pago.monto_final}}</td>
                     <td>{{pago.estado}}</td>
                 </tr>

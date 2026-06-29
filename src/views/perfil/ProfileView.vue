@@ -98,7 +98,7 @@
                       <div class="reserva-detalles">
                         <div class="reserva-dato"><i class="pi pi-building" /> {{ reserva.funciones.salas.cines.nombre }}</div>
                         <div class="reserva-dato"><i class="pi pi-objects-column" /> {{ reserva.funciones.salas.nombre }}</div>
-                        <div class="reserva-dato"><i class="pi pi-calendar" /> {{ formatSoloFecha(reserva.funciones.fecha_hora) }}</div>
+                        <div class="reserva-dato"><i class="pi pi-calendar" /> {{ formatFecha(reserva.funciones.fecha_hora) }}</div>
                         <div class="reserva-dato"><i class="pi pi-clock" /> {{ reserva.formato }}</div>
                       </div>
 
@@ -243,7 +243,7 @@
         </strong>
 
         <div style="color: var(--rosewood);">
-          {{ formatSoloFecha(reservaSeleccionada.funciones.fecha_hora) }}
+          {{ formatFecha(reservaSeleccionada.funciones.fecha_hora) }}
         </div>
 
         <br />
@@ -406,7 +406,7 @@ function getTotal(pagos: Pago[]){
   return pagoTotal;
 }
 
-function formatSoloFecha(fechaISO: string): string {
+function formatFecha(fechaISO: string): string {
   return new Date(fechaISO).toLocaleDateString('es-HN', {
     day: '2-digit', month: 'short', year: 'numeric',
   })

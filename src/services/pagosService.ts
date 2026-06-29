@@ -25,6 +25,7 @@ interface Reembolso {
 }
 
 interface reservas {
+    id: number
     usuarios: usuarios
 }
 

@@ -2,6 +2,7 @@
 import { onMounted, watch, ref } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { getPaymentHistory, cambiarEstadoPago, cambiarEstadoReembolso } from '@/services/pagosService'
+import { deleteReserva } from '@/services/reservaService'
 
 interface PaymentHistoy {
     pagos: Pago[],
@@ -28,11 +29,12 @@ interface Reembolso {
 }
 
 interface reservas {
-    usuarios: usuarios
+  id: number
+  usuarios: usuarios
 }
 
 interface usuarios {
-    email: string
+  email: string
 }
 
 interface PaymentHistoryFiltersFilter {
@@ -44,6 +46,7 @@ interface PaymentHistoryFiltersFilter {
 
 const paymenHistory = ref<PaymentHistoy>()
 const reembolsos = ref<Reembolso[]>([])
+const pagos = ref<Pago[]>([])
 const estadoReembolso = ref()
 const estadoPago = ref()
 
@@ -51,6 +54,7 @@ async function getReembolsos() {
   try{
     paymenHistory.value = await getPaymentHistory({...filters.value});
     reembolsos.value = paymenHistory.value?.reembolsos
+    pagos.value = paymenHistory.value.pagos
   }catch(error){
     throw new Error(`Error: ${error}`);
   }
@@ -74,9 +78,20 @@ function formatFecha(fechaISO: string): string {
   })
 }
 
+function getReservaID(id_pago: number){
+  if(!id_pago) return;
+  const pago = pagos.value.find(p => p.id === id_pago)
+  return pago?.reservas.id
+}
+
 async function updateState(reembolso: Reembolso, newState: Reembolso['estado']) {
   try{
     if(newState === 'Aprobado'){
+      const id_reserva = getReservaID(reembolso.id_pago)
+      if (id_reserva === undefined) {
+        throw new Error(`No se encontró la reserva asociada al pago.`)
+      }
+      await deleteReserva(id_reserva)
       await cambiarEstadoReembolso(reembolso.id, newState)
     }else if(newState === 'Rechazado'){
       await cambiarEstadoReembolso(reembolso.id, newState)

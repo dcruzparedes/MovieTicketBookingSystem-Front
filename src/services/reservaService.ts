@@ -166,6 +166,14 @@ export async function getPeliculas(){
   return res;
 }
 
+export async function deleteReserva(id: number){
+  const res = await api.delete(`/reservas/${id}`);
+  if(!res){
+    throw new Error(`Reserva no encontrada.`)
+  }
+  return res;
+}
+
 export async function calcularReembolso(id: number){
   const res = await api.get<CalcResr>(`/reembolso/${id}/calculo`);
   if(!res){

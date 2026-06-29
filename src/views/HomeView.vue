@@ -24,7 +24,7 @@ interface Pelicula {
   year?: number,
   generos?: { nombre: string }
   idiomas?: { nombre: string }
-  funciones?: { id: number, fecha_hora: string, estado: string, formato: string, asientos_disponibles: number, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}[]
+  funciones?: { id: number, fecha_hora: string, estado: string, formato: string, asientos_disponibles: number, salas: {id: number, nombre: string, cines: {id: number, nombre: string, ciudades: {nombre: string}}}}[]
 }
 interface Idioma {
   id: number,
@@ -39,7 +39,7 @@ interface Ciudad {
   nombre: string
 }
 interface Cine { id: number; nombre: string; direccion: string | null; id_ciudad: number }
-interface Funcion { id: number, fecha_hora: string, estado: string, formato: string, asientos_disponibles: number, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}
+interface Funcion { id: number, fecha_hora: string, estado: string, formato: string, asientos_disponibles: number, salas: {id: number, nombre: string, cines: {id: number, nombre: string, ciudades: {nombre: string}}}}
 
 // ── Estado ──
 const router = useRouter()
@@ -221,7 +221,7 @@ function irAAsientos(funcionId: number) {
               <div class="detail-stats animado" style="--delay: 240ms">
                 <div class="dstat"><div class="dstat-val">{{ selectedMovie.dur }}</div><div class="dstat-lbl">Duración</div></div>
                 <div class="dstat"><div class="dstat-val">{{ selectedMovie.year }}</div><div class="dstat-lbl">Año</div></div>
-                <div class="dstat"><div v-for="idioma in selectedMovie.idiomas" class="dstat-val">{{ idioma }}</div><div class="dstat-lbl">Año</div></div>
+                <div class="dstat"><div v-for="idioma in selectedMovie.idiomas" class="dstat-val">{{ idioma }}</div><div class="dstat-lbl">Idioma</div></div>
               </div>
             </div>
           </div>

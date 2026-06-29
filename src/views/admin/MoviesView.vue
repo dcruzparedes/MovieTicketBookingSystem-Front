@@ -132,7 +132,6 @@ async function toggleActive(movie: Movie) {
                     @update:model-value="toggleActive(movie)"
                   />
                   <span class="status-label" :class="movie.activo ? 'active' : 'inactive'">
-                    {{ movie.activo ? 'Activo' : 'Inactivo' }}
                   </span>
                 </div>
               </td>

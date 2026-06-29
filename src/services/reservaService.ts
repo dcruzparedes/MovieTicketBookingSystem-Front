@@ -100,6 +100,7 @@ export interface ReservasRes {
   meta: {
     page: number,
     limit: number
+    total: number
   }
 }
 

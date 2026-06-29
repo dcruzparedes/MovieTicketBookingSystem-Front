@@ -98,18 +98,11 @@ const peliculasFiltradas = computed(() =>
   })
 )
 
-const filteredFunctions = computed(() => {
-  if (!selectedMovie.value) return []
-  const cinemasInCity   = filteredCinemas.value.map((c) => c.id)
-  const targetCinemaIds = selectedCinemaId.value ? [selectedCinemaId.value] : cinemasInCity
-  return selectedMovie.value.funciones;
-})
-
-const funcionesPorFecha = computed(() => {
+const funcionesDisponibles = computed(() => {
   const grupos: Record<string, Funcion[]> = {}
   if(!selectedMovie.value?.funciones || !cineActual.value) return;
   selectedMovie.value.funciones
-  .filter((f) => f.salas.cines.nombre === cineActual.value!.nombre)
+  .filter((f) => f.salas.cines.id === cineActual.value!.id)
   .forEach((f) => {
     const fecha = new Date(f.fecha_hora)
     const fechaStr = fecha.toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'short' })
@@ -306,12 +299,12 @@ function irAAsientos(funcionId: number) {
             <button class="back-btn animado" style="--delay: 0ms" @click="selectedCinemaId = null">Cambiar cine</button>
             <div class="eyebrow animado" style="--delay: 50ms">Funciones en {{ cineActual?.nombre }}</div>
 
-            <div v-if="Object.keys(funcionesPorFecha || '').length === 0" class="empty-showtimes animado" style="--delay: 80ms">
+            <div v-if="Object.keys(funcionesDisponibles || '').length === 0" class="empty-showtimes animado" style="--delay: 80ms">
               No hay funciones programadas para esta película en el cine seleccionado.
             </div>
 
             <div
-              v-for="(times, date, gi) in funcionesPorFecha"
+              v-for="(times, date, gi) in funcionesDisponibles"
               :key="date"
               class="date-group animado"
               :style="{ '--delay': `${80 + (gi as number) * 80}ms` }"

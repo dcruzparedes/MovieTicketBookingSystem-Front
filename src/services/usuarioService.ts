@@ -76,9 +76,7 @@ export function listarClientes(filtro: ClientesFiltro = {}) {
 }
 
 export function cambiarEstadoCliente(id: number, status: 'activo' | 'inactivo' | 'bloqueado') {
-  return api.patch<{ message: string; id: number; status: string }>(`/usuarios/${id}/status`, {
-    body: JSON.stringify({ status }),
-  })
+  return api.patch<{ message: string; id: number; status: string }>(`/usuarios/${id}/status`, { status })
 }
 
 export interface UsuarioAdmin {

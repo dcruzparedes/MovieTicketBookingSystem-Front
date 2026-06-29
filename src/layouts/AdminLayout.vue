@@ -43,7 +43,10 @@ const navGroups = [
   },
   {
     label: 'Usuarios',
-    items: [{ label: 'Usuarios', icon: 'pi-user-edit', to: '/admin/roles' }],
+    items: [
+      { label: 'Clientes', icon: 'pi-users', to: '/admin/clientes' },
+      { label: 'Usuarios', icon: 'pi-user-edit', to: '/admin/roles' },
+    ],
   },
   {
     label: 'Reportes',

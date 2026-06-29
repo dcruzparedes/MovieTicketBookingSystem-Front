@@ -17,7 +17,7 @@ const etiquetasRol: Record<string, string> = {
   cliente: 'Cliente',
 }
 const rolEtiqueta = computed(() =>
-  usuario.value ? etiquetasRol[usuario.value.rol] ?? usuario.value.rol : props.subtitle,
+  usuario.value ? (etiquetasRol[usuario.value.rol] ?? usuario.value.rol) : props.subtitle,
 )
 
 const navGroups = [
@@ -43,16 +43,14 @@ const navGroups = [
   },
   {
     label: 'Usuarios',
-    items: [
-      { label: 'Clientes', icon: 'pi-users', to: '/admin/clientes' },
-      { label: 'Roles', icon: 'pi-user-edit', to: '/admin/roles' },
-    ],
+    items: [{ label: 'Usuarios', icon: 'pi-user-edit', to: '/admin/roles' }],
   },
   {
     label: 'Reportes',
     items: [
       { label: 'Reservas', icon: 'pi-chart-bar', to: '/admin/reservas' },
       { label: 'Pagos', icon: 'pi-wallet', to: '/admin/pagos' },
+      { label: 'Auditoría', icon: 'pi-shield', to: '/admin/audit-logs' },
     ],
   },
 ]
@@ -84,8 +82,13 @@ function logout() {
         <slot name="nav">
           <template v-for="group in navGroups" :key="group.label">
             <p class="nav-group">{{ group.label }}</p>
-            <RouterLink v-for="item in group.items" :key="item.to" :to="item.to" class="nav-item"
-              :class="{ active: isActive(item.to) }">
+            <RouterLink
+              v-for="item in group.items"
+              :key="item.to"
+              :to="item.to"
+              class="nav-item"
+              :class="{ active: isActive(item.to) }"
+            >
               <i :class="['pi', item.icon, 'nav-icon']" />
               {{ item.label }}
             </RouterLink>

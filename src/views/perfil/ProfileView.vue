@@ -164,13 +164,6 @@
                     </div>
                     <ToggleSwitch v-model="profile.notificaciones_activas" @update:model-value="updateNotifications" />
                   </div>
-                  <div class="setting-item">
-                    <div class="setting-info">
-                      <p class="setting-label">Recordatorios de función</p>
-                      <p class="setting-desc">Te avisaremos 1 hora antes de que inicie tu función</p>
-                    </div>
-                    <ToggleSwitch v-model="notifReminders" />
-                  </div>
                 </div>
 
                 <Transition name="fade-alert">
@@ -470,7 +463,6 @@ const INITIAL_PROFILE = reactive({
 })
 
 const profile = reactive({ ...INITIAL_PROFILE })
-const notifReminders = ref(false)
 const notifSaved = ref(false)
 
 const telefono = computed({
@@ -592,13 +584,15 @@ async function saveProfile() {
 }
 
 // ── Notificaciones ──
-async function updateNotifications() {
+async function updateNotifications(nuevoValor: boolean) {
+  const valorAnterior = !nuevoValor
   try {
-    await alternarNotificaciones(getCurrentUserId())
+    const res = await alternarNotificaciones(getCurrentUserId())
+    profile.notificaciones_activas = res.notificaciones_activas
     notifSaved.value = true
     setTimeout(() => (notifSaved.value = false), 3000)
   } catch (err) {
-    profile.notificaciones_activas = !profile.notificaciones_activas
+    profile.notificaciones_activas = valorAnterior
     console.error('Error actualizando notificaciones:', err)
   }
 }
@@ -974,6 +968,7 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', 'var(
   font-size: 12px;
   color: var(--text3);
 }
+
 
 /* ── Reservas ── */
 .empty-reservas {

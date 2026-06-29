@@ -33,8 +33,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { computed } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import Button from 'primevue/button'
 import Message from 'primevue/message'
 import NavBar from '@/components/NavBar.vue'
@@ -42,9 +42,9 @@ import { useReservaStore } from '@/stores/reserva'
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
+const ruta = useRoute()
 
-// Mock — luego viene del backend en la respuesta del pago
-const mensajeError = ref('Fondos insuficientes (INSUFFICIENT_FUNDS)')
+const mensajeError = computed(() => String(ruta.query.motivo ?? 'No se pudo procesar el pago.'))
 
 function cancelar() {
   tienda.limpiarSeleccion()

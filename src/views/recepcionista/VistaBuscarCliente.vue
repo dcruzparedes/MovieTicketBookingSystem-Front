@@ -139,9 +139,10 @@
           <div class="card" style="margin-bottom: 14px">
             <div class="card-body">
               <div class="busqueda-row">
-                <InputText v-model="codigoReserva" placeholder="Código de reserva (ej. RES-2026-00712)"
-                  style="font-family: 'DM Mono', monospace; letter-spacing: 1px; flex: 1" fluid />
-                <Button label="Buscar" @click="buscarReserva" />
+                <InputText v-model="codigoReserva" placeholder="Código de reserva (ej. RES-000001)"
+                  style="font-family: 'DM Mono', monospace; letter-spacing: 1px; flex: 1" fluid
+                  @keyup.enter="buscarReserva" />
+                <Button label="Buscar" @click="buscarReserva" :loading="cargandoReserva" />
               </div>
             </div>
           </div>
@@ -161,12 +162,20 @@
                     {{ reservaEncontrada.cliente }} · {{ reservaEncontrada.codigo }}
                   </div>
                 </div>
-                <Tag value="Confirmada" severity="success" />
+                <Tag :value="reservaEncontrada.estado" :severity="severidadEstado" />
               </div>
-              <Message severity="warn" :closable="false" style="margin-bottom: 14px">
+              <Message v-if="yaNoSePuedeCancelar" severity="info" :closable="false" style="margin-bottom: 14px">
+                Esta reserva ya está {{ estadoNormalizado }} y no se puede cancelar desde aquí.
+              </Message>
+              <Message v-else severity="warn" :closable="false" style="margin-bottom: 14px">
                 Política: con más de 48h de anticipación se aplica reembolso del 100%.
               </Message>
-              <Button label="Cancelar esta reserva" severity="danger" @click="mostrarConfirmCancelacion = true" />
+              <Button
+                label="Cancelar esta reserva"
+                severity="danger"
+                :disabled="yaNoSePuedeCancelar"
+                @click="mostrarConfirmCancelacion = true"
+              />
             </div>
           </div>
         </div>
@@ -193,7 +202,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -207,6 +216,9 @@ import Select from 'primevue/select'
 import Dialog from 'primevue/dialog'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useReservaStore } from '@/stores/reserva'
+import { isApiError } from '@/services/api'
+import { buscarClientes as buscarClientesApi, type ClienteBackend } from '@/services/usuarioService'
+import { getReservas, cancelReserva, type Funcion } from '@/services/reservaService'
 
 const toast = useToast()
 const tienda = useReservaStore()
@@ -216,32 +228,37 @@ const seccionActiva = ref<'buscar' | 'reservar' | 'cancelar'>('buscar')
 // ── Buscar cliente ──
 const terminoBusqueda = ref('')
 const cargando = ref(false)
-const clienteSeleccionado = ref<{ id: string; nombre: string; email: string; telefono: string } | null>(null)
+const clienteSeleccionado = ref<ClienteBackend | null>(null)
+const clientes = ref<ClienteBackend[]>([])
 
-const CLIENTES_MOCK = [
-  { id: '1', nombre: 'Juan Pérez', email: 'juan@correo.com', telefono: '+504 9976 1234' },
-  { id: '2', nombre: 'María López', email: 'maria@correo.com', telefono: '+504 9812 5678' },
-  { id: '3', nombre: 'Carlos Mejía', email: 'carlos@correo.com', telefono: '+504 9543 9012' },
-  { id: '4', nombre: 'Ana García', email: 'ana@correo.com', telefono: '+504 9654 3210' },
-  { id: '5', nombre: 'Luis Rodríguez', email: 'luis@correo.com', telefono: '+504 9321 0987' },
-]
+let debounceBusqueda: ReturnType<typeof setTimeout> | null = null
 
-const clientes = ref<typeof CLIENTES_MOCK>([])
-
-async function buscarClientes() {
-  if (!terminoBusqueda.value.trim()) { clientes.value = []; return }
-  cargando.value = true
-  await new Promise(r => setTimeout(r, 400))
-  const q = terminoBusqueda.value.toLowerCase()
-  clientes.value = CLIENTES_MOCK.filter(c =>
-    c.nombre.toLowerCase().includes(q) ||
-    c.email.toLowerCase().includes(q) ||
-    c.telefono.includes(q)
-  )
-  cargando.value = false
+function buscarClientes() {
+  if (debounceBusqueda) clearTimeout(debounceBusqueda)
+  if (!terminoBusqueda.value.trim()) {
+    clientes.value = []
+    return
+  }
+  debounceBusqueda = setTimeout(ejecutarBusquedaClientes, 300)
 }
 
-function seleccionarCliente(cliente: typeof CLIENTES_MOCK[0]) {
+async function ejecutarBusquedaClientes() {
+  cargando.value = true
+  try {
+    clientes.value = await buscarClientesApi(terminoBusqueda.value.trim())
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error al buscar',
+      detail: isApiError(error) ? error.message : 'No se pudo completar la búsqueda',
+      life: 4000,
+    })
+  } finally {
+    cargando.value = false
+  }
+}
+
+function seleccionarCliente(cliente: ClienteBackend) {
   clienteSeleccionado.value = cliente
   seccionActiva.value = 'reservar'
 }
@@ -272,34 +289,104 @@ function confirmarReserva() {
 
 // ── Cancelar reserva ──
 const codigoReserva = ref('')
+const cargandoReserva = ref(false)
 const mostrarConfirmCancelacion = ref(false)
 const reservaEncontrada = ref<{
-  codigo: string; pelicula: string; funcion: string; asientos: string; cliente: string
+  id: number
+  codigo: string
+  pelicula: string
+  funcion: string
+  asientos: string
+  cliente: string
+  estado: string
 } | null>(null)
 
-const RESERVAS_MOCK: Record<string, typeof reservaEncontrada.value> = {
-  'RES-2026-00712': {
-    codigo: 'RES-2026-00712',
-    pelicula: 'Alien: Romulus',
-    funcion: 'Sáb 7 Jun · 20:00 · Sala 4',
-    asientos: 'C4, C5',
-    cliente: 'Juan Pérez',
-  },
+// El backend mezcla casing para este campo ('activa', 'Cancelada', 'pagada'),
+// así que se normaliza antes de comparar.
+const estadoNormalizado = computed(() =>
+  reservaEncontrada.value ? reservaEncontrada.value.estado.toLowerCase() : '',
+)
+
+const yaNoSePuedeCancelar = computed(
+  () => estadoNormalizado.value === 'cancelada' || estadoNormalizado.value === 'pagada',
+)
+
+const severidadEstado = computed(() => {
+  if (estadoNormalizado.value === 'cancelada') return 'danger'
+  if (estadoNormalizado.value === 'pagada') return 'success'
+  return 'info'
+})
+
+function formatearFuncion(funcion: Funcion) {
+  const fecha = new Date(funcion.fecha_hora).toLocaleDateString('es-ES', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+  })
+  const hora = new Date(funcion.fecha_hora).toLocaleTimeString('es-ES', {
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  })
+  return `${fecha} · ${hora} · ${funcion.salas.nombre}`
 }
 
-function buscarReserva() {
+async function buscarReserva() {
   const codigo = codigoReserva.value.trim().toUpperCase()
-  reservaEncontrada.value = RESERVAS_MOCK[codigo] ?? null
-  if (!reservaEncontrada.value) {
-    toast.add({ severity: 'error', summary: 'No encontrada', detail: 'Código de reserva inválido', life: 3000 })
+  if (!codigo) return
+
+  cargandoReserva.value = true
+  reservaEncontrada.value = null
+  try {
+    const { data } = await getReservas({ numero_reserva: codigo })
+    const reserva = data[0]
+    if (!reserva) {
+      toast.add({ severity: 'error', summary: 'No encontrada', detail: 'Código de reserva inválido', life: 3000 })
+      return
+    }
+    reservaEncontrada.value = {
+      id: reserva.id,
+      codigo: reserva.numero_reserva,
+      pelicula: reserva.funciones.peliculas.titulo,
+      funcion: formatearFuncion(reserva.funciones),
+      asientos: reserva.reservaAsientos.map((ra) => ra.asientosfuncion.asientos.codigo).join(', '),
+      cliente: reserva.usuarios?.nombre ?? 'N/D',
+      estado: reserva.estado,
+    }
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error al buscar',
+      detail: isApiError(error) ? error.message : 'No se pudo buscar la reserva',
+      life: 4000,
+    })
+  } finally {
+    cargandoReserva.value = false
   }
 }
 
-function ejecutarCancelacion() {
-  mostrarConfirmCancelacion.value = false
-  reservaEncontrada.value = null
-  codigoReserva.value = ''
-  toast.add({ severity: 'success', summary: 'Reserva cancelada', detail: 'El reembolso se procesará en 3–5 días hábiles', life: 4000 })
+async function ejecutarCancelacion() {
+  if (!reservaEncontrada.value) return
+  try {
+    await cancelReserva(reservaEncontrada.value.id)
+    mostrarConfirmCancelacion.value = false
+    toast.add({
+      severity: 'success',
+      summary: 'Reserva cancelada',
+      detail: 'El reembolso se procesará en 3–5 días hábiles',
+      life: 4000,
+    })
+    reservaEncontrada.value = null
+    codigoReserva.value = ''
+  } catch (error) {
+    mostrarConfirmCancelacion.value = false
+    toast.add({
+      severity: 'error',
+      summary: 'No se pudo cancelar',
+      detail: isApiError(error) ? error.message : 'Intenta de nuevo.',
+      life: 4000,
+    })
+  }
 }
 </script>
 

@@ -1,212 +1,57 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import UserForm, { type UserFields } from '@/components/admin/UserForm.vue'
+import UserForm from '@/components/admin/UserForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
+import { listarClientes, cambiarEstadoCliente, type ClienteAdmin } from '@/services/usuarioService'
+import { isApiError } from '@/services/api'
 
-interface Customer {
-  id: number
-  nombre: string
-  email: string
-  estado: 'Activo' | 'Inactivo'
-  created_at: string
-  reservas_count: number
-  telefono?: string
-}
+type Customer = ClienteAdmin
 
-const customers = ref<Customer[]>([
-  {
-    id: 1,
-    nombre: 'Juan Pérez',
-    email: 'juan@correo.com',
-    estado: 'Activo',
-    created_at: '2026-01-15',
-    reservas_count: 3,
-    telefono: '+504 9976 1234',
-  },
-  {
-    id: 2,
-    nombre: 'María López',
-    email: 'maria@correo.com',
-    estado: 'Activo',
-    created_at: '2026-02-08',
-    reservas_count: 1,
-    telefono: '+504 9812 5678',
-  },
-  {
-    id: 3,
-    nombre: 'Carlos Mejía',
-    email: 'carlos@correo.com',
-    estado: 'Activo',
-    created_at: '2026-03-22',
-    reservas_count: 5,
-    telefono: '+504 9543 9012',
-  },
-  {
-    id: 4,
-    nombre: 'Ana García',
-    email: 'ana@correo.com',
-    estado: 'Inactivo',
-    created_at: '2025-11-30',
-    reservas_count: 0,
-    telefono: '+504 9999 0000',
-  },
-  {
-    id: 5,
-    nombre: 'Luis Rodríguez',
-    email: 'luis@correo.com',
-    estado: 'Activo',
-    created_at: '2026-04-10',
-    reservas_count: 2,
-    telefono: '+504 9888 7777',
-  },
-  {
-    id: 6,
-    nombre: 'Elena Martínez',
-    email: 'elena@correo.com',
-    estado: 'Activo',
-    created_at: '2026-01-20',
-    reservas_count: 4,
-  },
-  {
-    id: 7,
-    nombre: 'Roberto Sosa',
-    email: 'roberto@correo.com',
-    estado: 'Activo',
-    created_at: '2026-02-15',
-    reservas_count: 0,
-  },
-  {
-    id: 8,
-    nombre: 'Lucía Méndez',
-    email: 'lucia@correo.com',
-    estado: 'Inactivo',
-    created_at: '2026-03-05',
-    reservas_count: 1,
-  },
-  {
-    id: 9,
-    nombre: 'Fernando Ruiz',
-    email: 'fernando@correo.com',
-    estado: 'Activo',
-    created_at: '2026-01-10',
-    reservas_count: 6,
-  },
-  {
-    id: 10,
-    nombre: 'Gabriela Paz',
-    email: 'gabriela@correo.com',
-    estado: 'Activo',
-    created_at: '2026-04-02',
-    reservas_count: 3,
-  },
-  {
-    id: 11,
-    nombre: 'Miguel Ángel',
-    email: 'miguel@correo.com',
-    estado: 'Activo',
-    created_at: '2026-02-28',
-    reservas_count: 2,
-  },
-  {
-    id: 12,
-    nombre: 'Sofía Castro',
-    email: 'sofia@correo.com',
-    estado: 'Activo',
-    created_at: '2026-03-12',
-    reservas_count: 0,
-  },
-  {
-    id: 13,
-    nombre: 'Daniela Toro',
-    email: 'daniela@correo.com',
-    estado: 'Inactivo',
-    created_at: '2026-01-05',
-    reservas_count: 0,
-  },
-  {
-    id: 14,
-    nombre: 'Jorge Blanco',
-    email: 'jorge@correo.com',
-    estado: 'Activo',
-    created_at: '2026-04-15',
-    reservas_count: 7,
-  },
-  {
-    id: 15,
-    nombre: 'Isabel Díaz',
-    email: 'isabel@correo.com',
-    estado: 'Activo',
-    created_at: '2026-02-10',
-    reservas_count: 1,
-  },
-  {
-    id: 16,
-    nombre: 'Andrés Cruz',
-    email: 'andres@correo.com',
-    estado: 'Activo',
-    created_at: '2026-03-30',
-    reservas_count: 2,
-  },
-  {
-    id: 17,
-    nombre: 'Paola Ortiz',
-    email: 'paola@correo.com',
-    estado: 'Inactivo',
-    created_at: '2026-01-25',
-    reservas_count: 0,
-  },
-  {
-    id: 18,
-    nombre: 'Ricardo Luna',
-    email: 'ricardo@correo.com',
-    estado: 'Activo',
-    created_at: '2026-02-20',
-    reservas_count: 4,
-  },
-  {
-    id: 19,
-    nombre: 'Valeria Sol',
-    email: 'valeria@correo.com',
-    estado: 'Activo',
-    created_at: '2026-03-18',
-    reservas_count: 1,
-  },
-  {
-    id: 20,
-    nombre: 'Hugo Flores',
-    email: 'hugo@correo.com',
-    estado: 'Activo',
-    created_at: '2026-04-05',
-    reservas_count: 3,
-  },
-])
-
-const loadingIds = ref(new Set<number>())
+const customers = ref<Customer[]>([])
+const loading = ref(false)
+const loadError = ref('')
+const loadingIds = ref(new Set<string>())
 
 const showModal = ref(false)
 const searchQuery = ref('')
 const statusFilter = ref('Todos')
 const currentPage = ref(1)
 const itemsPerPage = 10
+const totalPages = ref(1)
 
-const filteredCustomers = computed(() => {
-  return customers.value.filter((c) => {
-    const matchesSearch =
-      c.nombre.toLowerCase().includes(searchQuery.value.toLowerCase()) ||
-      c.email.toLowerCase().includes(searchQuery.value.toLowerCase())
-    const matchesStatus = statusFilter.value === 'Todos' || c.estado === statusFilter.value
-    return matchesSearch && matchesStatus
-  })
+function formatFecha(iso: string): string {
+  return new Date(iso).toLocaleDateString('es-HN', { day: '2-digit', month: 'short', year: 'numeric' })
+}
+
+async function fetchClientes() {
+  loading.value = true
+  loadError.value = ''
+  try {
+    const estadoBackend = statusFilter.value === 'Activo' ? 'activo' : statusFilter.value === 'Inactivo' ? 'inactivo' : undefined
+    const res = await listarClientes({
+      q: searchQuery.value.trim() || undefined,
+      estado: estadoBackend,
+      page: currentPage.value,
+      limit: itemsPerPage,
+    })
+    customers.value = res.data
+    totalPages.value = res.meta.totalPages
+  } catch (err) {
+    loadError.value = isApiError(err) ? err.message : 'No se pudieron cargar los clientes.'
+  } finally {
+    loading.value = false
+  }
+}
+
+onMounted(fetchClientes)
+
+watch([searchQuery, statusFilter], () => {
+  currentPage.value = 1
+  fetchClientes()
 })
 
-const totalPages = computed(() => Math.ceil(filteredCustomers.value.length / itemsPerPage))
-
-const pagedCustomers = computed(() => {
-  const start = (currentPage.value - 1) * itemsPerPage
-  const end = start + itemsPerPage
-  return filteredCustomers.value.slice(start, end)
-})
+watch(currentPage, fetchClientes)
 
 function setPage(page: number) {
   if (page < 1 || page > totalPages.value) return
@@ -221,27 +66,18 @@ function closeModal() {
   showModal.value = false
 }
 
-function onUserSaved(data: UserFields) {
-  const newUser: Customer = {
-    id: customers.value.length + 1,
-    nombre: data.nombre,
-    email: data.email,
-    estado: 'Activo',
-    created_at: new Date().toISOString().split('T')[0] ?? '',
-    reservas_count: 0,
-    telefono: data.telefono,
-  }
-  customers.value.push(newUser)
+function onUserSaved() {
   closeModal()
+  fetchClientes()
 }
 
 async function toggleActive(customer: Customer) {
   loadingIds.value.add(customer.id)
   const previous = customer.estado
-  customer.estado = customer.estado === 'Activo' ? 'Inactivo' : 'Activo' // optimistic update
+  const nuevo = customer.estado === 'activo' ? 'inactivo' : 'activo'
+  customer.estado = nuevo // optimistic update
   try {
-    // TODO: PATCH /api/clientes/:id { estado: customer.estado }
-    await new Promise((r) => setTimeout(r, 600))
+    await cambiarEstadoCliente(Number(customer.id), nuevo)
   } catch {
     customer.estado = previous // rollback on error
   } finally {
@@ -266,9 +102,8 @@ async function toggleActive(customer: Customer) {
             type="text"
             placeholder="Buscar por nombre o correo…"
             class="filter-input"
-            @input="currentPage = 1"
           />
-          <select v-model="statusFilter" class="filter-select" @change="currentPage = 1">
+          <select v-model="statusFilter" class="filter-select">
             <option value="Todos">Todos los estados</option>
             <option value="Activo">Activo</option>
             <option value="Inactivo">Inactivo</option>
@@ -289,7 +124,7 @@ async function toggleActive(customer: Customer) {
             </tr>
           </thead>
           <TransitionGroup tag="tbody" name="rows" appear>
-            <tr v-for="(customer, index) in pagedCustomers" :key="customer.id" :style="{ '--row-delay': `${index * 40}ms` }">
+            <tr v-for="(customer, index) in customers" :key="customer.id" :style="{ '--row-delay': `${index * 40}ms` }">
               <td>
                 <strong>{{ customer.nombre }}</strong>
               </td>
@@ -297,20 +132,26 @@ async function toggleActive(customer: Customer) {
               <td>
                 <div class="status-cell">
                   <ToggleSwitch
-                    :model-value="customer.estado === 'Activo'"
+                    :model-value="customer.estado === 'activo'"
                     :loading="loadingIds.has(customer.id)"
                     @update:model-value="toggleActive(customer)"
                   />
-                  <span class="status-label" :class="customer.estado === 'Activo' ? 'active' : 'inactive'">
-                    {{ customer.estado }}
+                  <span class="status-label" :class="customer.estado === 'activo' ? 'active' : 'inactive'">
+                    {{ customer.estado === 'activo' ? 'Activo' : 'Inactivo' }}
                   </span>
                 </div>
               </td>
-              <td>{{ customer.created_at }}</td>
+              <td>{{ formatFecha(customer.created_at) }}</td>
               <td>{{ customer.reservas_count }}</td>
             </tr>
-            <tr v-if="pagedCustomers.length === 0" key="empty">
+            <tr v-if="!loading && !loadError && customers.length === 0" key="empty">
               <td colspan="5" class="empty-state">No se encontraron clientes</td>
+            </tr>
+            <tr v-if="loading" key="loading">
+              <td colspan="5" class="empty-state">Cargando clientes…</td>
+            </tr>
+            <tr v-if="loadError" key="error">
+              <td colspan="5" class="empty-state" style="color: var(--sinopia)">{{ loadError }}</td>
             </tr>
           </TransitionGroup>
         </table>

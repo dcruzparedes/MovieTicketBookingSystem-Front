@@ -5,6 +5,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import CinemaForm from '@/components/admin/CinemaForm.vue'
 import { getCines, updateCine, getCineFunciones } from '@/services/cinemaService'
 import type { Cine } from '@/services/cinemaService'
+import { getCiudades, type Ciudad } from '@/services/ciudadService'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,6 +18,7 @@ const status = ref<LoadStatus>('loading')
 const loadError = ref('')
 const cinema = ref<Cine | null>(null)
 const hasActiveFunciones = ref(false)
+const cities = ref<Ciudad[]>([])
 
 const isSaving = ref(false)
 const saveError = ref('')
@@ -24,9 +26,10 @@ const saved = ref(false)
 
 onMounted(async () => {
   try {
-    const [cines, funciones] = await Promise.all([
+    const [cines, funciones, ciudades] = await Promise.all([
       getCines(),
       getCineFunciones(cinemaId.value).catch(() => []),
+      getCiudades().catch(() => []),
     ])
 
     const found = cines.find((c) => Number(c.id) === cinemaId.value) ?? null
@@ -37,6 +40,7 @@ onMounted(async () => {
 
     cinema.value = found
     hasActiveFunciones.value = funciones.length > 0
+    cities.value = ciudades
     status.value = 'loaded'
   } catch (err) {
     loadError.value = err instanceof Error ? err.message : 'Error al cargar el cine'
@@ -138,6 +142,7 @@ function goBack() {
         <div class="card animado" style="--delay: 80ms">
           <CinemaForm
             :initial-data="initialData"
+            :cities="cities"
             :loading="isSaving"
             @saved="onSaved"
             @cancel="goBack"

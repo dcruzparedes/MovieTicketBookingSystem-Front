@@ -20,9 +20,10 @@ interface CinemaErrors {
 const props = withDefaults(
   defineProps<{
     initialData?: Partial<CinemaFields>
+    cities?: { id: string; nombre: string }[]
     loading?: boolean
   }>(),
-  { initialData: undefined, loading: false },
+  { initialData: undefined, cities: () => [], loading: false },
 )
 
 const emit = defineEmits<{
@@ -31,18 +32,6 @@ const emit = defineEmits<{
 }>()
 
 const isEditing = computed(() => !!props.initialData)
-
-const cities = [
-  { id: '1', name: 'San Pedro Sula' },
-  { id: '2', name: 'Tegucigalpa' },
-  { id: '3', name: 'Yuscarán' },
-  { id: '4', name: 'Santa Bárbara' },
-  { id: '5', name: 'Copán' },
-  { id: '6', name: 'Lempira' },
-  { id: '7', name: 'Gracias a Dios' },
-  { id: '8', name: 'Siguatepeque' },
-  { id: '9', name: 'La Paz' },
-]
 
 const form = reactive<CinemaFields>({
   cityId: props.initialData?.cityId ?? '',
@@ -88,7 +77,7 @@ function handleSubmit() {
         <label for="cf-city">Ciudad</label>
         <select id="cf-city" v-model="form.cityId" :class="{ 'input-error': errors.cityId }">
           <option value="" disabled>Seleccionar ciudad…</option>
-          <option v-for="city in cities" :key="city.id" :value="city.id">{{ city.name }}</option>
+          <option v-for="city in props.cities" :key="city.id" :value="city.id">{{ city.nombre }}</option>
         </select>
         <span v-if="errors.cityId" class="field-error">{{ errors.cityId }}</span>
       </div>
@@ -160,7 +149,7 @@ function handleSubmit() {
           <div class="summary-text">
             <span class="summary-key">Ciudad</span>
             <span class="summary-val">
-              {{ cities.find((c) => c.id === form.cityId)?.name || '—' }}
+              {{ props.cities.find((c) => c.id === form.cityId)?.nombre || '—' }}
             </span>
           </div>
         </div>

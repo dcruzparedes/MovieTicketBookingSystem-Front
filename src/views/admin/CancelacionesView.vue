@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-import { getPoliticas, crearPolitica, editPolitica } from '@/services/cancelacionesService'
+import { getPoliticas, crearPolitica, editPolitica, eliminarPolitica } from '@/services/cancelacionesService'
 
 
 interface Politica{
@@ -72,6 +72,41 @@ async function editarPolitica() {
     editModal.value = false
 }
 
+// ── Confirmación de eliminación ──
+const showDeleteConfirm = ref(false)
+const deletingPolitica = ref<Politica | null>(null)
+const isDeleting = ref(false)
+const deleteError = ref('')
+
+function openDeleteConfirm(politica: Politica) {
+  deletingPolitica.value = politica
+  deleteError.value = ''
+  showDeleteConfirm.value = true
+}
+
+function closeDeleteConfirm() {
+  if (isDeleting.value) return
+  showDeleteConfirm.value = false
+  deletingPolitica.value = null
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (!deletingPolitica.value) return
+  isDeleting.value = true
+  deleteError.value = ''
+  try {
+    await eliminarPolitica(deletingPolitica.value.id)
+    politicas.value = politicas.value.filter((p) => p.id !== deletingPolitica.value!.id)
+    isDeleting.value = false
+    closeDeleteConfirm()
+  } catch (error) {
+    deleteError.value = error instanceof Error ? error.message : 'Error al eliminar la política'
+  } finally {
+    isDeleting.value = false
+  }
+}
+
 </script>
 
 <template>
@@ -90,13 +125,17 @@ async function editarPolitica() {
                     <td>{{politica.horas_antes_maximo}}</td>
                     <td>{{politica.horas_antes_minimo}}</td>
                     <td>{{politica.porcentaje_reembolso}}%</td>
-                    <td><button
+                    <td>
+                    <div style="display:flex;gap:6px">
+                    <button
                     class="btn btn-ghost btn-sm"
-                    @click="editModal=true; nuevoForm.id=politica.id; 
+                    @click="editModal=true; nuevoForm.id=politica.id;
                     nuevoForm.horas_antes_maximo=politica.horas_antes_maximo;
                     nuevoForm.horas_antes_minimo=politica.horas_antes_minimo;
                     nuevoForm.porcentaje_reembolso=politica.porcentaje_reembolso;"
                     >Editar</button>
+                    <button class="btn btn-danger btn-sm" @click="openDeleteConfirm(politica)">Eliminar</button>
+                    </div>
                     </td>
                 </tr>
             </TransitionGroup>
@@ -168,6 +207,26 @@ async function editarPolitica() {
             <button class="btn btn-ghost" @click="editModal = false">Cancelar</button>
         </div>
         </div></div>
+    </div>
+    </div>
+    </div>
+
+    <!-- CONFIRMACIÓN DE ELIMINACIÓN -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="closeDeleteConfirm">
+    <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+    <div class="modal-title">Eliminar política</div>
+    <button class="close-btn" @click="closeDeleteConfirm">✕</button>
+    </div>
+    <div class="modal-body">
+        <p style="font-size:14px;color:var(--text2);line-height:1.55;margin-bottom:16px">
+            ¿Estás seguro de que deseas eliminar la política <strong style="color:var(--text)">#{{ deletingPolitica?.id }}</strong>? Esta acción no se puede deshacer.
+        </p>
+        <p v-if="deleteError" class="field-error" style="margin-bottom:12px">{{ deleteError }}</p>
+        <div style="display:flex;gap:10px">
+            <button class="btn btn-danger" :disabled="isDeleting" @click="confirmDelete">{{ isDeleting ? 'Eliminando…' : 'Sí, eliminar' }}</button>
+            <button class="btn btn-ghost" :disabled="isDeleting" @click="closeDeleteConfirm">Cancelar</button>
+        </div>
     </div>
     </div>
     </div>
@@ -309,6 +368,22 @@ async function editarPolitica() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+.btn-danger {
+  background: var(--sinopia);
+  color: #fff;
+  padding: 6px 14px;
+  opacity: 0.9;
+}
+
+.btn-danger:hover {
+  opacity: 1;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-sm {

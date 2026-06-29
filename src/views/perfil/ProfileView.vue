@@ -388,7 +388,7 @@ export interface CalcResr {
   monto_de_reembolso: number,
 }
 
-const filters = ref<ReservasFilter>({id_usuario: 4})
+const filters = ref<ReservasFilter>({id_usuario: getCurrentUserId()})
 const reservas = ref<ReservasRes>()
 const calculo = ref<CalcResr>()
 const calculoLoading = ref(false)

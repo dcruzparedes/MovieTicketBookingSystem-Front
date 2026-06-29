@@ -65,6 +65,7 @@ async function onSaved(data: { name: string }) {
       const created = await createCiudad(data.name)
       ciudades.value.push({ id: created.id, nombre: created.nombre, active: true })
     }
+    isSaving.value = false
     closeModal()
   } catch (err) {
     const status = (err as { status?: number }).status
@@ -104,6 +105,7 @@ async function confirmDelete() {
   try {
     await deleteCiudad(deletingCity.value.id)
     ciudades.value = ciudades.value.filter((c) => c.id !== deletingCity.value!.id)
+    isDeleting.value = false
     closeDeleteConfirm()
   } catch (err) {
     const status = (err as { status?: number }).status

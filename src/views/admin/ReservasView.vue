@@ -4,11 +4,6 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import { getReservas, getPeliculas, exportReservas } from '@/services/reservaService'
 import { fetchCines, fetchUsuarios } from '@/services/movieService'
 
-interface Export {
-  message: string,
-  filePath: string
-}
-
 interface ReservasRes {
   data: Reserva[],
   meta: {
@@ -111,8 +106,9 @@ const reservas = ref<ReservasRes>()
 const peliculas = ref<Pelicula[]>([])
 const usuarios = ref<Usuario[]>([])
 const cines = ref<Cine[]>([])
-const respuesta = ref<Export>()
 const filters = ref<ReservasFilter>({})
+const isExporting = ref(false)
+const exportError = ref('')
 
 async function getAllReservas() {
   try{
@@ -123,12 +119,14 @@ async function getAllReservas() {
 }
 
 async function exportar() {
-  try{
-    respuesta.value = await exportReservas();
-    alert(`${respuesta.value.message}`)
-  }catch(error){
-    throw new Error(`Error: ${error}`);
-    alert('Reservas no se pudieron exportar')
+  isExporting.value = true
+  exportError.value = ''
+  try {
+    await exportReservas()
+  } catch (error) {
+    exportError.value = error instanceof Error ? error.message : 'No se pudieron exportar las reservas'
+  } finally {
+    isExporting.value = false
   }
 }
 
@@ -196,8 +194,11 @@ function setPage(page: number) {
     <div id="admin-cacnelacion">
     <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Reportes de Reservas</div>
-    <button class="btn btn-primary btn-sm" @click="exportar">+ Exportar a CSV</button>
+    <button class="btn btn-primary btn-sm" :disabled="isExporting" @click="exportar">
+      {{ isExporting ? 'Descargando…' : '+ Exportar a CSV' }}
+    </button>
     </div>
+    <p v-if="exportError" style="color:var(--sinopia);font-size:13px;margin:0 28px 12px;">{{ exportError }}</p>
     <div class="card animado" style="--delay: 60ms; margin-bottom:14px; margin-right: 28px; margin-left: 28px;">
         <div class="card-body">
             <div style="display:flex;gap:10px;flex-wrap:wrap">

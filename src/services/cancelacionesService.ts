@@ -30,7 +30,7 @@ export async function crearPolitica(nuevaPolitica: BodyPolitica){
     if(!res.ok){
         throw new Error(`Error: ${res.status}`);
     }
-    return res.json;
+    return res.json();
 }
 
 export async function editPolitica(id: number, editarPolitica: BodyPolitica){
@@ -42,5 +42,14 @@ export async function editPolitica(id: number, editarPolitica: BodyPolitica){
     if(!res.ok){
         throw new Error(`Error: ${res.status}`);
     }
-    return res.json;
+    return res.json();
+}
+
+export async function eliminarPolitica(id: number): Promise<void> {
+    const res = await fetch(`${API_BASE}/politica-cancelacion/${id}`, {
+        method: 'DELETE',
+    });
+    if(!res.ok){
+        throw new Error(`Error: ${res.status}`);
+    }
 }

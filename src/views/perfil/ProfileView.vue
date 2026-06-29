@@ -25,6 +25,37 @@
               <div v-if="activeTab === 'perfil'" key="perfil">
                 <div class="section-title">Información personal</div>
 
+                <!-- Banner cuenta pendiente -->
+                <Transition name="fade-alert">
+                  <div v-if="estadoCuenta === 'pendiente'" class="banner-pendiente">
+                    <div class="banner-pendiente-body">
+                      <i class="pi pi-exclamation-triangle" />
+                      <div>
+                        <p class="banner-pendiente-title">Cuenta sin activar</p>
+                        <p class="banner-pendiente-desc">Revisa tu correo y activa tu cuenta para poder hacer reservas.</p>
+                      </div>
+                    </div>
+                    <div class="banner-pendiente-actions">
+                      <Button
+                        label="Activar cuenta"
+                        icon="pi pi-check-circle"
+                        size="small"
+                        @click="router.push('/activate')"
+                      />
+                      <Button
+                        :label="resendSent ? 'Correo enviado' : 'Reenviar correo'"
+                        icon="pi pi-send"
+                        size="small"
+                        severity="secondary"
+                        outlined
+                        :loading="resendingActivation"
+                        :disabled="resendSent"
+                        @click="reenviarActivacion"
+                      />
+                    </div>
+                  </div>
+                </Transition>
+
                 <Transition name="fade-alert">
                   <Message v-if="profileSaved" severity="success" :closable="false" style="margin-bottom: 16px">
                     Cambios guardados correctamente.
@@ -287,7 +318,7 @@ import NavBar from '@/components/NavBar.vue'
 import { getReservas, cancelReserva, calcularReembolso } from '@/services/reservaService'
 import { obtenerUsuario, actualizarPassword, alternarNotificaciones, actualizarPerfil, type ActualizarPerfilPayload } from '@/services/usuarioService'
 import { getCurrentUserId } from '@/services/movieService'
-import { getUsuarioActual, notificarCambioSesion } from '@/services/authService'
+import { getUsuarioActual, notificarCambioSesion, authService } from '@/services/authService'
 import { isApiError } from '@/services/api'
 const router = useRouter()
 const route = useRoute()
@@ -462,6 +493,7 @@ function onlyDigitsKeydown(e: KeyboardEvent) {
 async function cargarPerfil() {
   try {
     const usuario = await obtenerUsuario(getCurrentUserId())
+    estadoCuenta.value = usuario.estado
     Object.assign(INITIAL_PROFILE, {
       nombre: usuario.nombre,
       email: usuario.email,
@@ -475,6 +507,21 @@ async function cargarPerfil() {
 }
 
 onMounted(cargarPerfil)
+const estadoCuenta = ref('')
+const resendingActivation = ref(false)
+const resendSent = ref(false)
+
+async function reenviarActivacion() {
+  resendingActivation.value = true
+  resendSent.value = false
+  try {
+    await authService.resendActivation(profile.email)
+    resendSent.value = true
+  } catch { /* silencioso */ } finally {
+    resendingActivation.value = false
+  }
+}
+
 const pTouched = reactive({ nombre: false, email: false, telefono: false })
 const profileSubmitting = ref(false)
 const profileSaved = ref(false)
@@ -653,10 +700,54 @@ const strengthColor = computed(() => ['', '#d92200', '#f37100', '#e6a800', 'var(
 
 <style scoped>
 /* ── ALERTS ── */
-.alert-warn { 
-  background: rgba(243,113,0,.08); 
-  border: 1px solid rgba(243,113,0,.25); 
-  color: var(--orange); 
+.alert-warn {
+  background: rgba(243,113,0,.08);
+  border: 1px solid rgba(243,113,0,.25);
+  color: var(--orange);
+}
+
+/* ── Banner cuenta pendiente ── */
+.banner-pendiente {
+  background: rgba(230, 168, 0, 0.08);
+  border: 1px solid rgba(230, 168, 0, 0.35);
+  border-radius: var(--radius);
+  padding: 14px 16px;
+  margin-bottom: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.banner-pendiente-body {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #a07000;
+}
+
+.banner-pendiente-body .pi {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.banner-pendiente-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #7a5200;
+  margin-bottom: 2px;
+}
+
+.banner-pendiente-desc {
+  font-size: 12px;
+  color: #a07000;
+}
+
+.banner-pendiente-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .profile-screen {

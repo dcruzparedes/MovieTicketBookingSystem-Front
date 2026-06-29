@@ -26,6 +26,9 @@ export const authService = {
   async resetPassword(token: string, newPassword: string) {
     return api.post<{ message: string }>('/auth/reset-password', { token, newPassword });
   },
+  async resendActivation(email: string) {
+    return api.post<{ message: string }>('/auth/resend-activation', { email });
+  },
 };
 
 // ── Sesión (lectura del token/usuario guardados por LoginView) ──

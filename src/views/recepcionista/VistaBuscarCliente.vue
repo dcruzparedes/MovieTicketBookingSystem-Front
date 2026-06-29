@@ -46,7 +46,7 @@
                 <template #empty>
                   <div class="tabla-vacia">
                     <template v-if="terminoBusqueda">Sin resultados para "{{ terminoBusqueda }}"</template>
-                    <template v-else>Ingresa un término de búsqueda</template>
+                    <template v-else>No hay clientes registrados</template>
                   </div>
                 </template>
                 <Column field="nombre" header="Cliente">
@@ -131,6 +131,37 @@
             </div>
           </div>
 
+          <div class="card" style="margin-bottom: 14px">
+            <div class="card-body" style="padding: 0">
+              <DataTable :value="reservasRecientes" :loading="cargandoListaReservas" size="small" stripedRows>
+                <template #empty>
+                  <div class="tabla-vacia">No hay reservas recientes</div>
+                </template>
+                <Column field="numero_reserva" header="Código">
+                  <template #body="{ data }">
+                    <span style="font-family: 'DM Mono', monospace; font-size: 12px">{{ data.numero_reserva }}</span>
+                  </template>
+                </Column>
+                <Column header="Cliente">
+                  <template #body="{ data }">{{ data.usuarios?.nombre ?? 'N/D' }}</template>
+                </Column>
+                <Column header="Película">
+                  <template #body="{ data }">{{ data.funciones.peliculas.titulo }}</template>
+                </Column>
+                <Column header="Estado">
+                  <template #body="{ data }">
+                    <Tag :value="data.estado" :severity="severidadDeEstado(data.estado)" style="font-size: 11px" />
+                  </template>
+                </Column>
+                <Column header="">
+                  <template #body="{ data }">
+                    <Button label="Seleccionar" size="small" @click="seleccionarReservaDeLista(data)" />
+                  </template>
+                </Column>
+              </DataTable>
+            </div>
+          </div>
+
           <div v-if="reservaEncontrada" class="card">
             <div class="card-body">
               <div class="eyebrow" style="margin-bottom: 12px">Reserva encontrada</div>
@@ -203,7 +234,7 @@ import AdminLayout from '@/layouts/AdminLayout.vue'
 import { useReservaStore } from '@/stores/reserva'
 import { isApiError } from '@/services/api'
 import { buscarClientes as buscarClientesApi, type ClienteBackend } from '@/services/usuarioService'
-import { getReservas, cancelReserva, type Funcion } from '@/services/reservaService'
+import { getReservas, cancelReserva, type Funcion, type Reserva } from '@/services/reservaService'
 import { getPeliculas } from '@/services/movieService'
 
 // ── Forma de los datos que devuelve GET /peliculas (películas con sus funciones embebidas) ──
@@ -231,17 +262,17 @@ const seccionActiva = ref<'buscar' | 'reservar' | 'cancelar'>('buscar')
 // ── Buscar cliente ──
 const terminoBusqueda = ref('')
 const cargando = ref(false)
-const clienteSeleccionado = ref<ClienteBackend | null>(null)
+// Si el store ya tenía un cliente (p.ej. se volvió con "atrás" del navegador
+// desde /asientos), se restaura aquí para no perder la selección.
+const clienteSeleccionado = ref<ClienteBackend | null>(tienda.clienteReserva)
 const clientes = ref<ClienteBackend[]>([])
 
 let debounceBusqueda: ReturnType<typeof setTimeout> | null = null
 
+onMounted(ejecutarBusquedaClientes)
+
 function buscarClientes() {
   if (debounceBusqueda) clearTimeout(debounceBusqueda)
-  if (!terminoBusqueda.value.trim()) {
-    clientes.value = []
-    return
-  }
   debounceBusqueda = setTimeout(ejecutarBusquedaClientes, 300)
 }
 
@@ -263,6 +294,7 @@ async function ejecutarBusquedaClientes() {
 
 function seleccionarCliente(cliente: ClienteBackend) {
   clienteSeleccionado.value = cliente
+  tienda.establecerClienteReserva(cliente)
   seccionActiva.value = 'reservar'
 }
 
@@ -312,7 +344,7 @@ function continuarAAsientos() {
   if (funcionSeleccionada.value.llena) return
 
   const funcion = funcionSeleccionada.value
-  tienda.establecerClienteReserva(clienteSeleccionado.value.id)
+  tienda.establecerClienteReserva(clienteSeleccionado.value)
   tienda.seleccionarFuncion({
     id: String(funcion.id),
     tituloPelicula: peliculaSeleccionada.value.titulo,
@@ -346,6 +378,40 @@ const reservaEncontrada = ref<{
   cliente: string
   estado: string
 } | null>(null)
+
+const reservasRecientes = ref<Reserva[]>([])
+const cargandoListaReservas = ref(false)
+
+onMounted(cargarReservasRecientes)
+
+async function cargarReservasRecientes() {
+  cargandoListaReservas.value = true
+  try {
+    const { data } = await getReservas({ limit: 10 })
+    reservasRecientes.value = data
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error al cargar reservas',
+      detail: isApiError(error) ? error.message : 'No se pudo cargar la lista de reservas',
+      life: 4000,
+    })
+  } finally {
+    cargandoListaReservas.value = false
+  }
+}
+
+function severidadDeEstado(estado: string) {
+  const normalizado = estado.toLowerCase()
+  if (normalizado === 'cancelada') return 'danger'
+  if (normalizado === 'pagada') return 'success'
+  return 'info'
+}
+
+function seleccionarReservaDeLista(reserva: Reserva) {
+  codigoReserva.value = reserva.numero_reserva
+  buscarReserva()
+}
 
 // El backend mezcla casing para este campo ('activa', 'Cancelada', 'pagada'),
 // así que se normaliza antes de comparar.
@@ -427,6 +493,7 @@ async function ejecutarCancelacion() {
     })
     reservaEncontrada.value = null
     codigoReserva.value = ''
+    await cargarReservasRecientes()
   } catch (error) {
     mostrarConfirmCancelacion.value = false
     toast.add({

@@ -1,6 +1,7 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import type { AsientoFuncionBackend } from '@/services/reservaService'
+import type { ClienteBackend } from '@/services/usuarioService'
 
 // ── Tipos del backend ──
 export type EstadoAsientoBackend = 'disponible' | 'bloqueado' | 'reservado' | 'vendido'
@@ -212,15 +213,21 @@ export const useReservaStore = defineStore('reserva', () => {
   }
 
   // ── Reserva en nombre de un cliente (flujo de recepcionista) ──
+  // Se guarda en el store (no en un ref local del componente) para que
+  // sobreviva si VistaBuscarCliente.vue se remonta, por ejemplo al volver
+  // con el botón "atrás" del navegador desde /asientos.
   const idUsuarioReserva = ref<string | null>(null)
+  const clienteReserva = ref<ClienteBackend | null>(null)
 
-  function establecerClienteReserva(idCliente: string) {
-    idUsuarioReserva.value = idCliente
+  function establecerClienteReserva(cliente: ClienteBackend) {
+    idUsuarioReserva.value = cliente.id
+    clienteReserva.value = cliente
     metodoPago.value = 'efectivo'
   }
 
   function limpiarClienteReserva() {
     idUsuarioReserva.value = null
+    clienteReserva.value = null
   }
 
   return {
@@ -257,6 +264,7 @@ export const useReservaStore = defineStore('reserva', () => {
     seleccionarFuncion,
     // Reserva en nombre de un cliente
     idUsuarioReserva,
+    clienteReserva,
     establecerClienteReserva,
     limpiarClienteReserva,
   }

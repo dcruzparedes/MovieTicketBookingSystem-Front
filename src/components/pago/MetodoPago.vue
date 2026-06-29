@@ -60,9 +60,9 @@
     <!-- Info de efectivo -->
     <div v-else class="info-efectivo">
       <i class="pi pi-info-circle" style="color: var(--orange)" />
-      Presenta el código en taquilla y paga en efectivo. Tienes
-      <strong style="color: var(--sinopia)">30 minutos</strong>
-      antes de que los asientos se liberen.
+      <label>Presenta el código en taquilla y paga en efectivo. Tienes 
+        <strong style="color: var(--sinopia)">30 minutos</strong> antes de que los asientos se liberen.
+      </label>
     </div>
   </div>
 </template>

@@ -1,7 +1,8 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
+import { api } from '@/services/api'
 
 interface Cinema {
   id: number
@@ -11,31 +12,45 @@ interface Cinema {
   salasCount: number
 }
 
-const router = useRouter()
+// Interface to match API response
+interface ApiCinema {
+  id: string
+  nombre: string
+  direccion: string
+  id_ciudad: string
+}
 
-const cinemas = ref<Cinema[]>([
-  {
-    id: 1,
-    nombre: 'Cine Vicenta',
-    ciudad: 'Puerto Cortés',
-    direccion: 'Barrio El Centro',
-    salasCount: 4,
-  },
-  {
-    id: 2,
-    nombre: 'Cinemark City SPS',
-    ciudad: 'San Pedro Sula',
-    direccion: 'City Center Mall',
-    salasCount: 6,
-  },
-  {
-    id: 3,
-    nombre: 'Metrocinemas',
-    ciudad: 'Tegucigalpa',
-    direccion: 'Multiplaza',
-    salasCount: 5,
-  },
-])
+interface ApiCity {
+  id: string
+  nombre: string
+}
+
+const router = useRouter()
+const cinemas = ref<Cinema[]>([])
+
+async function fetchCinemas() {
+  try {
+    const apiCinemas = await api.get<ApiCinema[]>('/cines')
+    // We need cities to display city name instead of ID
+    const apiCities = await api.get<ApiCity[]>('/ciudades')
+
+    cinemas.value = apiCinemas.map((c) => {
+      const city = apiCities.find((ct) => ct.id === c.id_ciudad)
+      return {
+        id: Number(c.id),
+        nombre: c.nombre,
+        ciudad: city ? city.nombre : 'Desconocida',
+        direccion: c.direccion || '',
+        salasCount: 0, // TODO: Fetch sala count if needed, or update API to include it
+      }
+    })
+  } catch (error) {
+    console.error('Error al cargar cines:', error)
+    alert('Error al cargar los cines')
+  }
+}
+
+onMounted(fetchCinemas)
 
 function goToNewCinema() {
   router.push('/admin/cines/nuevo')
@@ -48,6 +63,40 @@ function editCinema(id: number) {
 function viewSalas(id: number) {
   // TODO: Navigate to salas view filtered by cinema
   router.push({ path: '/admin/salas', query: { cineId: id.toString() } })
+}
+
+// ── Confirmación de eliminación ──
+const showDeleteConfirm = ref(false)
+const deletingCinema = ref<Cinema | null>(null)
+const isDeleting = ref(false)
+const deleteError = ref('')
+
+function openDeleteConfirm(cinema: Cinema) {
+  deletingCinema.value = cinema
+  deleteError.value = ''
+  showDeleteConfirm.value = true
+}
+
+function closeDeleteConfirm() {
+  if (isDeleting.value) return
+  showDeleteConfirm.value = false
+  deletingCinema.value = null
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (!deletingCinema.value) return
+  isDeleting.value = true
+  deleteError.value = ''
+  try {
+    await api.delete(`/cines/${deletingCinema.value.id}`)
+    cinemas.value = cinemas.value.filter((c) => c.id !== deletingCinema.value!.id)
+  } catch (error) {
+    deleteError.value = error instanceof Error ? error.message : 'Error al eliminar el cine'
+  } finally {
+    isDeleting.value = false
+    closeDeleteConfirm()
+  }
 }
 </script>
 
@@ -71,7 +120,11 @@ function viewSalas(id: number) {
             </tr>
           </thead>
           <TransitionGroup tag="tbody" name="rows" appear>
-            <tr v-for="(cinema, index) in cinemas" :key="cinema.id" :style="{ '--row-delay': `${index * 40}ms` }">
+            <tr
+              v-for="(cinema, index) in cinemas"
+              :key="cinema.id"
+              :style="{ '--row-delay': `${index * 40}ms` }"
+            >
               <td>
                 <strong>{{ cinema.nombre }}</strong>
               </td>
@@ -86,6 +139,13 @@ function viewSalas(id: number) {
                     Editar
                   </button>
                   <button class="btn btn-ghost btn-sm" @click="viewSalas(cinema.id)">Salas</button>
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    @click="openDeleteConfirm(cinema)"
+                    style="color: var(--danger, #e74c3c)"
+                  >
+                    Eliminar
+                  </button>
                 </div>
               </td>
             </tr>
@@ -97,6 +157,28 @@ function viewSalas(id: number) {
       </div>
     </div>
   </AdminLayout>
+
+  <Teleport to="body">
+    <!-- CONFIRMACIÓN DE ELIMINACIÓN -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="closeDeleteConfirm">
+      <div class="modal-box" style="max-width:380px">
+        <div class="modal-header">
+          <div class="modal-title">Eliminar cine</div>
+          <button class="close-btn" @click="closeDeleteConfirm">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:14px;color:var(--text2);line-height:1.55;margin-bottom:16px">
+            ¿Estás seguro de que deseas eliminar el cine <strong>{{ deletingCinema?.nombre }}</strong>? Esta acción no se puede deshacer.
+          </p>
+          <p v-if="deleteError" class="field-error" style="margin-bottom:12px">{{ deleteError }}</p>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-danger" :disabled="isDeleting" @click="confirmDelete">{{ isDeleting ? 'Eliminando…' : 'Sí, eliminar' }}</button>
+            <button class="btn btn-ghost" :disabled="isDeleting" @click="closeDeleteConfirm">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -248,7 +330,9 @@ function viewSalas(id: number) {
 }
 
 .rows-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
+  transition:
+    opacity 0.15s ease,
+    transform 0.15s ease;
 }
 
 .rows-leave-to {
@@ -259,4 +343,63 @@ function viewSalas(id: number) {
 .rows-move {
   transition: transform 0.3s ease;
 }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 10, 6, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  font-family: 'Outfit', sans-serif;
+}
+
+.close-btn:hover {
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.field-error { font-size: 11px; color: var(--sinopia); margin-top: 4px; }
 </style>

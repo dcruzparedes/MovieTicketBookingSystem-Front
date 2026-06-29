@@ -7,6 +7,7 @@ export interface Sala {
   filas: number
   columnas: number
   created_at: string
+  cineNombre: string
 }
 
 export interface CreateSalaPayload {
@@ -40,4 +41,8 @@ export async function createSala(payload: CreateSalaPayload): Promise<Sala> {
 
 export async function updateSala(id: number, payload: UpdateSalaPayload): Promise<void> {
   await api.put<unknown>(`/salas/${id}`, payload)
+}
+
+export async function deleteSala(id: number): Promise<void> {
+  await api.delete<unknown>(`/salas/${id}`)
 }

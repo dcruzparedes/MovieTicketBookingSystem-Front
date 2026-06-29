@@ -1,41 +1,29 @@
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
-
-interface Sala {
-  id: number
-  nombre: string
-  cineNombre: string
-  id_cine: number
-  filas: number
-  columnas: number
-}
+import { getSalas, deleteSala, type Sala } from '@/services/salaService'
 
 const router = useRouter()
 const route = useRoute()
 
-// Mock data
-const salas = ref<Sala[]>([
-  { id: 1, nombre: 'Sala 1', cineNombre: 'Cine Vicenta', id_cine: 1, filas: 8, columnas: 12 },
-  { id: 2, nombre: 'Sala 2', cineNombre: 'Cine Vicenta', id_cine: 1, filas: 6, columnas: 10 },
-  { id: 3, nombre: 'Sala 4 (VIP)', cineNombre: 'Cine Vicenta', id_cine: 1, filas: 8, columnas: 10 },
-  { id: 4, nombre: 'IMAX', cineNombre: 'Cinemark City SPS', id_cine: 2, filas: 12, columnas: 18 },
-  { id: 5, nombre: 'Sala 1', cineNombre: 'Cinemark City SPS', id_cine: 2, filas: 10, columnas: 15 },
-  { id: 6, nombre: 'Premium', cineNombre: 'Metrocinemas', id_cine: 3, filas: 6, columnas: 8 },
-])
+const salas = ref<Sala[]>([])
+
+onMounted(async () => {
+  salas.value = await getSalas()
+})
 
 // Filtro por cine si viene en la query
 const filteredSalas = computed(() => {
   const cineId = route.query.cineId
   if (!cineId) return salas.value
-  return salas.value.filter(s => s.id_cine === Number(cineId))
+  return salas.value.filter(s => s.id_cine === cineId)
 })
 
 const selectedCineName = computed(() => {
   const cineId = route.query.cineId
   if (!cineId) return ''
-  const sala = salas.value.find(s => s.id_cine === Number(cineId))
+  const sala = salas.value.find(s => s.id_cine === cineId)
   return sala ? sala.cineNombre : ''
 })
 
@@ -43,8 +31,42 @@ function goToNewSala() {
   router.push('/admin/salas/nueva')
 }
 
-function editSala(id: number) {
+function editSala(id: string) {
   router.push(`/admin/salas/${id}/editar`)
+}
+
+// ── Confirmación de eliminación ──
+const showDeleteConfirm = ref(false)
+const deletingSala = ref<Sala | null>(null)
+const isDeleting = ref(false)
+const deleteError = ref('')
+
+function openDeleteConfirm(sala: Sala) {
+  deletingSala.value = sala
+  deleteError.value = ''
+  showDeleteConfirm.value = true
+}
+
+function closeDeleteConfirm() {
+  if (isDeleting.value) return
+  showDeleteConfirm.value = false
+  deletingSala.value = null
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (!deletingSala.value) return
+  isDeleting.value = true
+  deleteError.value = ''
+  try {
+    await deleteSala(Number(deletingSala.value.id))
+    salas.value = await getSalas()
+  } catch (error) {
+    deleteError.value = error instanceof Error ? error.message : 'Error al eliminar la sala'
+  } finally {
+    isDeleting.value = false
+    closeDeleteConfirm()
+  }
 }
 
 function clearFilter() {
@@ -92,6 +114,9 @@ function clearFilter() {
                   <button class="btn btn-ghost btn-sm" @click="editSala(sala.id)">
                     Editar
                   </button>
+                  <button class="btn btn-ghost btn-sm btn-danger" @click="openDeleteConfirm(sala)">
+                    Eliminar
+                  </button>
                 </div>
               </td>
             </tr>
@@ -103,6 +128,28 @@ function clearFilter() {
       </div>
     </div>
   </AdminLayout>
+
+  <Teleport to="body">
+    <!-- CONFIRMACIÓN DE ELIMINACIÓN -->
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="closeDeleteConfirm">
+      <div class="modal-box" style="max-width:380px">
+        <div class="modal-header">
+          <div class="modal-title">Eliminar sala</div>
+          <button class="close-btn" @click="closeDeleteConfirm">✕</button>
+        </div>
+        <div class="modal-body">
+          <p style="font-size:14px;color:var(--text2);line-height:1.55;margin-bottom:16px">
+            ¿Estás seguro de que deseas eliminar la sala <strong>{{ deletingSala?.nombre }}</strong>? Esta acción no se puede deshacer.
+          </p>
+          <p v-if="deleteError" class="field-error" style="margin-bottom:12px">{{ deleteError }}</p>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-danger" :disabled="isDeleting" @click="confirmDelete">{{ isDeleting ? 'Eliminando…' : 'Sí, eliminar' }}</button>
+            <button class="btn btn-ghost" :disabled="isDeleting" @click="closeDeleteConfirm">Cancelar</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
@@ -291,4 +338,63 @@ function clearFilter() {
 .rows-move {
   transition: transform 0.3s ease;
 }
+
+/* Modal */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(42, 10, 6, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border2);
+  border-radius: 12px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.modal-title {
+  font-family: 'DM Serif Display', serif;
+  font-size: 20px;
+  color: var(--text);
+  font-weight: 400;
+}
+
+.close-btn {
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: var(--text3);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.2s;
+  font-family: 'Outfit', sans-serif;
+}
+
+.close-btn:hover {
+  color: var(--text);
+}
+
+.modal-body {
+  padding: 24px;
+}
+
+.field-error { font-size: 11px; color: var(--sinopia); margin-top: 4px; }
 </style>

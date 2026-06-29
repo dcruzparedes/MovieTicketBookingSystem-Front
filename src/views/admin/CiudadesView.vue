@@ -118,11 +118,6 @@ async function confirmDelete() {
     isDeleting.value = false
   }
 }
-
-// ── Toggle activo (estado local, sin persistencia en backend) ──
-function toggleActive(city: CiudadRow) {
-  city.active = !city.active
-}
 </script>
 
 <template>
@@ -152,27 +147,18 @@ function toggleActive(city: CiudadRow) {
             <tr>
               <th>#</th>
               <th>Nombre</th>
-              <th>Estado</th>
               <th>Acciones</th>
             </tr>
           </thead>
           <TransitionGroup tag="tbody" name="rows" appear>
-            <tr v-for="(ciudad, index) in ciudades" :key="ciudad.id" :style="{ '--row-delay': `${index * 40}ms` }">
+            <tr
+              v-for="(ciudad, index) in ciudades"
+              :key="ciudad.id"
+              :style="{ '--row-delay': `${index * 40}ms` }"
+            >
               <td class="id-cell">{{ ciudad.id }}</td>
               <td>
                 <strong>{{ ciudad.nombre }}</strong>
-              </td>
-              <td>
-                <div class="status-cell">
-                  <ToggleSwitch
-                    :model-value="ciudad.active"
-                    :loading="loadingIds.has(ciudad.id)"
-                    @update:model-value="toggleActive(ciudad)"
-                  />
-                  <span class="status-label" :class="ciudad.active ? 'active' : 'inactive'">
-                    {{ ciudad.active ? 'Activa' : 'Inactiva' }}
-                  </span>
-                </div>
               </td>
               <td>
                 <div class="action-group">
@@ -186,7 +172,7 @@ function toggleActive(city: CiudadRow) {
               </td>
             </tr>
             <tr v-if="ciudades.length === 0" key="empty">
-              <td colspan="4" class="empty-state">No hay ciudades registradas.</td>
+              <td colspan="3" class="empty-state">No hay ciudades registradas.</td>
             </tr>
           </TransitionGroup>
         </table>
@@ -234,7 +220,9 @@ function toggleActive(city: CiudadRow) {
               <button class="btn btn-danger" :disabled="isDeleting" @click="confirmDelete">
                 {{ isDeleting ? 'Eliminando…' : 'Sí, eliminar' }}
               </button>
-              <button class="btn btn-ghost" :disabled="isDeleting" @click="closeDeleteConfirm">Cancelar</button>
+              <button class="btn btn-ghost" :disabled="isDeleting" @click="closeDeleteConfirm">
+                Cancelar
+              </button>
             </div>
           </div>
         </div>
@@ -293,8 +281,13 @@ function toggleActive(city: CiudadRow) {
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.4; }
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
 }
 
 .state-text {
@@ -343,6 +336,11 @@ function toggleActive(city: CiudadRow) {
   font-weight: 500;
 }
 
+.tbl th:last-child,
+.tbl td:last-child {
+  text-align: right;
+}
+
 .tbl tr:last-child td {
   border-bottom: none;
 }
@@ -368,17 +366,10 @@ function toggleActive(city: CiudadRow) {
   font-weight: 500;
 }
 
-.status-label.active {
-  color: var(--success);
-}
-
-.status-label.inactive {
-  color: var(--text3);
-}
-
 .action-group {
   display: flex;
   gap: 6px;
+  justify-content: flex-end;
 }
 
 .empty-state {
@@ -529,16 +520,6 @@ function toggleActive(city: CiudadRow) {
   opacity: 0;
   animation: slideUp 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   animation-delay: var(--delay, 0ms);
-}
-
-.rows-enter-active {
-  animation: slideUp 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-  animation-delay: var(--row-delay, 0ms);
-  opacity: 0;
-}
-
-.rows-leave-active {
-  transition: opacity 0.15s ease, transform 0.15s ease;
 }
 
 .rows-leave-to {

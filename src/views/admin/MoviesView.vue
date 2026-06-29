@@ -1,30 +1,36 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MovieForm from '@/components/admin/MovieForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
-import { deletePelicula } from '@/services/movieService'
+import { getPeliculas, deletePelicula } from '@/services/movieService'
 
 const router = useRouter()
 
 const loadingIds = ref(new Set<number>())
+const isLoading = ref(true)
 
 interface Movie {
   id: number
-  title: string
-  genre: string
-  language: string
-  releaseDate: string
-  active: boolean
+  titulo: string
+  generos?: { nombre: string }
+  idiomas?: { nombre: string }
+  fecha_estreno: string
+  activo: boolean
 }
 
-const movies = ref<Movie[]>([
-  { id: 1, title: 'Alien: Romulus', genre: 'Sci-Fi', language: 'Español / Sub', releaseDate: '2024-08-16', active: true },
-  { id: 2, title: 'Wild Robot', genre: 'Animación', language: 'Español', releaseDate: '2024-09-27', active: true },
-  { id: 3, title: 'Megalopolis', genre: 'Drama', language: 'Subtitulada', releaseDate: '2024-09-27', active: false },
-  { id: 4, title: 'Venom: El Último Baile', genre: 'Acción', language: 'Español', releaseDate: '2024-10-25', active: true },
-])
+const movies = ref<Movie[]>([])
+
+onMounted(async () => {
+  try {
+    movies.value = await getPeliculas()
+  } catch (e) {
+    console.error('Error cargando películas:', e)
+  } finally {
+    isLoading.value = false
+  }
+})
 
 const showModal = ref(false)
 
@@ -36,15 +42,9 @@ function closeModal() {
   showModal.value = false
 }
 
-function onMovieSaved(data: { title: string; genre: string; language: string; releaseDate: string }) {
-  movies.value.push({
-    id: Date.now(),
-    title: data.title,
-    genre: data.genre,
-    language: data.language,
-    releaseDate: data.releaseDate,
-    active: true,
-  })
+function onMovieSaved() {
+  // Recargar lista después de guardar
+  location.reload() 
   closeModal()
 }
 
@@ -82,13 +82,17 @@ async function confirmDelete() {
 
 async function toggleActive(movie: Movie) {
   loadingIds.value.add(movie.id)
-  const previous = movie.active
-  movie.active = !movie.active // optimistic update
+  const previous = movie.activo
+  movie.activo = !movie.activo // optimistic update
   try {
-    // TODO: PATCH /api/peliculas/:id { active: movie.active }
-    await new Promise((r) => setTimeout(r, 600))
+    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/peliculas/${movie.id}/estado`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ activo: movie.activo }),
+    })
+    if (!res.ok) throw new Error('Error')
   } catch {
-    movie.active = previous // rollback on error
+    movie.activo = previous // rollback on error
   } finally {
     loadingIds.value.delete(movie.id)
   }
@@ -103,7 +107,8 @@ async function toggleActive(movie: Movie) {
     </div>
 
     <div class="page-body">
-      <div class="card animado" style="--delay: 80ms">
+      <div v-if="isLoading">Cargando películas...</div>
+      <div v-else class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
             <tr>
@@ -117,19 +122,19 @@ async function toggleActive(movie: Movie) {
           </thead>
           <TransitionGroup tag="tbody" name="rows" appear>
             <tr v-for="(movie, index) in movies" :key="movie.id" :style="{ '--row-delay': `${index * 40}ms` }">
-              <td><strong>{{ movie.title }}</strong></td>
-              <td>{{ movie.genre }}</td>
-              <td>{{ movie.language }}</td>
-              <td>{{ movie.releaseDate }}</td>
+              <td><strong>{{ movie.titulo }}</strong></td>
+              <td>{{ movie.generos?.nombre || 'N/A' }}</td>
+              <td>{{ movie.idiomas?.nombre || 'N/A' }}</td>
+              <td>{{ new Date(movie.fecha_estreno).toLocaleDateString() }}</td>
               <td>
                 <div class="status-cell">
                   <ToggleSwitch
-                    :model-value="movie.active"
+                    :model-value="movie.activo"
                     :loading="loadingIds.has(movie.id)"
                     @update:model-value="toggleActive(movie)"
                   />
-                  <span class="status-label" :class="movie.active ? 'active' : 'inactive'">
-                    {{ movie.active ? 'Activo' : 'Inactivo' }}
+                  <span class="status-label" :class="movie.activo ? 'active' : 'inactive'">
+                    {{ movie.activo ? 'Activo' : 'Inactivo' }}
                   </span>
                 </div>
               </td>
@@ -180,7 +185,7 @@ async function toggleActive(movie: Movie) {
           <div class="modal-body">
             <p class="confirm-text">
               ¿Estás seguro de que quieres eliminar
-              <strong>{{ deletingMovie?.title }}</strong>?
+              <strong>{{ deletingMovie?.titulo }}</strong>?
               Esta acción no se puede deshacer.
             </p>
             <p v-if="deleteError" class="delete-error">{{ deleteError }}</p>

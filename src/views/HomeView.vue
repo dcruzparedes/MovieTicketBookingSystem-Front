@@ -70,7 +70,7 @@ onMounted(async () => {
     const [filtersResponse2] = await Promise.all([fetchIdiomas()]);
     const [filtersResponse3] = await Promise.all([fetchGeneros()]);
     const [cinesRes] = await Promise.all([fetchCines()]);
-    peliculas.value = response;
+    peliculas.value = response.filter((p: Pelicula) => p.activo);
     ciudades.value = filtersResponse1;
     idiomas.value = filtersResponse2;
     generos.value = filtersResponse3;

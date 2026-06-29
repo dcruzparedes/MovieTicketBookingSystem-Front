@@ -40,7 +40,7 @@ export function actualizarPassword(id: number, oldPassword: string, newPassword:
 }
 
 export function alternarNotificaciones(id: number) {
-  return api.patch<string>(`/usuarios/${id}/notifications`)
+  return api.patch<string>(`/usuarios/${id}/notifications`, {})
 }
 
 export interface ClienteAdmin {
@@ -79,4 +79,44 @@ export function cambiarEstadoCliente(id: number, status: 'activo' | 'inactivo' |
   return api.patch<{ message: string; id: number; status: string }>(`/usuarios/${id}/status`, {
     body: JSON.stringify({ status }),
   })
+}
+
+export interface UsuarioAdmin {
+  id: string
+  nombre: string
+  email: string
+  telefono: string | null
+  estado: string
+  created_at: string
+  roles: { id: string; nombre: string }
+}
+
+export interface UsuariosPaginados {
+  data: UsuarioAdmin[]
+  meta: { page: number; limit: number; total: number; totalPages: number }
+}
+
+export interface AdminCrearUsuarioPayload {
+  nombre: string
+  email: string
+  password: string
+  telefono?: string
+  rolId: number
+}
+
+export function listarTodosUsuarios(filtro: ClientesFiltro = {}) {
+  const params = new URLSearchParams()
+  if (filtro.q) params.set('q', filtro.q)
+  if (filtro.estado) params.set('estado', filtro.estado)
+  params.set('page', String(filtro.page ?? 1))
+  params.set('limit', String(filtro.limit ?? 20))
+  return api.get<UsuariosPaginados>(`/usuarios/todos?${params.toString()}`)
+}
+
+export function adminCrearUsuario(payload: AdminCrearUsuarioPayload) {
+  return api.post<UsuarioAdmin>('/usuarios/admin-create', payload)
+}
+
+export function actualizarRolUsuario(id: string, rolId: number) {
+  return api.patch<UsuarioAdmin>(`/usuarios/${id}/rol`, { rolId })
 }

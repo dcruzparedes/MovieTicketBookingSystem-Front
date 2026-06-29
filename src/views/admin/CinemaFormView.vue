@@ -1,15 +1,25 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import CinemaForm from '@/components/admin/CinemaForm.vue'
 import { createCine } from '@/services/cinemaService'
+import { getCiudades, type Ciudad } from '@/services/ciudadService'
 
 const router = useRouter()
 
 const isSaving = ref(false)
 const saveError = ref('')
 const saved = ref(false)
+const cities = ref<Ciudad[]>([])
+
+onMounted(async () => {
+  try {
+    cities.value = await getCiudades()
+  } catch {
+    cities.value = []
+  }
+})
 
 async function handleSaved(data: {
   cityId: string
@@ -64,7 +74,7 @@ function goBack() {
       <p v-if="saveError" class="save-error">{{ saveError }}</p>
 
       <div class="card animado" style="--delay: 80ms">
-        <CinemaForm :loading="isSaving" @saved="handleSaved" @cancel="goBack" />
+        <CinemaForm :cities="cities" :loading="isSaving" @saved="handleSaved" @cancel="goBack" />
       </div>
     </div>
   </AdminLayout>

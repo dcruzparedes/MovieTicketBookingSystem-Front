@@ -103,11 +103,6 @@ export interface ReservasRes {
   }
 }
 
-export interface Export {
-  message: string,
-  filePath: string
-}
-
 export interface CalcResr {
   reserva: string,
   monto_total: number,
@@ -131,12 +126,22 @@ export async function getReservas(filters: ReservasFilter = {}): Promise<Reserva
   return data;
 }
 
-export async function exportReservas(){
-  const res = await api.get<Export>(`/reservas/export`);
-  if(!res){
-    throw new Error(`No se pudo exportar las reservas.`)
+export async function exportReservas(): Promise<void> {
+  const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
+  const res = await fetch(`${API_BASE_URL}/reservas/export`)
+  if (!res.ok) {
+    throw new Error('No se pudo exportar las reservas.')
   }
-  return res;
+
+  const blob = await res.blob()
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement('a')
+  link.href = url
+  link.download = `reportes_reservas_${Date.now()}.csv`
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
 }
 
 export async function cancelReserva(id: number){

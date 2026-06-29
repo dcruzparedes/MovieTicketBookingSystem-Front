@@ -2,7 +2,7 @@
 import { onMounted, ref, computed } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
-import { getCupones, nuevoCupon, cambiarEstadoCupon } from '@/services/cuponesService'
+import { getCupones, nuevoCupon, actualizarCupon, eliminarCupon, cambiarEstadoCupon } from '@/services/cuponesService'
 
 
 interface Cupon{
@@ -17,25 +17,29 @@ interface Cupon{
 }
 
 const cupones = ref<Cupon[]>([])
+const loadError = ref('')
 
 async function getAllCupones(){
   try{
     cupones.value = await getCupones();
   }catch(error){
-    throw new Error(`Error: ${error}`)
+    loadError.value = error instanceof Error ? error.message : 'Error al cargar los cupones'
   }
 }
 
 onMounted(getAllCupones);
 
 const showModal = ref(false)
+const editingCupon = ref<Cupon | null>(null)
+const isSaving = ref(false)
+const formError = ref('')
 
 async function toggleActive(cupon: Cupon, valor: boolean){
   try{
     await cambiarEstadoCupon(cupon.id, valor);
     cupon.activo = valor;
   }catch(error){
-    throw new Error(`Error: ${error}`)   
+    throw new Error(`Error: ${error}`)
   }
 }
 
@@ -47,25 +51,102 @@ const nuevoForm = ref({
   usos_maximos: null as number | null,
 })
 
-async function agregarCupon() {
-  if (!nuevoForm.value.codigo || !nuevoForm.value.valor || !nuevoForm.value.fecha_expiracion || !nuevoForm.value.usos_maximos) return;
-  try{
-      await nuevoCupon({
-        codigo: nuevoForm.value.codigo,
-        tipo: nuevoForm.value.tipo,
-        valor: nuevoForm.value.valor,
-        fecha_expiracion: nuevoForm.value.fecha_expiracion,
-        usos_maximos: nuevoForm.value.usos_maximos,
-        activo: true
-      });
-  }catch(error){
-    throw new Error(`Error: ${error}`)
-  }
-
+function openCreateModal() {
+  editingCupon.value = null
+  formError.value = ''
   nuevoForm.value = { codigo: '', tipo: 'Porcentaje', valor: null, fecha_expiracion: '', usos_maximos: null }
-  showModal.value = false;
+  showModal.value = true
+}
 
-  await getAllCupones();
+function openEditModal(cupon: Cupon) {
+  editingCupon.value = cupon
+  formError.value = ''
+  nuevoForm.value = {
+    codigo: cupon.codigo,
+    tipo: cupon.tipo,
+    valor: cupon.valor,
+    fecha_expiracion: cupon.fecha_expiracion.slice(0, 10),
+    usos_maximos: cupon.usos_maximos,
+  }
+  showModal.value = true
+}
+
+function closeModal() {
+  if (isSaving.value) return
+  showModal.value = false
+  editingCupon.value = null
+  formError.value = ''
+}
+
+async function guardarCupon() {
+  if (!nuevoForm.value.codigo || !nuevoForm.value.valor || !nuevoForm.value.fecha_expiracion || !nuevoForm.value.usos_maximos) return;
+  isSaving.value = true
+  formError.value = ''
+  try{
+      if (editingCupon.value) {
+        const actualizado = await actualizarCupon(editingCupon.value.id, {
+          codigo: nuevoForm.value.codigo,
+          tipo: nuevoForm.value.tipo,
+          valor: nuevoForm.value.valor,
+          fecha_expiracion: nuevoForm.value.fecha_expiracion,
+          usos_maximos: nuevoForm.value.usos_maximos,
+        });
+        Object.assign(editingCupon.value, actualizado)
+      } else {
+        await nuevoCupon({
+          codigo: nuevoForm.value.codigo,
+          tipo: nuevoForm.value.tipo,
+          valor: nuevoForm.value.valor,
+          fecha_expiracion: nuevoForm.value.fecha_expiracion,
+          usos_maximos: nuevoForm.value.usos_maximos,
+          activo: true
+        });
+        await getAllCupones();
+      }
+      isSaving.value = false
+      closeModal();
+  }catch(error){
+    formError.value = error instanceof Error ? error.message : 'Error al guardar el cupón'
+  }finally{
+    isSaving.value = false
+  }
+}
+
+// ── Confirmación de eliminación ──
+const showDeleteConfirm = ref(false)
+const deletingCupon = ref<Cupon | null>(null)
+const isDeleting = ref(false)
+const deleteError = ref('')
+
+function openDeleteConfirm(cupon: Cupon) {
+  deletingCupon.value = cupon
+  deleteError.value = ''
+  showDeleteConfirm.value = true
+}
+
+function closeDeleteConfirm() {
+  if (isDeleting.value) return
+  showDeleteConfirm.value = false
+  deletingCupon.value = null
+  deleteError.value = ''
+}
+
+async function confirmDelete() {
+  if (!deletingCupon.value) return
+  isDeleting.value = true
+  deleteError.value = ''
+  try {
+    await eliminarCupon(deletingCupon.value.id)
+    cupones.value = cupones.value.filter((c) => c.id !== deletingCupon.value!.id)
+    isDeleting.value = false
+    closeDeleteConfirm()
+  } catch (error) {
+    deleteError.value = error instanceof Error
+      ? error.message
+      : 'No se puede eliminar este cupón porque ya fue usado en algún pago.'
+  } finally {
+    isDeleting.value = false
+  }
 }
 
 const currentPage = ref(1)
@@ -91,17 +172,24 @@ function setPage(page: number) {
     <div id="admin-cupones">
     <div class="admin-header animado" style="--delay: 0ms">
     <div class="admin-page-title">Cupones</div>
-    <button class="btn btn-primary btn-sm" @click="showModal = true">+ Nuevo cupón</button></div>
+    <button class="btn btn-primary btn-sm" @click="openCreateModal">+ Nuevo cupón</button></div>
+    <p v-if="loadError" style="color:var(--sinopia);font-size:13px;margin:0 28px 12px;">{{ loadError }}</p>
     <div class="admin-body">
         <div class="card animado" style="--delay: 80ms"><div class="card-body" style="padding:0">
         <table class="tbl">
-            <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Vencimiento</th><th>Usos</th><th>Estado</th></tr></thead>
+            <thead><tr><th>Código</th><th>Tipo</th><th>Valor</th><th>Vencimiento</th><th>Usos</th><th>Estado</th><th>Acciones</th></tr></thead>
             <TransitionGroup tag="tbody" name="rows" appear>
                 <tr v-for="(cupon, index) in cuponesPaginados" :key="cupon.id" :style="{ '--row-delay': `${index * 40}ms` }">
                     <td><strong style="font-family:'DM Mono',monospace">{{cupon.codigo}}</strong></td><td>{{cupon.tipo}}</td><td>{{cupon.valor}}</td><td>{{cupon.fecha_expiracion}}</td><td>{{cupon.usos_actuales}} / {{cupon.usos_maximos}}</td><td>
-                        <ToggleSwitch 
-                        :model-value="cupon.activo" 
+                        <ToggleSwitch
+                        :model-value="cupon.activo"
                         @update:model-value="(valor) => toggleActive(cupon, valor)"></ToggleSwitch></td>
+                    <td>
+                        <div style="display:flex;gap:6px">
+                            <button class="btn btn-ghost btn-sm" @click="openEditModal(cupon)">Editar</button>
+                            <button class="btn btn-danger btn-sm" @click="openDeleteConfirm(cupon)">Eliminar</button>
+                        </div>
+                    </td>
                 </tr>
             </TransitionGroup>
         </table>
@@ -133,14 +221,15 @@ function setPage(page: number) {
 
     <!-- FORMULARIO CUPÓN -->
     <Teleport to="body">
-    <div v-if="showModal" class="modal-overlay">
+    <div v-if="showModal" class="modal-overlay" @click.self="closeModal">
     <div class="modal-box">
     <div class="modal-header">
-    <div class="modal-title">Nuevo cupon</div>
-    <button class="close-btn"  @click="showModal = false">✕</button>
+    <div class="modal-title">{{ editingCupon ? 'Editar cupón' : 'Nuevo cupón' }}</div>
+    <button class="close-btn" @click="closeModal">✕</button>
     </div>
     <div class="modal-body">
         <div class="card"><div class="card-body">
+        <p v-if="formError" class="field-error" style="margin-bottom:12px">{{ formError }}</p>
         <div class="field">
             <label>Código</label>
             <input v-model="nuevoForm.codigo" placeholder="ej. VERANO50" style="font-family:'DM Mono',monospace;letter-spacing:1px" />
@@ -148,7 +237,7 @@ function setPage(page: number) {
         <div class="field-row">
             <div class="field">
                 <label>Tipo</label>
-                <select>
+                <select v-model="nuevoForm.tipo">
                     <option>Porcentaje</option>
                     <option>Monto fijo</option>
                 </select>
@@ -169,10 +258,32 @@ function setPage(page: number) {
             </div>
         </div>
         <div style="display:flex;gap:10px">
-            <button class="btn btn-primary"  @click="agregarCupon">Guardar cupón</button>
-            <button class="btn btn-ghost" @click="showModal = false">Cancelar</button>
+            <button class="btn btn-primary" :disabled="isSaving" @click="guardarCupon">{{ isSaving ? 'Guardando…' : 'Guardar cupón' }}</button>
+            <button class="btn btn-ghost" :disabled="isSaving" @click="closeModal">Cancelar</button>
         </div>
         </div></div>
+    </div>
+    </div>
+    </div>
+    </Teleport>
+
+    <!-- CONFIRMACIÓN DE ELIMINACIÓN -->
+    <Teleport to="body">
+    <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="closeDeleteConfirm">
+    <div class="modal-box" style="max-width:380px">
+    <div class="modal-header">
+    <div class="modal-title">Eliminar cupón</div>
+    <button class="close-btn" @click="closeDeleteConfirm">✕</button>
+    </div>
+    <div class="modal-body">
+        <p style="font-size:14px;color:var(--text2);line-height:1.55;margin-bottom:16px">
+            ¿Estás seguro de que deseas eliminar el cupón <strong style="color:var(--text)">{{ deletingCupon?.codigo }}</strong>? Esta acción no se puede deshacer.
+        </p>
+        <p v-if="deleteError" class="field-error" style="margin-bottom:12px">{{ deleteError }}</p>
+        <div style="display:flex;gap:10px">
+            <button class="btn btn-danger" :disabled="isDeleting" @click="confirmDelete">{{ isDeleting ? 'Eliminando…' : 'Sí, eliminar' }}</button>
+            <button class="btn btn-ghost" :disabled="isDeleting" @click="closeDeleteConfirm">Cancelar</button>
+        </div>
     </div>
     </div>
     </div>
@@ -310,6 +421,22 @@ function setPage(page: number) {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+.btn-danger {
+  background: var(--sinopia);
+  color: #fff;
+  padding: 6px 14px;
+  opacity: 0.9;
+}
+
+.btn-danger:hover {
+  opacity: 1;
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .btn-sm {

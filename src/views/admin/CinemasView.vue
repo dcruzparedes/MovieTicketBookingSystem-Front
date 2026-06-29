@@ -18,6 +18,9 @@ interface ApiCinema {
   nombre: string
   direccion: string
   id_ciudad: string
+  _count?: {
+    salas: number
+  }
 }
 
 interface ApiCity {
@@ -41,7 +44,7 @@ async function fetchCinemas() {
         nombre: c.nombre,
         ciudad: city ? city.nombre : 'Desconocida',
         direccion: c.direccion || '',
-        salasCount: 0, // TODO: Fetch sala count if needed, or update API to include it
+        salasCount: c._count?.salas ?? 0,
       }
     })
   } catch (error) {
@@ -238,6 +241,11 @@ async function confirmDelete() {
   font-weight: 500;
 }
 
+.tbl th:last-child,
+.tbl td:last-child {
+  text-align: right;
+}
+
 .tbl tr:last-child td {
   border-bottom: none;
 }
@@ -266,6 +274,7 @@ async function confirmDelete() {
 .action-group {
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
 }
 
 /* Buttons */

@@ -21,6 +21,8 @@ interface MovieForm {
   language: number | ''
   releaseDate: string
   synopsis: string
+  dur: string
+  year: number | ''
 }
 
 interface FormErrors {
@@ -29,6 +31,8 @@ interface FormErrors {
   language: string
   releaseDate: string
   synopsis: string
+  dur: string
+  year: string
 }
 
 const form = reactive<MovieForm>({
@@ -37,6 +41,8 @@ const form = reactive<MovieForm>({
   language: '',
   releaseDate: '',
   synopsis: '',
+  dur: '',
+  year: '',
 })
 
 const errors = reactive<FormErrors>({
@@ -45,6 +51,8 @@ const errors = reactive<FormErrors>({
   language: '',
   releaseDate: '',
   synopsis: '',
+  dur: '',
+  year: '',
 })
 
 const posterFile = ref<File | null>(null)
@@ -72,6 +80,8 @@ function validate(): boolean {
   errors.language = form.language !== '' ? '' : 'Selecciona un idioma'
   errors.releaseDate = form.releaseDate ? '' : 'La fecha de estreno es requerida'
   errors.synopsis = form.synopsis.trim() ? '' : 'La sinopsis es requerida'
+  errors.dur = form.dur.trim() ? '' : 'La duración es requerida'
+  errors.year = form.year !== '' ? '' : 'El año es requerido'
   return Object.values(errors).every((e) => !e)
 }
 
@@ -94,6 +104,8 @@ async function handleSubmit() {
       id_genero: form.genre !== '' ? Number(form.genre) : undefined,
       id_idioma: form.language !== '' ? Number(form.language) : undefined,
       fecha_estreno: form.releaseDate ? new Date(form.releaseDate).toISOString() : undefined,
+      dur: form.dur || undefined,
+      year: form.year !== '' ? Number(form.year) : undefined,
       id_usuario: getCurrentUserId(),
     })) as { id: string }
 
@@ -193,6 +205,36 @@ function goBack() {
               :disabled="createdMovieId !== null"
             />
             <span v-if="errors.releaseDate" class="field-error">{{ errors.releaseDate }}</span>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label for="year">Año</label>
+              <input
+                id="year"
+                v-model.number="form.year"
+                type="number"
+                placeholder="ej. 2026"
+                min="1900"
+                :max="new Date().getFullYear() + 2"
+                :class="{ 'input-error': errors.year }"
+                :disabled="createdMovieId !== null"
+              />
+              <span v-if="errors.year" class="field-error">{{ errors.year }}</span>
+            </div>
+
+            <div class="field">
+              <label for="dur">Duración</label>
+              <input
+                id="dur"
+                v-model="form.dur"
+                type="text"
+                placeholder="ej. 2h 15m"
+                :class="{ 'input-error': errors.dur }"
+                :disabled="createdMovieId !== null"
+              />
+              <span v-if="errors.dur" class="field-error">{{ errors.dur }}</span>
+            </div>
           </div>
 
           <div class="field">

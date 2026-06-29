@@ -17,6 +17,8 @@ export interface CreatePeliculaPayload {
   id_genero?: number
   id_idioma?: number
   fecha_estreno?: string
+  dur?: string
+  year?: number
   id_usuario: number
 }
 

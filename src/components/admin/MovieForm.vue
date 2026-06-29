@@ -9,6 +9,7 @@ import {
   type Genero,
   type Idioma,
 } from '@/services/movieService'
+import { uploadPosterPelicula } from '@/services/storageService'
 
 const emit = defineEmits<{
   saved: []
@@ -21,6 +22,8 @@ const form = reactive({
   languageId: null as number | null,
   releaseDate: '',
   synopsis: '',
+  dur: '',
+  year: null as number | null,
 })
 
 const errors = reactive({
@@ -29,6 +32,8 @@ const errors = reactive({
   language: '',
   releaseDate: '',
   synopsis: '',
+  dur: '',
+  year: '',
 })
 
 const genres = ref<Genero[]>([])
@@ -47,30 +52,42 @@ onMounted(async () => {
 
 const posterFile = ref<File | null>(null)
 
+const submitError = ref('')
+
 function validate(): boolean {
   errors.title = form.title.trim() ? '' : 'El título es requerido'
   errors.genre = form.genreId ? '' : 'Selecciona un género'
   errors.language = form.languageId ? '' : 'Selecciona un idioma'
   errors.releaseDate = form.releaseDate ? '' : 'La fecha de estreno es requerida'
   errors.synopsis = form.synopsis.trim() ? '' : 'La sinopsis es requerida'
+  errors.dur = form.dur.trim() ? '' : 'La duración es requerida'
+  errors.year = form.year ? '' : 'El año es requerido'
   return Object.values(errors).every((e) => !e)
 }
 
 async function handleSubmit() {
   if (!validate()) return
   loading.value = true
+  submitError.value = ''
   try {
-    await createPelicula({
+    const pelicula = await createPelicula({
       titulo: form.title,
       sinopsis: form.synopsis,
       id_genero: form.genreId ? Number(form.genreId) : undefined,
       id_idioma: form.languageId ? Number(form.languageId) : undefined,
       fecha_estreno: form.releaseDate ? new Date(form.releaseDate).toISOString() : undefined,
+      dur: form.dur || undefined,
+      year: form.year ? Number(form.year) : undefined,
       id_usuario: getCurrentUserId(),
-    })
+    }) as { id: string }
+
+    if (posterFile.value) {
+      await uploadPosterPelicula(Number(pelicula.id), posterFile.value)
+    }
+
     emit('saved')
   } catch (e) {
-    console.error('Error al crear película:', e)
+    submitError.value = e instanceof Error ? e.message : 'Error al guardar la película'
   } finally {
     loading.value = false
   }
@@ -130,6 +147,34 @@ async function handleSubmit() {
         <span v-if="errors.releaseDate" class="field-error">{{ errors.releaseDate }}</span>
       </div>
 
+      <div class="field-row">
+        <div class="field">
+          <label for="mf-year">Año</label>
+          <input
+            id="mf-year"
+            v-model.number="form.year"
+            type="number"
+            placeholder="ej. 2026"
+            min="1900"
+            :max="new Date().getFullYear() + 2"
+            :class="{ 'input-error': errors.year }"
+          />
+          <span v-if="errors.year" class="field-error">{{ errors.year }}</span>
+        </div>
+
+        <div class="field">
+          <label for="mf-dur">Duración</label>
+          <input
+            id="mf-dur"
+            v-model="form.dur"
+            type="text"
+            placeholder="ej. 2h 15m"
+            :class="{ 'input-error': errors.dur }"
+          />
+          <span v-if="errors.dur" class="field-error">{{ errors.dur }}</span>
+        </div>
+      </div>
+
       <div class="field">
         <label for="mf-synopsis">Sinopsis</label>
         <textarea
@@ -142,6 +187,7 @@ async function handleSubmit() {
         <span v-if="errors.synopsis" class="field-error">{{ errors.synopsis }}</span>
       </div>
 
+      <p v-if="submitError" class="submit-error">{{ submitError }}</p>
       <div class="form-actions">
         <button type="submit" class="btn btn-primary" :disabled="loading">
           {{ loading ? 'Guardando...' : 'Guardar película' }}
@@ -243,6 +289,12 @@ async function handleSubmit() {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+}
+
+.submit-error {
+  font-size: 12px;
+  color: var(--sinopia);
+  margin-bottom: 10px;
 }
 
 /* Actions */

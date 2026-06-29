@@ -59,24 +59,24 @@ const selectedGenero = ref('Todos los géneros')
 const selectedIdioma = ref('Todos los idiomas')
 const selectedCiudad = ref('Todas las ciudades')
 
-setTimeout(() => { cargandoPeliculas.value = false }, 800)
+const errorCarga = ref('')
 
 watch(selectedCityId, () => { selectedCinemaId.value = null })
 
 onMounted(async () => {
   try{
-    const [response] = await Promise.all([getPeliculas()]);
-    const [filtersResponse1] = await Promise.all([fetchCiudades()]);
-    const [filtersResponse2] = await Promise.all([fetchIdiomas()]);
-    const [filtersResponse3] = await Promise.all([fetchGeneros()]);
-    const [cinesRes] = await Promise.all([fetchCines()]);
-    peliculas.value = response.filter((p: Pelicula) => p.activo);
-    ciudades.value = filtersResponse1;
-    idiomas.value = filtersResponse2;
-    generos.value = filtersResponse3;
-    cines.value = cinesRes;
-  }catch(error){
-    throw new Error('Ocurrio un error.')
+    const [response, filtersResponse1, filtersResponse2, filtersResponse3, cinesRes] = await Promise.all([
+      getPeliculas(), fetchCiudades(), fetchIdiomas(), fetchGeneros(), fetchCines()
+    ])
+    peliculas.value = response.filter((p: Pelicula) => p.activo)
+    ciudades.value = filtersResponse1
+    idiomas.value = filtersResponse2
+    generos.value = filtersResponse3
+    cines.value = cinesRes
+  } catch(error) {
+    errorCarga.value = 'No se pudo cargar la cartelera. Intenta de nuevo más tarde.'
+  } finally {
+    cargandoPeliculas.value = false
   }
 })
 
@@ -216,7 +216,9 @@ function irAAsientos(funcionId: number) {
                 <span class="badge badge-orange">{{ selectedMovie.generos?.nombre }}</span>
               </div>
               <h1 class="detail-title animado" style="--delay: 130ms">{{ selectedMovie.titulo }}</h1>
-              <p class="detail-tagline animado" style="--delay: 170ms">En cartelera {{ cineActual?.nombre }}</p>
+              <p class="detail-tagline animado" style="--delay: 170ms">
+                {{ cineActual ? `En cartelera · ${cineActual.nombre}` : 'Selecciona un cine para ver las funciones' }}
+              </p>
               <p class="detail-desc animado" style="--delay: 200ms">{{ selectedMovie.sinopsis }}</p>
               <div class="detail-stats animado" style="--delay: 240ms">
                 <div class="dstat"><div class="dstat-val">{{ selectedMovie.dur }}</div><div class="dstat-lbl">Duración</div></div>
@@ -236,8 +238,15 @@ function irAAsientos(funcionId: number) {
           <div v-if="!selectedMovie" key="cartelera">
             <div class="eyebrow animado" style="--delay: 240ms">En cartelera ahora</div>
 
+            <!-- Error de carga -->
+            <div v-if="errorCarga" class="empty-state empty-state--error">
+              <span class="empty-icon">⚠️</span>
+              <p>{{ errorCarga }}</p>
+              <button class="btn-reload" @click="() => window.location.reload()">Recargar página</button>
+            </div>
+
             <!-- Skeletons -->
-            <div v-if="cargandoPeliculas" class="movies-grid">
+            <div v-else-if="cargandoPeliculas" class="movies-grid">
               <div v-for="i in 6" :key="i" class="movie-card-skeleton">
                 <Skeleton height="320px" border-radius="8px 8px 0 0" />
                 <div style="padding: 10px 12px 14px; display:flex; flex-direction:column; gap:6px">
@@ -277,6 +286,13 @@ function irAAsientos(funcionId: number) {
           <!-- ── SELECCIÓN DE CINE ── -->
           <div v-else-if="!selectedCinemaId" key="cines" class="cine-selection">
             <div class="eyebrow animado" style="--delay: 0ms">Disponible en</div>
+
+            <div v-if="filteredCinemas.length === 0" class="empty-state animado" style="--delay: 60ms">
+              <span class="empty-icon">🎭</span>
+              <p>Esta película aún no tiene funciones programadas.</p>
+              <button class="btn-back-inline" @click="limpiarSeleccion">Ver otras películas</button>
+            </div>
+
             <div
               v-for="(cine, index) in filteredCinemas"
               :key="cine.id"
@@ -286,9 +302,7 @@ function irAAsientos(funcionId: number) {
             >
               <div>
                 <div class="cine-item-name">{{ cine.nombre }}</div>
-                <div class="cine-item-meta">
-                  {{ cine.direccion }}
-                </div>
+                <div class="cine-item-meta">{{ cine.direccion }}</div>
               </div>
               <span class="cine-item-arrow">›</span>
             </div>
@@ -299,8 +313,10 @@ function irAAsientos(funcionId: number) {
             <button class="back-btn animado" style="--delay: 0ms" @click="selectedCinemaId = null">Cambiar cine</button>
             <div class="eyebrow animado" style="--delay: 50ms">Funciones en {{ cineActual?.nombre }}</div>
 
-            <div v-if="Object.keys(funcionesDisponibles || '').length === 0" class="empty-showtimes animado" style="--delay: 80ms">
-              No hay funciones programadas para esta película en el cine seleccionado.
+            <div v-if="Object.keys(funcionesDisponibles || {}).length === 0" class="empty-state animado" style="--delay: 80ms">
+              <span class="empty-icon">🎬</span>
+              <p>No hay funciones programadas para <strong>{{ selectedMovie?.titulo }}</strong> en {{ cineActual?.nombre }}.</p>
+              <button class="btn-back-inline" @click="selectedCinemaId = null">Ver otros cines</button>
             </div>
 
             <div
@@ -444,7 +460,49 @@ function irAAsientos(funcionId: number) {
 .movie-info { padding: 10px 12px 14px; border-top: 1px solid var(--border); }
 .movie-title { font-size: 13px; font-weight: 600; color: var(--text); line-height: 1.3; margin-bottom: 4px; }
 .movie-meta { font-size: 11px; color: var(--text3); font-family: 'DM Mono', monospace; }
-.empty-state { grid-column: 1/-1; padding: 60px 0; text-align: center; color: var(--text3); font-size: 14px; }
+.empty-state {
+  grid-column: 1 / -1;
+  padding: 52px 0;
+  text-align: center;
+  color: var(--text3);
+  font-size: 14px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.empty-state--error { color: var(--sinopia); }
+.empty-icon { font-size: 36px; line-height: 1; }
+.empty-state p { margin: 0; line-height: 1.5; }
+.empty-state strong { color: var(--text2); }
+.btn-back-inline {
+  margin-top: 4px;
+  background: none;
+  border: 1px solid var(--border2);
+  color: var(--text2);
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  padding: 7px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background .15s;
+}
+.btn-back-inline:hover { background: var(--surface); }
+.btn-reload {
+  margin-top: 4px;
+  background: var(--sinopia);
+  border: none;
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  padding: 8px 18px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity .2s;
+}
+.btn-reload:hover { opacity: .88; }
 
 /* ── Cines ── */
 .cine-item {

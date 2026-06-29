@@ -152,7 +152,8 @@ async function submitRol() {
   try {
     const actualizado = await actualizarRolUsuario(editingUsuario.value.id, Number(nuevoRolId.value))
     const idx = usuarios.value.findIndex((u) => u.id === editingUsuario.value!.id)
-    if (idx !== -1) usuarios.value[idx] = { ...usuarios.value[idx], roles: actualizado.roles }
+    const actual = idx !== -1 ? usuarios.value[idx] : undefined
+    if (actual) usuarios.value[idx] = { ...actual, roles: actualizado.roles }
     closeRolModal()
   } catch (e: unknown) {
     rolError.value = e instanceof Error ? e.message : 'Error al cambiar rol'
@@ -170,7 +171,8 @@ async function toggleEstado(u: UsuarioAdmin) {
   try {
     await actualizarEstadoUsuario(u.id, nuevoEstado)
     const idx = usuarios.value.findIndex((x) => x.id === u.id)
-    if (idx !== -1) usuarios.value[idx] = { ...usuarios.value[idx], estado: nuevoEstado }
+    const actual = idx !== -1 ? usuarios.value[idx] : undefined
+    if (actual) usuarios.value[idx] = { ...actual, estado: nuevoEstado }
   } catch (e: unknown) {
     actionError.value = e instanceof Error ? e.message : 'Error al cambiar estado'
   } finally {

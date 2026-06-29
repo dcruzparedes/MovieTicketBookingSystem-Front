@@ -40,7 +40,8 @@ async function onSaved(data: { name: string }) {
     if (editingIdioma.value) {
       await updateIdioma(editingIdioma.value.id, data.name)
       const index = idiomas.value.findIndex(i => i.id === editingIdioma.value?.id)
-      if (index !== -1) idiomas.value[index].nombre = data.name
+      const item = index !== -1 ? idiomas.value[index] : undefined
+      if (item) item.nombre = data.name
     } else {
       const newIdioma = await createIdioma(data.name)
       idiomas.value.push(newIdioma)

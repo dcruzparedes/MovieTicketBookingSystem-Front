@@ -40,7 +40,7 @@ export function actualizarPassword(id: number, oldPassword: string, newPassword:
 }
 
 export function alternarNotificaciones(id: number) {
-  return api.patch<string>(`/usuarios/${id}/notifications`, {})
+  return api.patch<{ message: string; notificaciones_activas: boolean }>(`/usuarios/${id}/notifications`, {})
 }
 
 export interface ClienteAdmin {

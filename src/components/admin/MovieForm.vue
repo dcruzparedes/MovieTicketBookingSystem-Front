@@ -1,46 +1,29 @@
 <script setup lang="ts">
-import { computed, reactive, ref } from 'vue'
+import { reactive, ref, onMounted } from 'vue'
 import PosterUpload from '@/components/PosterUpload.vue'
-
-interface FormFields {
-  title: string
-  genre: string
-  language: string
-  releaseDate: string
-  synopsis: string
-}
-
-interface FormErrors {
-  title: string
-  genre: string
-  language: string
-  releaseDate: string
-  synopsis: string
-}
-
-const props = withDefaults(
-  defineProps<{
-    initialData?: Partial<FormFields>
-  }>(),
-  { initialData: undefined },
-)
+import {
+  createPelicula,
+  fetchGeneros,
+  fetchIdiomas,
+  getCurrentUserId,
+  type Genero,
+  type Idioma,
+} from '@/services/movieService'
 
 const emit = defineEmits<{
-  saved: [data: FormFields & { poster: File | null }]
+  saved: []
   cancel: []
 }>()
 
-const isEditing = computed(() => !!props.initialData)
-
-const form = reactive<FormFields>({
-  title: props.initialData?.title ?? '',
-  genre: props.initialData?.genre ?? '',
-  language: props.initialData?.language ?? '',
-  releaseDate: props.initialData?.releaseDate ?? '',
-  synopsis: props.initialData?.synopsis ?? '',
+const form = reactive({
+  title: '',
+  genreId: null as number | null,
+  languageId: null as number | null,
+  releaseDate: '',
+  synopsis: '',
 })
 
-const errors = reactive<FormErrors>({
+const errors = reactive({
   title: '',
   genre: '',
   language: '',
@@ -48,23 +31,49 @@ const errors = reactive<FormErrors>({
   synopsis: '',
 })
 
-const genres = ['Acción', 'Animación', 'Drama', 'Sci-Fi', 'Terror']
-const languages = ['Español', 'Subtitulada']
+const genres = ref<Genero[]>([])
+const languages = ref<Idioma[]>([])
+const loading = ref(false)
+
+onMounted(async () => {
+  try {
+    const [g, i] = await Promise.all([fetchGeneros(), fetchIdiomas()])
+    genres.value = g
+    languages.value = i
+  } catch (e) {
+    console.error('Error cargando catálogos:', e)
+  }
+})
 
 const posterFile = ref<File | null>(null)
 
 function validate(): boolean {
   errors.title = form.title.trim() ? '' : 'El título es requerido'
-  errors.genre = form.genre ? '' : 'Selecciona un género'
-  errors.language = form.language ? '' : 'Selecciona un idioma'
+  errors.genre = form.genreId ? '' : 'Selecciona un género'
+  errors.language = form.languageId ? '' : 'Selecciona un idioma'
   errors.releaseDate = form.releaseDate ? '' : 'La fecha de estreno es requerida'
   errors.synopsis = form.synopsis.trim() ? '' : 'La sinopsis es requerida'
   return Object.values(errors).every((e) => !e)
 }
 
-function handleSubmit() {
+async function handleSubmit() {
   if (!validate()) return
-  emit('saved', { ...form, poster: posterFile.value })
+  loading.value = true
+  try {
+    await createPelicula({
+      titulo: form.title,
+      sinopsis: form.synopsis,
+      id_genero: form.genreId ? Number(form.genreId) : undefined,
+      id_idioma: form.languageId ? Number(form.languageId) : undefined,
+      fecha_estreno: form.releaseDate ? new Date(form.releaseDate).toISOString() : undefined,
+      id_usuario: getCurrentUserId(),
+    })
+    emit('saved')
+  } catch (e) {
+    console.error('Error al crear película:', e)
+  } finally {
+    loading.value = false
+  }
 }
 </script>
 
@@ -89,9 +98,9 @@ function handleSubmit() {
       <div class="field-row">
         <div class="field">
           <label for="mf-genre">Género</label>
-          <select id="mf-genre" v-model="form.genre" :class="{ 'input-error': errors.genre }">
-            <option value="" disabled>Seleccionar…</option>
-            <option v-for="g in genres" :key="g" :value="g">{{ g }}</option>
+          <select id="mf-genre" v-model="form.genreId" :class="{ 'input-error': errors.genre }">
+            <option :value="null" disabled>Seleccionar…</option>
+            <option v-for="g in genres" :key="g.id" :value="g.id">{{ g.nombre }}</option>
           </select>
           <span v-if="errors.genre" class="field-error">{{ errors.genre }}</span>
         </div>
@@ -100,11 +109,11 @@ function handleSubmit() {
           <label for="mf-language">Idioma</label>
           <select
             id="mf-language"
-            v-model="form.language"
+            v-model="form.languageId"
             :class="{ 'input-error': errors.language }"
           >
-            <option value="" disabled>Seleccionar…</option>
-            <option v-for="l in languages" :key="l" :value="l">{{ l }}</option>
+            <option :value="null" disabled>Seleccionar…</option>
+            <option v-for="l in languages" :key="l.id" :value="l.id">{{ l.nombre }}</option>
           </select>
           <span v-if="errors.language" class="field-error">{{ errors.language }}</span>
         </div>
@@ -134,8 +143,8 @@ function handleSubmit() {
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-          {{ isEditing ? 'Guardar cambios' : 'Guardar película' }}
+        <button type="submit" class="btn btn-primary" :disabled="loading">
+          {{ loading ? 'Guardando...' : 'Guardar película' }}
         </button>
         <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancelar</button>
       </div>

@@ -1,60 +1,80 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import GeneroForm from '@/components/admin/GeneroForm.vue'
-import ToggleSwitch from '@/components/ToggleSwitch.vue'
+import {
+  fetchGeneros,
+  createGenero,
+  updateGenero,
+  deleteGenero,
+  type Genero,
+} from '@/services/generoService'
 
-interface Genero {
-  id: number
-  name: string
-  active: boolean
+const generos = ref<Genero[]>([])
+const isLoading = ref(true)
+
+async function loadGeneros() {
+  isLoading.value = true
+  try {
+    generos.value = await fetchGeneros()
+  } catch (e) {
+    console.error('Error cargando géneros:', e)
+  } finally {
+    isLoading.value = false
+  }
 }
 
-const generos = ref<Genero[]>([
-  { id: 1, name: 'Acción', active: true },
-  { id: 2, name: 'Comedia', active: true },
-  { id: 3, name: 'Drama', active: true },
-  { id: 4, name: 'Terror', active: false },
-])
+onMounted(loadGeneros)
 
-const loadingIds = ref(new Set<number>())
 const showModal = ref(false)
 const editingGenero = ref<Genero | null>(null)
 
-function openCreateModal() { editingGenero.value = null; showModal.value = true }
-function openEditModal(genero: Genero) { editingGenero.value = genero; showModal.value = true }
-function closeModal() { showModal.value = false; editingGenero.value = null }
+function openCreateModal() {
+  editingGenero.value = null
+  showModal.value = true
+}
+function openEditModal(genero: Genero) {
+  editingGenero.value = genero
+  showModal.value = true
+}
+function closeModal() {
+  showModal.value = false
+  editingGenero.value = null
+}
 
-function onSaved(data: { name: string }) {
-  if (editingGenero.value) {
-    editingGenero.value.name = data.name
-  } else {
-    generos.value.push({ id: Date.now(), name: data.name, active: true })
+async function onSaved(data: { name: string }) {
+  try {
+    if (editingGenero.value) {
+      await updateGenero(editingGenero.value.id, { nombre: data.name })
+    } else {
+      await createGenero({ nombre: data.name })
+    }
+    loadGeneros()
+    closeModal()
+  } catch (e) {
+    console.error('Error al guardar género:', e)
   }
-  closeModal()
 }
 
 const showDeleteConfirm = ref(false)
 const deletingGenero = ref<Genero | null>(null)
 
-function openDeleteConfirm(genero: Genero) { deletingGenero.value = genero; showDeleteConfirm.value = true }
-function closeDeleteConfirm() { showDeleteConfirm.value = false; deletingGenero.value = null }
-function confirmDelete() {
-  if (!deletingGenero.value) return
-  generos.value = generos.value.filter((g) => g.id !== deletingGenero.value!.id)
-  closeDeleteConfirm()
+function openDeleteConfirm(genero: Genero) {
+  deletingGenero.value = genero
+  showDeleteConfirm.value = true
 }
-
-async function toggleActive(genero: Genero) {
-  loadingIds.value.add(genero.id)
-  const previous = genero.active
-  genero.active = !genero.active
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false
+  deletingGenero.value = null
+}
+async function confirmDelete() {
+  if (!deletingGenero.value) return
   try {
-    await new Promise((r) => setTimeout(r, 600))
-  } catch {
-    genero.active = previous
-  } finally {
-    loadingIds.value.delete(genero.id)
+    await deleteGenero(deletingGenero.value.id)
+    loadGeneros()
+    closeDeleteConfirm()
+  } catch (e) {
+    console.error('Error al eliminar género:', e)
   }
 }
 </script>
@@ -69,22 +89,33 @@ async function toggleActive(genero: Genero) {
       <div class="card animado" style="--delay: 80ms">
         <table class="tbl">
           <thead>
-            <tr><th>#</th><th>Nombre</th><th>Estado</th><th>Acciones</th></tr>
+            <tr>
+              <th>#</th>
+              <th>Nombre</th>
+              <th>Acciones</th>
+            </tr>
           </thead>
-          <TransitionGroup tag="tbody" name="rows" appear>
-            <tr v-for="(genero, index) in generos" :key="genero.id" :style="{ '--row-delay': `${index * 40}ms` }">
+          <tbody v-if="isLoading">
+            <tr>
+              <td colspan="3" style="text-align: center">Cargando...</td>
+            </tr>
+          </tbody>
+          <TransitionGroup v-else tag="tbody" name="rows" appear>
+            <tr
+              v-for="(genero, index) in generos"
+              :key="genero.id"
+              :style="{ '--row-delay': `${index * 40}ms` }"
+            >
               <td class="id-cell">{{ genero.id }}</td>
-              <td><strong>{{ genero.name }}</strong></td>
               <td>
-                <div class="status-cell">
-                  <ToggleSwitch :model-value="genero.active" :loading="loadingIds.has(genero.id)" @update:model-value="toggleActive(genero)" />
-                  <span class="status-label" :class="genero.active ? 'active' : 'inactive'">{{ genero.active ? 'Activo' : 'Inactivo' }}</span>
-                </div>
+                <strong>{{ genero.nombre }}</strong>
               </td>
               <td>
                 <div class="action-group">
                   <button class="btn btn-ghost btn-sm" @click="openEditModal(genero)">Editar</button>
-                  <button class="btn btn-danger btn-sm" @click="openDeleteConfirm(genero)">Eliminar</button>
+                  <button class="btn btn-danger btn-sm" @click="openDeleteConfirm(genero)">
+                    Eliminar
+                  </button>
                 </div>
               </td>
             </tr>
@@ -100,7 +131,12 @@ async function toggleActive(genero: Genero) {
             <button class="close-btn" @click="closeModal">✕</button>
           </div>
           <div class="modal-body">
-            <GeneroForm :key="editingGenero?.id ?? 'new'" :initial-data="editingGenero ? { name: editingGenero.name } : undefined" @saved="onSaved" @cancel="closeModal" />
+            <GeneroForm
+              :key="editingGenero?.id ?? 'new'"
+              :initial-data="editingGenero ? { name: editingGenero.nombre } : undefined"
+              @saved="onSaved"
+              @cancel="closeModal"
+            />
           </div>
         </div>
       </div>
@@ -108,10 +144,18 @@ async function toggleActive(genero: Genero) {
     <Teleport to="body">
       <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="closeDeleteConfirm">
         <div class="modal-box modal-box--sm">
-          <div class="modal-header"><h2 class="modal-title">Eliminar género</h2><button class="close-btn" @click="closeDeleteConfirm">✕</button></div>
+          <div class="modal-header">
+            <h2 class="modal-title">Eliminar género</h2>
+            <button class="close-btn" @click="closeDeleteConfirm">✕</button>
+          </div>
           <div class="modal-body">
-            <p class="confirm-text">¿Estás seguro de que deseas eliminar <strong>{{ deletingGenero?.name }}</strong>?</p>
-            <div class="confirm-actions"><button class="btn btn-danger" @click="confirmDelete">Sí, eliminar</button><button class="btn btn-ghost" @click="closeDeleteConfirm">Cancelar</button></div>
+            <p class="confirm-text">
+              ¿Estás seguro de que deseas eliminar <strong>{{ deletingGenero?.nombre }}</strong>?
+            </p>
+            <div class="confirm-actions">
+              <button class="btn btn-danger" @click="confirmDelete">Sí, eliminar</button>
+              <button class="btn btn-ghost" @click="closeDeleteConfirm">Cancelar</button>
+            </div>
           </div>
         </div>
       </div>
@@ -134,7 +178,11 @@ async function toggleActive(genero: Genero) {
 .status-label { font-size: 12px; font-weight: 500; }
 .status-label.active { color: var(--success); }
 .status-label.inactive { color: var(--text3); }
-.action-group { display: flex; gap: 6px; }
+.tbl th:last-child,
+.tbl td:last-child {
+  text-align: right;
+}
+.action-group { display: flex; gap: 6px; justify-content: flex-end; }
 .btn { border: none; cursor: pointer; font-family: 'Outfit', sans-serif; border-radius: var(--radius); font-weight: 600; font-size: 14px; transition: opacity 0.2s; }
 .btn-primary { background: var(--sinopia); color: #fff; padding: 9px 18px; }
 .btn-primary:hover { opacity: 0.88; }

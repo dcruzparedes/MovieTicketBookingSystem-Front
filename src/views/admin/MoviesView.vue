@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MovieForm from '@/components/admin/MovieForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
-import { getPeliculas, deletePelicula } from '@/services/movieService'
+import { getPeliculas, deletePelicula, updateEstadoPelicula } from '@/services/movieService'
 
 const router = useRouter()
 
@@ -42,10 +42,13 @@ function closeModal() {
   showModal.value = false
 }
 
-function onMovieSaved() {
-  // Recargar lista después de guardar
-  location.reload() 
+async function onMovieSaved() {
   closeModal()
+  try {
+    movies.value = await getPeliculas()
+  } catch (e) {
+    console.error('Error recargando películas:', e)
+  }
 }
 
 // ── Delete ────────────────────────────────────────────────────────
@@ -85,12 +88,7 @@ async function toggleActive(movie: Movie) {
   const previous = movie.activo
   movie.activo = !movie.activo // optimistic update
   try {
-    const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/peliculas/${movie.id}/estado`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ activo: movie.activo }),
-    })
-    if (!res.ok) throw new Error('Error')
+    await updateEstadoPelicula(movie.id, movie.activo)
   } catch {
     movie.activo = previous // rollback on error
   } finally {

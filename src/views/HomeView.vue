@@ -24,7 +24,7 @@ interface Pelicula {
   year?: number,
   generos?: { nombre: string }
   idiomas?: { nombre: string }
-  funciones?: { id: number, fecha_hora: string, estado: string, formato: string, asientosFuncions: { id: number}[], salas: {id: number, nombre: string, cines: { id: number, nombre: string, ciudades: {nombre: string}}}}[]
+  funciones?: { id: number, fecha_hora: string, estado: string, formato: string, asientos_disponibles: number, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}[]
 }
 interface Idioma {
   id: number,
@@ -39,7 +39,7 @@ interface Ciudad {
   nombre: string
 }
 interface Cine { id: number; nombre: string; direccion: string | null; id_ciudad: number }
-interface Funcion { id: number, fecha_hora: string, estado: string, formato: string, asientosFuncions: { id: number}[], salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}
+interface Funcion { id: number, fecha_hora: string, estado: string, formato: string, asientos_disponibles: number, salas: {id: number, nombre: string, cines: {nombre: string, ciudades: {nombre: string}}}}
 
 // ── Estado ──
 const router = useRouter()
@@ -117,6 +117,9 @@ const funcionesDisponibles = computed(() => {
 function formatearHora(dateStr: string) {
   return new Date(dateStr).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })
 }
+function funcionLlena(funcion: Funcion) {
+  return funcion.asientos_disponibles === 0
+}
 function seleccionarPelicula(movie: Pelicula) {
   selectedMovie.value = movie
   selectedCinemaId.value = null
@@ -141,6 +144,7 @@ function irAAsientos(funcionId: number) {
     }
   }
   if(!funcion || !pelicula) return;
+  if(funcionLlena(funcion)) return;
 
   tienda.seleccionarFuncion({
     id: String(funcion.id),
@@ -311,13 +315,14 @@ function irAAsientos(funcionId: number) {
                   v-for="(s, si) in times"
                   :key="s.id"
                   class="funcion-btn animado"
+                  :class="{ 'funcion-btn-llena': funcionLlena(s) }"
                   :style="{ '--delay': `${100 + (gi as number) * 80 + si * 50}ms` }"
+                  :disabled="funcionLlena(s)"
                   @click="irAAsientos(s.id)"
                 >
                   <div class="funcion-time">{{ formatearHora(s.fecha_hora) }}</div>
                   <div class="funcion-format">{{ s.formato }}</div>
-                  <div v-if="s.asientosFuncions.length === 0" class="funcion-avail low">{{ s.asientosFuncions.length }} Disponibles</div>
-                  <div v-else class="funcion-avail">{{ s.asientosFuncions.length }} Disponibles</div>
+                  <div v-if="funcionLlena(s)" class="funcion-avail llena">Función Llena</div>
                 </button>
               </div>
             </div>
@@ -461,10 +466,18 @@ function irAAsientos(funcionId: number) {
   padding: 10px 16px; cursor: pointer; font-family: 'Outfit', sans-serif; text-align: left; transition: all .2s;
 }
 .funcion-btn:hover { border-color: var(--tangelo); background: rgba(243,80,10,.04); }
+.funcion-btn:disabled,
+.funcion-btn.funcion-btn-llena {
+  opacity: .5;
+  cursor: not-allowed;
+  background: var(--bg);
+}
+.funcion-btn.funcion-btn-llena:hover { border-color: var(--border2); background: var(--bg); }
 .funcion-time { font-size: 16px; font-weight: 600; color: var(--text); font-family: 'DM Mono', monospace; }
 .funcion-format { font-size: 11px; color: var(--text3); margin-top: 2px; }
 .funcion-avail { font-size: 11px; color: #1e783c; margin-top: 6px; display: flex; align-items: center; gap: 5px; }
 .funcion-avail.low { color: var(--orange); }
+.funcion-avail.llena { color: var(--text3); font-weight: 600; }
 .empty-showtimes { padding: 40px 0; color: var(--text3); font-size: 14px; }
 
 /* ── Badges ── */

@@ -145,8 +145,13 @@ export async function exportReservas(): Promise<void> {
   URL.revokeObjectURL(url)
 }
 
+export interface CancelarReservaResponse {
+  message: string
+  reembolso: { porcentaje: number; monto: number } | null
+}
+
 export async function cancelReserva(id: number){
-  const res = await api.patch(`/reservas/${id}/cancelar`, {});
+  const res = await api.patch<CancelarReservaResponse>(`/reservas/${id}/cancelar`, {});
   if(!res){
     throw new Error(`No se pudo cacnelar la reserva.`)
   }

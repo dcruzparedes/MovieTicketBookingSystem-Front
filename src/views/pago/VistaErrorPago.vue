@@ -39,6 +39,7 @@ import Button from 'primevue/button'
 import Message from 'primevue/message'
 import NavBar from '@/components/NavBar.vue'
 import { useReservaStore } from '@/stores/reserva'
+import { getUsuarioActual, rutaPorRol } from '@/services/authService'
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
@@ -49,7 +50,9 @@ const mensajeError = computed(() => String(ruta.query.motivo ?? 'No se pudo proc
 function cancelar() {
   tienda.limpiarSeleccion()
   tienda.limpiarTemporizador()
-  enrutador.push('/')
+  tienda.limpiarClienteReserva()
+  const usuario = getUsuarioActual()
+  enrutador.push(usuario ? rutaPorRol(usuario.rol) : '/')
 }
 </script>
 

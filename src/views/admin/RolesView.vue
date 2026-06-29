@@ -5,6 +5,8 @@ import {
   listarTodosUsuarios,
   adminCrearUsuario,
   actualizarRolUsuario,
+  actualizarEstadoUsuario,
+  eliminarUsuario,
   type UsuarioAdmin,
 } from '@/services/usuarioService'
 import { listarRoles, type Rol } from '@/services/rolService'
@@ -18,6 +20,16 @@ const error = ref('')
 const meta = ref({ page: 1, limit: 20, total: 0, totalPages: 1 })
 const paginaActual = ref(1)
 const busqueda = ref('')
+
+// ── Acciones por fila ────────────────────────────────────────────
+const actionLoadingId = ref<string | null>(null)
+const actionError = ref('')
+
+// ── Modal: Eliminar usuario ──────────────────────────────────────
+const showDeleteModal = ref(false)
+const deletingUsuario = ref<UsuarioAdmin | null>(null)
+const deleteLoading = ref(false)
+const deleteError = ref('')
 
 // ── Carga de datos ───────────────────────────────────────────────
 async function cargarUsuarios(pagina = 1) {
@@ -149,6 +161,51 @@ async function submitRol() {
   }
 }
 
+// ── Acciones: Toggle estado ──────────────────────────────────────
+async function toggleEstado(u: UsuarioAdmin) {
+  if (actionLoadingId.value) return
+  const nuevoEstado = u.estado === 'activo' ? 'inactivo' : 'activo'
+  actionLoadingId.value = u.id
+  actionError.value = ''
+  try {
+    await actualizarEstadoUsuario(u.id, nuevoEstado)
+    const idx = usuarios.value.findIndex((x) => x.id === u.id)
+    if (idx !== -1) usuarios.value[idx] = { ...usuarios.value[idx], estado: nuevoEstado }
+  } catch (e: unknown) {
+    actionError.value = e instanceof Error ? e.message : 'Error al cambiar estado'
+  } finally {
+    actionLoadingId.value = null
+  }
+}
+
+// ── Acciones: Eliminar usuario ───────────────────────────────────
+function openDeleteModal(u: UsuarioAdmin) {
+  deletingUsuario.value = u
+  deleteError.value = ''
+  showDeleteModal.value = true
+}
+
+function closeDeleteModal() {
+  showDeleteModal.value = false
+  deletingUsuario.value = null
+}
+
+async function confirmDelete() {
+  if (!deletingUsuario.value) return
+  deleteLoading.value = true
+  deleteError.value = ''
+  try {
+    await eliminarUsuario(deletingUsuario.value.id)
+    usuarios.value = usuarios.value.filter((u) => u.id !== deletingUsuario.value!.id)
+    meta.value.total--
+    closeDeleteModal()
+  } catch (e: unknown) {
+    deleteError.value = e instanceof Error ? e.message : 'Error al eliminar usuario'
+  } finally {
+    deleteLoading.value = false
+  }
+}
+
 // ── Helpers ──────────────────────────────────────────────────────
 function rolLabel(nombre: string) {
   const mapa: Record<string, string> = {
@@ -236,8 +293,12 @@ function onlyDigitsKeydown(e: KeyboardEvent) {
               <td class="muted">{{ u.telefono ?? '—' }}</td>
               <td><span class="rol-chip">{{ rolLabel(u.roles.nombre) }}</span></td>
               <td><span class="badge" :class="estadoClass(u.estado)">{{ u.estado }}</span></td>
-              <td>
-                <button class="btn btn-ghost btn-sm" @click="openRolModal(u)">Cambiar rol</button>
+              <td class="actions-cell">
+                <button class="btn btn-ghost btn-sm" :disabled="actionLoadingId === u.id" @click="openRolModal(u)">Cambiar rol</button>
+                <button class="btn btn-ghost btn-sm" :disabled="actionLoadingId === u.id" @click="toggleEstado(u)">
+                  {{ actionLoadingId === u.id ? '…' : u.estado === 'activo' ? 'Suspender' : 'Activar' }}
+                </button>
+                <button class="btn btn-danger btn-sm" :disabled="actionLoadingId === u.id" @click="openDeleteModal(u)">Eliminar</button>
               </td>
             </tr>
           </TransitionGroup>
@@ -245,6 +306,8 @@ function onlyDigitsKeydown(e: KeyboardEvent) {
             <tr><td colspan="7" class="empty-state">No se encontraron usuarios</td></tr>
           </tbody>
         </table>
+
+        <p v-if="actionError" class="api-error" style="padding: 8px 14px; margin: 0;">{{ actionError }}</p>
 
         <!-- Paginación -->
         <div v-if="meta.totalPages > 1" class="pagination">
@@ -340,6 +403,29 @@ function onlyDigitsKeydown(e: KeyboardEvent) {
         </div>
       </div>
     </Teleport>
+    <!-- Modal: Eliminar usuario -->
+    <Teleport to="body">
+      <div v-if="showDeleteModal" class="modal-overlay" @click.self="closeDeleteModal">
+        <div class="modal-box modal-box--sm">
+          <div class="modal-header">
+            <h2 class="modal-title">Eliminar usuario</h2>
+            <button class="close-btn" @click="closeDeleteModal">✕</button>
+          </div>
+          <div class="modal-body">
+            <p class="confirm-text">
+              ¿Eliminar a <strong>{{ deletingUsuario?.nombre }}</strong>? Esta acción no se puede deshacer.
+            </p>
+            <p v-if="deleteError" class="api-error">{{ deleteError }}</p>
+            <div class="form-actions">
+              <button class="btn btn-danger" :disabled="deleteLoading" @click="confirmDelete">
+                {{ deleteLoading ? 'Eliminando…' : 'Sí, eliminar' }}
+              </button>
+              <button class="btn btn-ghost" :disabled="deleteLoading" @click="closeDeleteModal">Cancelar</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </Teleport>
   </AdminLayout>
 </template>
 
@@ -407,6 +493,7 @@ function onlyDigitsKeydown(e: KeyboardEvent) {
 .form-actions { display: flex; gap: 10px; margin-top: 4px; }
 .confirm-text { font-size: 14px; color: var(--text2); margin-bottom: 16px; line-height: 1.5; }
 .confirm-text strong { color: var(--text); }
+.actions-cell { white-space: nowrap; display: flex; gap: 6px; align-items: center; }
 
 /* Animaciones */
 @keyframes slideUp {

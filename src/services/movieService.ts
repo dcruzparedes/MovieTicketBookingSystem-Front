@@ -87,6 +87,41 @@ export async function getPeliculas(){
   return res.json();
 }
 
+export async function updatePelicula(id: number, payload: Partial<CreatePeliculaPayload>): Promise<unknown> {
+  const res = await fetch(`${API_BASE}/peliculas/${id}`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { message?: string }
+    throw new Error(data.message ?? `Error ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function updateEstadoPelicula(id: number, activo: boolean): Promise<unknown> {
+  const res = await fetch(`${API_BASE}/peliculas/${id}/estado`, {
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ activo }),
+  })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { message?: string }
+    throw new Error(data.message ?? `Error ${res.status}`)
+  }
+  return res.json()
+}
+
+export async function getPeliculaById(id: number): Promise<unknown> {
+  const res = await fetch(`${API_BASE}/peliculas/${id}`)
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { message?: string }
+    throw new Error(data.message ?? `Error ${res.status}`)
+  }
+  return res.json()
+}
+
 export async function deletePelicula(id: number): Promise<void> {
   const res = await fetch(`${API_BASE}/peliculas/${id}`, { method: 'DELETE' })
   if (!res.ok) {

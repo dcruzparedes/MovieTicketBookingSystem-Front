@@ -83,6 +83,12 @@ export const useReservaStore = defineStore('reserva', () => {
       asientosSeleccionados.value.push(codigo)
       idsSeleccionados.value.push(asiento.id)
       asiento.estado = 'seleccionado'
+
+      // El temporizador arranca con la primera selección, no con el bloqueo
+      // en el backend (eso pasa después, al continuar al pago).
+      if (asientosSeleccionados.value.length === 1 && !intervaloTemporizador) {
+        iniciarTemporizador()
+      }
     }
   }
 
@@ -205,6 +211,18 @@ export const useReservaStore = defineStore('reserva', () => {
     funcionActual.value = funcion
   }
 
+  // ── Reserva en nombre de un cliente (flujo de recepcionista) ──
+  const idUsuarioReserva = ref<string | null>(null)
+
+  function establecerClienteReserva(idCliente: string) {
+    idUsuarioReserva.value = idCliente
+    metodoPago.value = 'efectivo'
+  }
+
+  function limpiarClienteReserva() {
+    idUsuarioReserva.value = null
+  }
+
   return {
     // Estado
     funcionActual,
@@ -237,5 +255,9 @@ export const useReservaStore = defineStore('reserva', () => {
     aplicarCupon,
     limpiarCupon,
     seleccionarFuncion,
+    // Reserva en nombre de un cliente
+    idUsuarioReserva,
+    establecerClienteReserva,
+    limpiarClienteReserva,
   }
 })

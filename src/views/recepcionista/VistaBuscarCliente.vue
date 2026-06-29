@@ -84,47 +84,31 @@
             Primero busca y selecciona un cliente.
           </Message>
 
-          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px">
-            <div class="card">
-              <div class="card-body">
-                <div class="campo"><label>Película</label>
-                  <Select v-model="reservaForm.pelicula" :options="peliculasMock" optionLabel="titulo"
-                    placeholder="Seleccionar" fluid />
-                </div>
-                <div class="campo"><label>Función</label>
-                  <Select v-model="reservaForm.funcion" :options="funcionesMock" optionLabel="label"
-                    placeholder="Seleccionar" fluid />
-                </div>
+          <div class="card">
+            <div class="card-body">
+              <div class="campo"><label>Película</label>
+                <Select v-model="peliculaSeleccionada" :options="peliculasConFunciones" optionLabel="titulo"
+                  :loading="cargandoPeliculas" placeholder="Seleccionar" fluid
+                  @update:model-value="funcionSeleccionada = null" />
               </div>
-            </div>
-            <div class="card">
-              <div class="card-body">
-                <div class="eyebrow" style="margin-bottom: 12px">Asientos seleccionados</div>
-                <div style="display: flex; flex-wrap: wrap; gap: 4px; min-height: 40px">
-                  <Tag v-for="codigo in tienda.asientosSeleccionados" :key="codigo" :value="codigo" severity="warn"
-                    style="font-family: 'DM Mono', monospace" />
-                  <span v-if="!tienda.asientosSeleccionados.length" style="font-size: 12px; color: var(--text3)">
-                    Ve a la vista de asientos para seleccionar
-                  </span>
-                </div>
+              <div class="campo"><label>Función</label>
+                <Select v-model="funcionSeleccionada" :options="funcionesDisponibles" optionLabel="label"
+                  option-disabled="llena" :disabled="!peliculaSeleccionada" placeholder="Seleccionar" fluid />
+                <span v-if="peliculaSeleccionada && !funcionesDisponibles.length"
+                  style="font-size: 12px; color: var(--text3)">
+                  Esta película no tiene funciones activas.
+                </span>
               </div>
             </div>
           </div>
 
           <div class="card" style="margin-top: 14px">
             <div class="card-body" style="display: flex; justify-content: space-between; align-items: center">
-              <div>
-                <div style="font-size: 13px; color: var(--text2); margin-bottom: 4px">
-                  {{ tienda.asientosSeleccionados.length }} asiento(s) seleccionado(s)
-                </div>
-                <div
-                  style="font-size: 18px; font-weight: 700; color: var(--sinopia); font-family: 'DM Mono', monospace">
-                  L. {{ tienda.subtotal.toFixed(2) }}
-                </div>
-              </div>
-              <Button label="Confirmar reserva"
-                :disabled="!clienteSeleccionado || tienda.asientosSeleccionados.length === 0"
-                @click="confirmarReserva" />
+              <span style="font-size: 12px; color: var(--text3)">
+                Vas a continuar al mapa de asientos para esta función.
+              </span>
+              <Button label="Continuar a selección de asientos" icon="pi pi-arrow-right" icon-pos="right"
+                :disabled="!clienteSeleccionado || !funcionSeleccionada" @click="continuarAAsientos" />
             </div>
           </div>
         </div>
@@ -202,7 +186,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Button from 'primevue/button'
 import InputText from 'primevue/inputtext'
@@ -219,9 +204,27 @@ import { useReservaStore } from '@/stores/reserva'
 import { isApiError } from '@/services/api'
 import { buscarClientes as buscarClientesApi, type ClienteBackend } from '@/services/usuarioService'
 import { getReservas, cancelReserva, type Funcion } from '@/services/reservaService'
+import { getPeliculas } from '@/services/movieService'
+
+// ── Forma de los datos que devuelve GET /peliculas (películas con sus funciones embebidas) ──
+interface FuncionEmbebida {
+  id: number
+  fecha_hora: string
+  estado: string
+  formato: string
+  asientos_disponibles: number
+  salas: { id: number; nombre: string; cines: { nombre: string } }
+}
+interface PeliculaConFunciones {
+  id: number
+  titulo: string
+  activo: boolean
+  funciones?: FuncionEmbebida[]
+}
 
 const toast = useToast()
 const tienda = useReservaStore()
+const router = useRouter()
 
 const seccionActiva = ref<'buscar' | 'reservar' | 'cancelar'>('buscar')
 
@@ -264,27 +267,70 @@ function seleccionarCliente(cliente: ClienteBackend) {
 }
 
 // ── Nueva reserva ──
-const peliculasMock = [
-  { id: '1', titulo: 'Alien: Romulus' },
-  { id: '2', titulo: 'Wild Robot' },
-  { id: '3', titulo: 'Venom' },
-]
-const funcionesMock = [
-  { id: '1', label: 'Vie 12 Jun · 19:15 · 3D · Sala 4' },
-  { id: '2', label: 'Vie 12 Jun · 21:45 · IMAX · Sala 2' },
-]
-const reservaForm = ref({ pelicula: null, funcion: null })
+const peliculasConFunciones = ref<PeliculaConFunciones[]>([])
+const cargandoPeliculas = ref(false)
+const peliculaSeleccionada = ref<PeliculaConFunciones | null>(null)
+const funcionSeleccionada = ref<(FuncionEmbebida & { label: string; llena: boolean }) | null>(null)
 
-function confirmarReserva() {
-  toast.add({
-    severity: 'success',
-    summary: 'Reserva confirmada',
-    detail: `Reserva creada para ${clienteSeleccionado.value?.nombre}`,
-    life: 4000,
+onMounted(async () => {
+  cargandoPeliculas.value = true
+  try {
+    const data = await getPeliculas()
+    peliculasConFunciones.value = (data as PeliculaConFunciones[]).filter((p) => p.activo)
+  } catch (error) {
+    toast.add({
+      severity: 'error',
+      summary: 'Error al cargar películas',
+      detail: isApiError(error) ? error.message : 'No se pudo cargar la cartelera',
+      life: 4000,
+    })
+  } finally {
+    cargandoPeliculas.value = false
+  }
+})
+
+const funcionesDisponibles = computed(() => {
+  const funciones = peliculaSeleccionada.value?.funciones ?? []
+  return funciones
+    .filter((f) => f.estado.toLowerCase() !== 'cancelada')
+    .map((f) => {
+      const llena = f.asientos_disponibles === 0
+      const label = formatearFuncionEmbebida(f) + (llena ? ' — Función Llena' : '')
+      return { ...f, label, llena }
+    })
+})
+
+function formatearFuncionEmbebida(funcion: FuncionEmbebida) {
+  const fecha = new Date(funcion.fecha_hora)
+  const fechaStr = fecha.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'short' })
+  const horaStr = fecha.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', hour12: false })
+  return `${fechaStr} · ${horaStr} · ${funcion.formato} · ${funcion.salas.nombre}`
+}
+
+function continuarAAsientos() {
+  if (!clienteSeleccionado.value || !peliculaSeleccionada.value || !funcionSeleccionada.value) return
+  if (funcionSeleccionada.value.llena) return
+
+  const funcion = funcionSeleccionada.value
+  tienda.establecerClienteReserva(clienteSeleccionado.value.id)
+  tienda.seleccionarFuncion({
+    id: String(funcion.id),
+    tituloPelicula: peliculaSeleccionada.value.titulo,
+    cine: funcion.salas.cines.nombre,
+    sala: funcion.salas.nombre,
+    fecha: new Date(funcion.fecha_hora).toLocaleDateString('es-ES', {
+      weekday: 'long',
+      day: 'numeric',
+      month: 'short',
+    }),
+    hora: new Date(funcion.fecha_hora).toLocaleTimeString('es-ES', {
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+    }),
+    formato: funcion.formato,
   })
-  seccionActiva.value = 'buscar'
-  clienteSeleccionado.value = null
-  tienda.limpiarSeleccion()
+  router.push('/asientos')
 }
 
 // ── Cancelar reserva ──
@@ -307,9 +353,9 @@ const estadoNormalizado = computed(() =>
   reservaEncontrada.value ? reservaEncontrada.value.estado.toLowerCase() : '',
 )
 
-const yaNoSePuedeCancelar = computed(
-  () => estadoNormalizado.value === 'cancelada' || estadoNormalizado.value === 'pagada',
-)
+// Una reserva 'pagada' sí se puede cancelar (genera reembolso); solo una
+// reserva ya 'cancelada' no tiene nada más que hacer.
+const yaNoSePuedeCancelar = computed(() => estadoNormalizado.value === 'cancelada')
 
 const severidadEstado = computed(() => {
   if (estadoNormalizado.value === 'cancelada') return 'danger'
@@ -368,13 +414,16 @@ async function buscarReserva() {
 async function ejecutarCancelacion() {
   if (!reservaEncontrada.value) return
   try {
-    await cancelReserva(reservaEncontrada.value.id)
+    const respuesta = await cancelReserva(reservaEncontrada.value.id)
     mostrarConfirmCancelacion.value = false
+    const detalle = respuesta.reembolso
+      ? `Reembolso de L. ${respuesta.reembolso.monto.toFixed(2)} (${respuesta.reembolso.porcentaje}%) se procesará en 3–5 días hábiles`
+      : 'La reserva no tenía un pago registrado, no se generó reembolso'
     toast.add({
       severity: 'success',
       summary: 'Reserva cancelada',
-      detail: 'El reembolso se procesará en 3–5 días hábiles',
-      life: 4000,
+      detail: detalle,
+      life: 5000,
     })
     reservaEncontrada.value = null
     codigoReserva.value = ''

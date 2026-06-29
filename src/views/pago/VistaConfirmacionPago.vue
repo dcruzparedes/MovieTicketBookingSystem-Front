@@ -65,9 +65,14 @@
 
         <!-- Acciones -->
         <div class="confirmacion-acciones animado" style="--delay: 300ms">
-          <Button label="Ver más películas" icon="pi pi-video" @click="enrutador.push('/')" />
-          <Button label="Mis reservas" icon="pi pi-ticket" severity="secondary" outlined
-            @click="enrutador.push({ path: '/perfil', query: { tab: 'reservas' } })" />
+          <template v-if="esRecepcionista">
+            <Button label="Volver a recepción" icon="pi pi-arrow-left" @click="enrutador.push('/recepcionista')" />
+          </template>
+          <template v-else>
+            <Button label="Ver más películas" icon="pi pi-video" @click="enrutador.push('/')" />
+            <Button label="Mis reservas" icon="pi pi-ticket" severity="secondary" outlined
+              @click="enrutador.push({ path: '/perfil', query: { tab: 'reservas' } })" />
+          </template>
           <Button icon="pi pi-print" severity="secondary" text v-tooltip="'Imprimir ticket'" @click="imprimir" />
         </div>
 
@@ -86,12 +91,14 @@ import Avatar from 'primevue/avatar'
 import Message from 'primevue/message'
 import NavBar from '@/components/NavBar.vue'
 import { useReservaStore } from '@/stores/reserva'
+import { getUsuarioActual } from '@/services/authService'
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
 const ruta = useRoute()
 
 const numeroReserva = computed(() => String(ruta.query.numero ?? ''))
+const esRecepcionista = computed(() => getUsuarioActual()?.rol === 'recepcionista')
 
 function imprimir() {
   window.print()
@@ -100,6 +107,7 @@ function imprimir() {
 onUnmounted(() => {
   tienda.limpiarSeleccion()
   tienda.limpiarCupon()
+  tienda.limpiarClienteReserva()
 })
 </script>
 

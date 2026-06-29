@@ -113,7 +113,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useToast } from 'primevue/usetoast'
 import Toast from 'primevue/toast'
@@ -128,6 +128,7 @@ import { useReservaStore } from '@/stores/reserva'
 import { getAsientosPorFuncion, bloquearAsientos } from '@/services/reservaService'
 import { isApiError } from '@/services/api'
 import { getCurrentUserId } from '@/services/movieService'
+import { getUsuarioActual, rutaPorRol } from '@/services/authService'
 // NavBar para mostrar el menú de usuario
 import NavBar from '@/components/NavBar.vue'
 
@@ -164,9 +165,10 @@ async function cargarAsientos() {
 
 onMounted(cargarAsientos)
 
-onUnmounted(() => {
-  tienda.limpiarTemporizador()
-})
+// No limpiamos el temporizador al desmontar: este componente se desmonta
+// justo al navegar a /pago tras bloquear los asientos, que es exactamente
+// cuando el temporizador debe seguir corriendo (representa el tiempo real
+// del bloqueo en el backend). Limpiarlo aquí lo mataba apenas arrancaba.
 
 async function manejarConflicto() {
   if (!tienda.funcionActual) return
@@ -196,9 +198,8 @@ async function irAPago() {
       tienda.funcionActual!.id,
       tienda.idsSeleccionados,
       MINUTOS_BLOQUEO,
-      getCurrentUserId(),
+      tienda.idUsuarioReserva ? Number(tienda.idUsuarioReserva) : getCurrentUserId(),
     )
-    tienda.iniciarTemporizador()
     enrutador.push('/pago')
   } catch (error) {
     if (isApiError(error) && error.status === 409) {
@@ -218,7 +219,10 @@ async function irAPago() {
 
 function irAHome() {
   tienda.limpiarSeleccion()
-  enrutador.push('/')
+  tienda.limpiarClienteReserva()
+  tienda.limpiarTemporizador()
+  const usuario = getUsuarioActual()
+  enrutador.push(usuario ? rutaPorRol(usuario.rol) : '/')
 }
 </script>
 

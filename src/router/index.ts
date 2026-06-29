@@ -56,29 +56,31 @@ const router = createRouter({
     },
 
     // ── Cliente (requiere sesión con rol cliente) ──
+    // También accesibles para recepcionista: reutiliza este mismo flujo
+    // para crear reservas en el mostrador a nombre de un cliente.
     {
       path: '/asientos',
       name: 'asientos',
       component: () => import('@/views/asientos/VistaSeleccionAsientos.vue'),
-      meta: { roles: ['cliente'] },
+      meta: { roles: ['cliente', 'recepcionista'] },
     },
     {
       path: '/pago',
       name: 'pago',
       component: () => import('@/views/pago/VistaPago.vue'),
-      meta: { roles: ['cliente'] },
+      meta: { roles: ['cliente', 'recepcionista'] },
     },
     {
       path: '/confirmacion',
       name: 'confirmacion',
       component: () => import('@/views/pago/VistaConfirmacionPago.vue'),
-      meta: { roles: ['cliente'] },
+      meta: { roles: ['cliente', 'recepcionista'] },
     },
     {
       path: '/error-pago',
       name: 'error-pago',
       component: () => import('@/views/pago/VistaErrorPago.vue'),
-      meta: { roles: ['cliente'] },
+      meta: { roles: ['cliente', 'recepcionista'] },
     },
     {
       path: '/perfil',

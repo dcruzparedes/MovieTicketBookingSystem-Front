@@ -99,6 +99,7 @@ import { crearReserva } from '@/services/reservaService'
 import { crearPago, crearPagoEfectivo } from '@/services/pagoService'
 import { isApiError } from '@/services/api'
 import { getCurrentUserId } from '@/services/movieService'
+import { getUsuarioActual, rutaPorRol } from '@/services/authService'
 
 const tienda = useReservaStore()
 const enrutador = useRouter()
@@ -110,7 +111,7 @@ async function confirmarPago() {
   procesando.value = true
   try {
     const reserva = await crearReserva({
-      id_usuario: getCurrentUserId(),
+      id_usuario: tienda.idUsuarioReserva ? Number(tienda.idUsuarioReserva) : getCurrentUserId(),
       id_funcion: Number(tienda.funcionActual.id),
       id_asientos: tienda.idsSeleccionados.map(Number),
     })
@@ -148,7 +149,10 @@ async function confirmarPago() {
 
 function irAHome() {
   tienda.limpiarSeleccion()
-  enrutador.push('/')
+  tienda.limpiarClienteReserva()
+  tienda.limpiarTemporizador()
+  const usuario = getUsuarioActual()
+  enrutador.push(usuario ? rutaPorRol(usuario.rol) : '/')
 }
 </script>
 

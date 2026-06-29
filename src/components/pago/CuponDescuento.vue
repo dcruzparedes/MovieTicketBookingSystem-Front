@@ -72,7 +72,7 @@ async function aplicar() {
       return
     }
 
-    tienda.aplicarCupon(res.cupon.codigo, res.cupon.tipo, Number(res.cupon.valor), res.cupon.codigo)
+    tienda.aplicarCupon(res.cupon.codigo, res.cupon.tipo, Number(res.cupon.valor), res.cupon.id)
     codigoIngresado.value = ''
   } catch (err) {
     error.value = isApiError(err) ? err.message : 'No se pudo validar el cupón.'

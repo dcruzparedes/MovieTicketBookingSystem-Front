@@ -168,6 +168,7 @@
                   <div class="field">
                     <label for="current">Contraseña actual</label>
                     <Password id="current" v-model="pw.current" placeholder="Tu contraseña actual" :feedback="false"
+                      :input-props="{ autocomplete: 'current-password' }"
                       :invalid="pwTouched.current && !!pwErrors.current" fluid toggle-mask @blur="pwTouch('current')" />
                     <Transition name="fade-alert">
                       <small v-if="pwTouched.current && pwErrors.current" class="field-error">{{ pwErrors.current
@@ -180,6 +181,7 @@
                   <div class="field">
                     <label for="newpw">Nueva contraseña</label>
                     <Password id="newpw" v-model="pw.newPw" placeholder="Mínimo 8 caracteres" :feedback="false"
+                      :input-props="{ autocomplete: 'new-password' }"
                       :invalid="pwTouched.newPw && !!pwErrors.newPw" fluid toggle-mask @blur="pwTouch('newPw')" />
                     <Transition name="fade-alert">
                       <small v-if="pwTouched.newPw && pwErrors.newPw" class="field-error">{{ pwErrors.newPw }}</small>
@@ -197,7 +199,8 @@
                   <div class="field">
                     <label for="confirmpw">Confirmar nueva contraseña</label>
                     <Password id="confirmpw" v-model="pw.confirm" placeholder="Repite la nueva contraseña"
-                      :feedback="false" :invalid="pwTouched.confirm && !!pwErrors.confirm" fluid toggle-mask
+                      :feedback="false" :input-props="{ autocomplete: 'new-password' }"
+                      :invalid="pwTouched.confirm && !!pwErrors.confirm" fluid toggle-mask
                       @blur="pwTouch('confirm')" />
                     <Transition name="fade-alert">
                       <small v-if="pwTouched.confirm && !!pwErrors.confirm" class="field-error">{{ pwErrors.confirm

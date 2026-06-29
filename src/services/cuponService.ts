@@ -1,6 +1,7 @@
 import { api } from './api'
 
 export interface CuponValidado {
+  id: string
   codigo: string
   tipo: 'porcentaje' | 'fijo'
   valor: string

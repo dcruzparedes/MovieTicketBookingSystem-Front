@@ -6,6 +6,7 @@ export interface CrearPagoPayload {
   monto_descuento: string
   monto_final: string
   metodo: string
+  id_cupon?: number
 }
 
 export interface CrearPagoEfectivoPayload {
@@ -13,6 +14,7 @@ export interface CrearPagoEfectivoPayload {
   monto_original: string
   monto_descuento: string
   monto_final: string
+  id_cupon?: number
 }
 
 export interface PagoCreado {

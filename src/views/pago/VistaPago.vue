@@ -119,6 +119,7 @@ async function confirmarPago() {
     const montoOriginal = tienda.subtotal.toFixed(2)
     const montoDescuento = tienda.descuento.toFixed(2)
     const montoFinal = tienda.totalFinal.toFixed(2)
+    const idCupon = tienda.idCupon ? Number(tienda.idCupon) : undefined
 
     if (tienda.metodoPago === 'efectivo') {
       await crearPagoEfectivo({
@@ -126,6 +127,7 @@ async function confirmarPago() {
         monto_original: montoOriginal,
         monto_descuento: montoDescuento,
         monto_final: montoFinal,
+        id_cupon: idCupon,
       })
     } else {
       await crearPago({
@@ -134,6 +136,7 @@ async function confirmarPago() {
         monto_descuento: montoDescuento,
         monto_final: montoFinal,
         metodo: 'tarjeta',
+        id_cupon: idCupon,
       })
     }
 

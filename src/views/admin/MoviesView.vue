@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import AdminLayout from '@/layouts/AdminLayout.vue'
 import MovieForm from '@/components/admin/MovieForm.vue'
 import ToggleSwitch from '@/components/ToggleSwitch.vue'
+import { deletePelicula } from '@/services/movieService'
 
 const router = useRouter()
 
@@ -45,6 +46,38 @@ function onMovieSaved(data: { title: string; genre: string; language: string; re
     active: true,
   })
   closeModal()
+}
+
+// ── Delete ────────────────────────────────────────────────────────
+const showDeleteConfirm = ref(false)
+const deletingMovie = ref<Movie | null>(null)
+const deleteLoading = ref(false)
+const deleteError = ref('')
+
+function openDeleteConfirm(movie: Movie) {
+  deletingMovie.value = movie
+  deleteError.value = ''
+  showDeleteConfirm.value = true
+}
+
+function closeDeleteConfirm() {
+  showDeleteConfirm.value = false
+  deletingMovie.value = null
+}
+
+async function confirmDelete() {
+  if (!deletingMovie.value) return
+  deleteLoading.value = true
+  deleteError.value = ''
+  try {
+    await deletePelicula(deletingMovie.value.id)
+    movies.value = movies.value.filter((m) => m.id !== deletingMovie.value!.id)
+    closeDeleteConfirm()
+  } catch (e: unknown) {
+    deleteError.value = e instanceof Error ? e.message : 'Error al eliminar la película'
+  } finally {
+    deleteLoading.value = false
+  }
 }
 
 async function toggleActive(movie: Movie) {
@@ -101,12 +134,20 @@ async function toggleActive(movie: Movie) {
                 </div>
               </td>
               <td>
-                <button
-                  class="btn btn-ghost btn-sm"
-                  @click="router.push('/admin/peliculas/' + movie.id + '/editar')"
-                >
-                  Editar
-                </button>
+                <div class="action-group">
+                  <button
+                    class="btn btn-ghost btn-sm"
+                    @click="router.push('/admin/peliculas/' + movie.id + '/editar')"
+                  >
+                    Editar
+                  </button>
+                  <button
+                    class="btn btn-danger btn-sm"
+                    @click="openDeleteConfirm(movie)"
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </td>
             </tr>
           </TransitionGroup>
@@ -124,6 +165,35 @@ async function toggleActive(movie: Movie) {
           </div>
           <div class="modal-body">
             <MovieForm @saved="onMovieSaved" @cancel="closeModal" />
+          </div>
+        </div>
+      </div>
+    </Teleport>
+    <!-- Modal: Confirmar eliminación -->
+    <Teleport to="body">
+      <div v-if="showDeleteConfirm" class="modal-overlay" @click.self="closeDeleteConfirm">
+        <div class="modal-box modal-box--sm">
+          <div class="modal-header">
+            <h2 class="modal-title">Eliminar película</h2>
+            <button class="close-btn" @click="closeDeleteConfirm">✕</button>
+          </div>
+          <div class="modal-body">
+            <p class="confirm-text">
+              ¿Estás seguro de que quieres eliminar
+              <strong>{{ deletingMovie?.title }}</strong>?
+              Esta acción no se puede deshacer.
+            </p>
+            <p v-if="deleteError" class="delete-error">{{ deleteError }}</p>
+            <div class="form-actions">
+              <button
+                class="btn btn-danger"
+                :disabled="deleteLoading"
+                @click="confirmDelete"
+              >
+                {{ deleteLoading ? 'Eliminando…' : 'Sí, eliminar' }}
+              </button>
+              <button class="btn btn-ghost" @click="closeDeleteConfirm">Cancelar</button>
+            </div>
           </div>
         </div>
       </div>
@@ -251,6 +321,26 @@ async function toggleActive(movie: Movie) {
   font-size: 12px;
 }
 
+.btn-danger {
+  background: var(--sinopia);
+  color: #fff;
+  padding: 6px 14px;
+}
+
+.btn-danger:hover:not(:disabled) {
+  opacity: 0.88;
+}
+
+.btn-danger:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.action-group {
+  display: flex;
+  gap: 6px;
+}
+
 /* Modal */
 .modal-overlay {
   position: fixed;
@@ -306,6 +396,32 @@ async function toggleActive(movie: Movie) {
 
 .modal-body {
   padding: 24px;
+}
+
+.modal-box--sm {
+  max-width: 420px;
+}
+
+.confirm-text {
+  font-size: 14px;
+  color: var(--text2);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+
+.confirm-text strong {
+  color: var(--text);
+}
+
+.delete-error {
+  font-size: 13px;
+  color: var(--sinopia);
+  margin-bottom: 12px;
+}
+
+.form-actions {
+  display: flex;
+  gap: 10px;
 }
 
 /* ── Animaciones ── */

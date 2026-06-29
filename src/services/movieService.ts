@@ -87,6 +87,14 @@ export async function getPeliculas(){
   return res.json();
 }
 
+export async function deletePelicula(id: number): Promise<void> {
+  const res = await fetch(`${API_BASE}/peliculas/${id}`, { method: 'DELETE' })
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({})) as { message?: string }
+    throw new Error(data.message ?? `Error ${res.status}`)
+  }
+}
+
 export function getCurrentUserId(): number {
   try {
     const raw = localStorage.getItem('user')

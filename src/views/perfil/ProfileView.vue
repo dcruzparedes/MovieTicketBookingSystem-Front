@@ -57,8 +57,17 @@
 
                   <div class="field">
                     <label for="telefono">Teléfono</label>
-                    <InputText id="telefono" v-model="profile.telefono" type="tel" placeholder="+504 9999 9999"
-                      :invalid="pTouched.telefono && !!pErrors.telefono" fluid @blur="pTouch('telefono')" />
+                    <InputText 
+                      id="telefono" 
+                      v-model="telefono" 
+                      inputmode="numeric"
+                      maxlength="8"
+                      placeholder="+504 9999 9999"
+                      :invalid="pTouched.telefono && !!pErrors.telefono" 
+                      fluid 
+                      @keydown="onlyDigitsKeydown"
+                      @blur="pTouch('telefono')" 
+                    />
                     <Transition name="fade-alert">
                       <small v-if="pTouched.telefono && pErrors.telefono" class="field-error">{{ pErrors.telefono
                         }}</small>
@@ -75,12 +84,9 @@
               <!-- TAB: RESERVAS -->
               <div v-else-if="activeTab === 'reservas'" key="reservas">
                 <div class="section-title">Mis reservas</div>
-                <p class="section-desc">Consulta el historial y el estado de tus reservas de funciones.</p>
-
-                <div v-if="reservas?.data.length === 0" class="empty-reservas">
-                  Todavía no tienes reservas. ¡Explora la cartelera y reserva tu próxima función!
-                </div>
-
+                <p class="section-desc"v-if="reservas?.data.length === 0">
+                  Todavía no tienes reservas. ¡Explora la cartelera y reserva tu próxima función!</p>
+                <button @click="router.push('/')" v-if="reservas?.data.length === 0" class="btn-ghost">Ir A Cartelera</button>
                 <div v-else class="reservas-list">
                   <div v-for="reserva in reservas?.data" :key="reserva.id" class="reserva-card">
                     <img class="reserva-poster" :src="reserva.funciones.peliculas.poster_url" :alt="reserva.funciones.peliculas.titulo" />
@@ -266,7 +272,7 @@
 
 <script setup lang="ts">
 import { reactive, ref, computed, watch, onMounted } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import InputText from 'primevue/inputtext'
 import Password from 'primevue/password'
 import Button from 'primevue/button'
@@ -280,6 +286,7 @@ import { obtenerUsuario, actualizarPassword, alternarNotificaciones, actualizarP
 import { getCurrentUserId } from '@/services/movieService'
 import { getUsuarioActual, notificarCambioSesion } from '@/services/authService'
 import { isApiError } from '@/services/api'
+const router = useRouter()
 const route = useRoute()
 const cancelarReserva = ref(false)
 const menuItems = [
@@ -431,6 +438,23 @@ const INITIAL_PROFILE = reactive({
 const profile = reactive({ ...INITIAL_PROFILE })
 const notifReminders = ref(false)
 const notifSaved = ref(false)
+
+const telefono = computed({
+  get: () => profile.telefono,
+  set: (value: string) => {
+    profile.telefono = value.replace(/\D/g, '').slice(0, 8)
+  }
+})
+
+// Bloquea cualquier tecla que no sea un dígito antes de que se escriba
+const ALLOWED_KEYS = ['Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'Tab', 'Home', 'End']
+
+function onlyDigitsKeydown(e: KeyboardEvent) {
+  if (ALLOWED_KEYS.includes(e.key)) return
+  if (!/^\d$/.test(e.key)) {
+    e.preventDefault()
+  }
+}
 
 async function cargarPerfil() {
   try {

@@ -134,11 +134,11 @@ function limpiarFiltros() {
                 <td><span :class="badgeClass(log.accion)">{{ log.accion }}</span></td>
                 <td style="color:var(--text3)">{{ log.detalle ?? '—' }}</td>
                 <td>
-                  <span style="display:block;font-weight:500;color:var(--text)">{{ log.usuarios.nombre }}</span>
-                  <span style="display:block;font-size:11px;color:var(--text3)">{{ log.usuarios.email }}</span>
+                  <span style="display:block;font-weight:500;color:var(--text)">{{ log.usuarios?.nombre ?? '—' }}</span>
+                  <span style="display:block;font-size:11px;color:var(--text3)">{{ log.usuarios?.email ?? '' }}</span>
                 </td>
                 <td>
-                  <span style="font-weight:500;color:var(--text)">{{ log.realizado_por.nombre }}</span>
+                  <span style="font-weight:500;color:var(--text)">{{ log.realizado_por?.nombre ?? '—' }}</span>
                 </td>
               </tr>
             </TransitionGroup>

@@ -2,13 +2,13 @@ import { api } from './api'
 
 export interface AuditLog {
   id: string
-  id_usuario: string
-  id_auditor: string
+  id_usuario: string | null
+  id_auditor: string | null
   accion: string
   detalle: string | null
   created_at: string
-  usuarios: { id: string; nombre: string; email: string }
-  realizado_por: { id: string; nombre: string; email: string }
+  usuarios: { id: string; nombre: string; email: string } | null
+  realizado_por: { id: string; nombre: string; email: string } | null
 }
 
 export interface AuditLogsFilter {

@@ -120,3 +120,11 @@ export function adminCrearUsuario(payload: AdminCrearUsuarioPayload) {
 export function actualizarRolUsuario(id: string, rolId: number) {
   return api.patch<UsuarioAdmin>(`/usuarios/${id}/rol`, { rolId })
 }
+
+export function actualizarEstadoUsuario(id: string, status: 'activo' | 'inactivo') {
+  return api.patch<{ message: string; id: string; status: string }>(`/usuarios/${id}/status`, { status })
+}
+
+export function eliminarUsuario(id: string) {
+  return api.delete<{ message: string }>(`/usuarios/${id}`)
+}

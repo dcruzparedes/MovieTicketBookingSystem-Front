@@ -1,3 +1,5 @@
+import Cookies from 'js-cookie'
+
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3001'
 
 export interface ApiError extends Error {
@@ -14,6 +16,7 @@ export async function request<T>(endpoint: string, options: RequestInit = {}): P
     ...options,
     headers: {
       'Content-Type': 'application/json',
+      ...(Cookies.get('token') ? { Authorization: `Bearer ${Cookies.get('token')}` } : {}),
       ...options.headers,
     },
   })

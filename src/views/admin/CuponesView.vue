@@ -87,18 +87,18 @@ async function guardarCupon() {
         const actualizado = await actualizarCupon(editingCupon.value.id, {
           codigo: nuevoForm.value.codigo,
           tipo: nuevoForm.value.tipo,
-          valor: nuevoForm.value.valor,
+          valor: Number(nuevoForm.value.valor),
           fecha_expiracion: nuevoForm.value.fecha_expiracion,
-          usos_maximos: nuevoForm.value.usos_maximos,
+          usos_maximos: Number(nuevoForm.value.usos_maximos),
         });
         Object.assign(editingCupon.value, actualizado)
       } else {
         await nuevoCupon({
           codigo: nuevoForm.value.codigo,
           tipo: nuevoForm.value.tipo,
-          valor: nuevoForm.value.valor,
+          valor: Number(nuevoForm.value.valor),
           fecha_expiracion: nuevoForm.value.fecha_expiracion,
-          usos_maximos: nuevoForm.value.usos_maximos,
+          usos_maximos: Number(nuevoForm.value.usos_maximos),
           activo: true
         });
         await getAllCupones();

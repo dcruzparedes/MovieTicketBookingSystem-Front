@@ -129,6 +129,12 @@ function seleccionarPelicula(movie: Pelicula) {
   selectedCinemaId.value = null
   window.scrollTo({ top: 0, behavior: 'smooth' })
 }
+function cleanFilters(){
+  searchTitle.value = ''
+  selectedGenero.value = 'Todos los géneros' 
+  selectedIdioma.value ='Todos los idiomas'
+  selectedCiudad.value = 'Todas las ciudades'
+}
 function limpiarSeleccion() { selectedMovie.value = null; selectedCinemaId.value = null }
 function irAAsientos(funcionId: number) {
   let pelicula: Pelicula | undefined;
@@ -190,6 +196,8 @@ function irAAsientos(funcionId: number) {
                 <option>Todos los géneros</option>
                 <option v-for="g in generos">{{ g.nombre }}</option>
               </select>
+              <button @click='cleanFilters' 
+              class="select-native">Quitar Filtros</button>
             </div>
           </div>
         </header>

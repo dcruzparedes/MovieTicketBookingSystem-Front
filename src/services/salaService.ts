@@ -23,6 +23,13 @@ export interface UpdateSalaPayload {
   columnas?: number
 }
 
+export async function getSalas(): Promise<Sala[]> {
+  return api.get<Sala[]>('/salas').catch((err) => {
+    if ((err as { status?: number }).status === 404) return []
+    throw err
+  })
+}
+
 export async function getSala(id: number): Promise<Sala> {
   return api.get<Sala>(`/salas/${id}`)
 }

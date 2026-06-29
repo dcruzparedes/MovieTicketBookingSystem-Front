@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, reactive, watch } from 'vue'
 
-interface FuncionFields {
+export interface FuncionFields {
   peliculaId: string
   cinemaId: string
   salaId: string
@@ -16,14 +16,23 @@ interface FuncionErrors {
   salaId: string
   fecha: string
   hora: string
-  precio: string
 }
 
 const props = withDefaults(
   defineProps<{
     initialData?: Partial<FuncionFields>
+    peliculas?: { id: string; titulo: string; dur?: string | null }[]
+    cines?: { id: string; nombre: string }[]
+    salas?: { id: string; id_cine: string; nombre: string }[]
+    loading?: boolean
   }>(),
-  { initialData: undefined },
+  {
+    initialData: undefined,
+    peliculas: () => [],
+    cines: () => [],
+    salas: () => [],
+    loading: false,
+  },
 )
 
 const emit = defineEmits<{
@@ -32,31 +41,6 @@ const emit = defineEmits<{
 }>()
 
 const isEditing = computed(() => !!props.initialData)
-
-const peliculas = [
-  { id: '1', title: 'Alien: Romulus', genre: 'Sci-Fi', duration: 119 },
-  { id: '2', title: 'Wild Robot', genre: 'Animación', duration: 102 },
-  { id: '3', title: 'Megalopolis', genre: 'Drama', duration: 138 },
-  { id: '4', title: 'Venom: El Último Baile', genre: 'Acción', duration: 109 },
-]
-
-const cinemas = [
-  { id: '1', name: 'Cine Vicenta Zona 10', city: 'San Pedro Sula' },
-  { id: '2', name: 'Cine Vicenta Miraflores', city: 'Tegucigalpa' },
-  { id: '3', name: 'Cine Vicenta Pradera', city: 'Yuscarán' },
-  { id: '4', name: 'Cine Vicenta Antigua', city: 'Santa Bárbara' },
-]
-
-const allSalas = [
-  { id: '1', cinemaId: '1', name: 'Sala 1' },
-  { id: '2', cinemaId: '1', name: 'Sala 2' },
-  { id: '3', cinemaId: '1', name: 'Sala VIP' },
-  { id: '4', cinemaId: '2', name: 'Sala 1' },
-  { id: '5', cinemaId: '2', name: 'Sala IMAX' },
-  { id: '6', cinemaId: '3', name: 'Sala 1' },
-  { id: '7', cinemaId: '3', name: 'Sala 2' },
-  { id: '8', cinemaId: '4', name: 'Sala 1' },
-]
 
 const form = reactive<FuncionFields>({
   peliculaId: props.initialData?.peliculaId ?? '',
@@ -73,11 +57,10 @@ const errors = reactive<FuncionErrors>({
   salaId: '',
   fecha: '',
   hora: '',
-  precio: '',
 })
 
-const salas = computed(() =>
-  form.cinemaId ? allSalas.filter((s) => s.cinemaId === form.cinemaId) : [],
+const salasFiltradas = computed(() =>
+  form.cinemaId ? props.salas.filter((s) => s.id_cine === form.cinemaId) : [],
 )
 
 // Reset sala when cinema changes
@@ -88,13 +71,9 @@ watch(
   },
 )
 
-const selectedPelicula = computed(() => peliculas.find((p) => p.id === form.peliculaId) ?? null)
-const selectedCinema = computed(() => cinemas.find((c) => c.id === form.cinemaId) ?? null)
-const selectedSala = computed(() => allSalas.find((s) => s.id === form.salaId) ?? null)
-
-function formatDuration(min: number): string {
-  return `${Math.floor(min / 60)}h ${min % 60}m`
-}
+const selectedPelicula = computed(() => props.peliculas.find((p) => p.id === form.peliculaId) ?? null)
+const selectedCinema = computed(() => props.cines.find((c) => c.id === form.cinemaId) ?? null)
+const selectedSala = computed(() => props.salas.find((s) => s.id === form.salaId) ?? null)
 
 function validate(): boolean {
   errors.peliculaId = form.peliculaId ? '' : 'Selecciona una película'
@@ -102,12 +81,6 @@ function validate(): boolean {
   errors.salaId = form.salaId ? '' : 'Selecciona una sala'
   errors.fecha = form.fecha ? '' : 'La fecha es requerida'
   errors.hora = form.hora ? '' : 'La hora es requerida'
-  const precio = parseFloat(form.precio)
-  errors.precio = !form.precio.trim()
-    ? 'El precio base es requerido'
-    : isNaN(precio) || precio < 0
-      ? 'Ingresa un precio válido'
-      : ''
   return Object.values(errors).every((e) => !e)
 }
 
@@ -132,7 +105,7 @@ function handleSubmit() {
         >
           <option value="" disabled>Seleccionar película…</option>
           <option v-for="p in peliculas" :key="p.id" :value="p.id">
-            {{ p.title }} ({{ p.genre }})
+            {{ p.titulo }}
           </option>
         </select>
         <span v-if="errors.peliculaId" class="field-error">{{ errors.peliculaId }}</span>
@@ -144,8 +117,8 @@ function handleSubmit() {
         <label for="ff-cinema">Cine</label>
         <select id="ff-cinema" v-model="form.cinemaId" :class="{ 'input-error': errors.cinemaId }">
           <option value="" disabled>Seleccionar cine…</option>
-          <option v-for="c in cinemas" :key="c.id" :value="c.id">
-            {{ c.name }} — {{ c.city }}
+          <option v-for="c in cines" :key="c.id" :value="c.id">
+            {{ c.nombre }}
           </option>
         </select>
         <span v-if="errors.cinemaId" class="field-error">{{ errors.cinemaId }}</span>
@@ -162,7 +135,7 @@ function handleSubmit() {
           <option value="" disabled>
             {{ form.cinemaId ? 'Seleccionar sala…' : 'Primero elige un cine' }}
           </option>
-          <option v-for="s in salas" :key="s.id" :value="s.id">{{ s.name }}</option>
+          <option v-for="s in salasFiltradas" :key="s.id" :value="s.id">{{ s.nombre }}</option>
         </select>
         <span v-if="errors.salaId" class="field-error">{{ errors.salaId }}</span>
       </div>
@@ -202,16 +175,14 @@ function handleSubmit() {
           min="0"
           step="0.50"
           placeholder="ej. 45.00"
-          :class="{ 'input-error': errors.precio }"
         />
-        <span v-if="errors.precio" class="field-error">{{ errors.precio }}</span>
       </div>
 
       <div class="form-actions">
-        <button type="submit" class="btn btn-primary">
-          {{ isEditing ? 'Guardar cambios' : 'Crear función' }}
+        <button type="submit" class="btn btn-primary" :disabled="loading">
+          {{ loading ? 'Guardando…' : isEditing ? 'Guardar cambios' : 'Crear función' }}
         </button>
-        <button type="button" class="btn btn-ghost" @click="emit('cancel')">Cancelar</button>
+        <button type="button" class="btn btn-ghost" :disabled="loading" @click="emit('cancel')">Cancelar</button>
       </div>
     </div>
 
@@ -223,25 +194,22 @@ function handleSubmit() {
           <span class="summary-icon">🎬</span>
           <div class="summary-text">
             <span class="summary-key">Película</span>
-            <span class="summary-val">{{ selectedPelicula?.title || '—' }}</span>
-            <span v-if="selectedPelicula" class="summary-sub">
-              {{ selectedPelicula.genre }} · {{ formatDuration(selectedPelicula.duration) }}
-            </span>
+            <span class="summary-val">{{ selectedPelicula?.titulo || '—' }}</span>
+            <span v-if="selectedPelicula?.dur" class="summary-sub">{{ selectedPelicula.dur }}</span>
           </div>
         </div>
         <div class="summary-row">
           <span class="summary-icon">🏛</span>
           <div class="summary-text">
             <span class="summary-key">Cine</span>
-            <span class="summary-val">{{ selectedCinema?.name || '—' }}</span>
-            <span v-if="selectedCinema" class="summary-sub">{{ selectedCinema.city }}</span>
+            <span class="summary-val">{{ selectedCinema?.nombre || '—' }}</span>
           </div>
         </div>
         <div class="summary-row">
           <span class="summary-icon">🎭</span>
           <div class="summary-text">
             <span class="summary-key">Sala</span>
-            <span class="summary-val">{{ selectedSala?.name || '—' }}</span>
+            <span class="summary-val">{{ selectedSala?.nombre || '—' }}</span>
           </div>
         </div>
         <div class="summary-divider" />
@@ -448,5 +416,10 @@ function handleSubmit() {
 
 .btn-ghost:hover {
   background: var(--bg);
+}
+
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 </style>
